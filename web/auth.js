@@ -63,6 +63,7 @@ export async function loginEmail(email, password) {
 
 // ── Logout ───────────────────────────────────────────────────
 export async function logout() {
+  localStorage.removeItem('ives_local_admin');
   await signOut(auth);
   currentUser  = null;
   isAdmin      = false;
@@ -70,12 +71,23 @@ export async function logout() {
   notifyListeners();
 }
 
-// ── Modo Prueba (Local) ──────────────────────────────────────
+// ── Modo Admin Local (persiste en localStorage) ─────────────
+const LOCAL_ADMIN_KEY = 'ives_local_admin';
+
 export function forceAdmin() {
-  currentUser = { displayName: 'Admin (Prueba)', email: 'tecnicouzcategui@gmail.com', uid: 'dev-123' };
+  currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
   isAdmin = true;
+  localStorage.setItem(LOCAL_ADMIN_KEY, '1');
   notifyListeners();
 }
+
+// Restaurar sesión local si existe al cargar la página
+(function restoreLocalAdmin() {
+  if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
+    currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
+    isAdmin = true;
+  }
+})();
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
