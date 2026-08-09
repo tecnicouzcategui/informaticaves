@@ -58,8 +58,7 @@
         <button class="btn btn-primary w-full" id="btn-login-admin" style="font-size:1rem;padding:0.75rem">
           → Entrar al panel
         </button>
-        <div style="margin:1rem 0;color:var(--text-dim);font-size:0.78rem">o</div>
-        <button class="btn btn-secondary btn-sm w-full" id="btn-force-admin">🛠 Modo prueba (sin Firebase)</button>
+
       </div>
     </div>
 
@@ -306,7 +305,7 @@
 
   // ── Gestión de contraseña con SHA-256 ──────────────────────────
   const PASS_KEY     = 'ives_admin_hash';
-  const DEFAULT_PASS = 'Admin2024!';
+  const DEFAULT_PASS = '@Amy.2023';
 
   async function sha256(text) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -335,22 +334,18 @@
 
     if (!email || !pass) { errorEl.textContent = 'Ingresa correo y contraseña.'; return; }
 
-    // Acceso local con hash
+    btnLogin.disabled = true;
+    btnLogin.textContent = 'Verificando...';
+
+    // Solo autenticación local SHA-256, sin Firebase
     if (email === 'tecnicouzcategui@gmail.com' && await checkLocalPass(pass)) {
       forceAdmin();
       return;
     }
 
-    // Intentar con Firebase
-    btnLogin.disabled = true;
-    btnLogin.textContent = 'Entrando...';
-    try {
-      await loginEmail(email, pass);
-    } catch (err) {
-      errorEl.textContent = err.message;
-      btnLogin.disabled = false;
-      btnLogin.textContent = '→ Entrar al panel';
-    }
+    errorEl.textContent = 'Correo o contraseña incorrectos.';
+    btnLogin.disabled = false;
+    btnLogin.textContent = '→ Entrar al panel';
   });
 
   passInput?.addEventListener('keydown', e => { if (e.key === 'Enter') btnLogin.click(); });
