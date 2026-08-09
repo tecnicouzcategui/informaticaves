@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin | InformaticaVES</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#63b3ed">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none;">
+      <img src="logo_oficial.png" alt="InformaticaVES" style="height:110px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="servicios.html">Servicios</a></li>
+      <li><a href="solicitud.html">Solicitar</a></li>
+      <li><a href="admin.html" class="active">Admin</a></li>
+    </ul>
+    <div class="nav-actions">
+      <span class="admin-badge" id="admin-badge">Admin</span>
+      <div class="user-avatar hidden" id="user-avatar"></div>
+      <button class="btn-nav-auth hidden" id="btn-login">Iniciar Sesión</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container-wide" style="padding-top:1rem;padding-bottom:4rem">
+
+    <!-- ── Acceso denegado ──────────────────────────────────── -->
+    <div id="admin-access-denied" style="display:flex;justify-content:center;align-items:center;min-height:70vh">
+      <div class="card" style="max-width:380px;width:100%;padding:2.5rem 2rem;text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
+        <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:0.4rem">Panel de Administrador</h2>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:1.75rem">Ingresa con tu cuenta para continuar</p>
+
+        <div class="form-group" style="text-align:left;margin-bottom:1rem">
+          <label class="form-label" for="login-email">Correo electrónico</label>
+          <input type="email" id="login-email" class="form-input"
+                 placeholder="tecnicouzcategui@gmail.com"
+                 value="tecnicouzcategui@gmail.com" autocomplete="email">
+        </div>
+        <div class="form-group" style="text-align:left;margin-bottom:0.5rem">
+          <label class="form-label" for="login-password">Contraseña</label>
+          <input type="password" id="login-password" class="form-input"
+                 placeholder="Tu contraseña" autocomplete="current-password">
+        </div>
+        <p id="login-error" style="color:#fc8181;font-size:0.82rem;min-height:1.2rem;margin-bottom:0.75rem"></p>
+        <button class="btn btn-primary w-full" id="btn-login-admin" style="font-size:1rem;padding:0.75rem">
+          → Entrar al panel
+        </button>
+        <div style="margin:1rem 0;color:var(--text-dim);font-size:0.78rem">o</div>
+        <button class="btn btn-secondary btn-sm w-full" id="btn-force-admin">🛠 Modo prueba (sin Firebase)</button>
+      </div>
+    </div>
+
+    <!-- ── Panel Admin ─────────────────────────────────────────── -->
+    <div id="admin-panel" class="hidden">
+
+      <!-- Header Admin -->
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">🛠 Panel de Administración</h1>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem" id="admin-welcome"></p>
+        </div>
+        <div class="flex gap-2" style="flex-wrap:wrap">
+          <a href="index.html" class="btn btn-secondary btn-sm">🌐 Ver sitio</a>
+          <button class="btn btn-ghost btn-sm" id="btn-logout-admin">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <!-- Stats rápidas -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:2rem" id="stats-grid">
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:900;color:var(--accent)" id="stat-servicios">—</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Servicios publicados</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:900;color:var(--yellow)" id="stat-borradores">—</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">En borrador</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:900;color:var(--green)" id="stat-solicitudes">—</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Solicitudes totales</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:900;color:var(--red)" id="stat-pendientes">—</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Sin leer</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="admin-tabs" style="margin-bottom:1.5rem">
+        <button class="admin-tab active" data-tab="servicios">🔧 Servicios</button>
+        <button class="admin-tab" data-tab="solicitudes">📥 Solicitudes</button>
+        <button class="admin-tab" data-tab="faq">❓ FAQ</button>
+        <button class="admin-tab" data-tab="config">⚙️ Configuración</button>
+      </div>
+
+      <!-- TAB: Servicios ────────────────────────────────────────── -->
+      <div id="tab-servicios" class="tab-pane">
+        <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
+          <h2 style="font-size:1.1rem;font-weight:700">Catálogo de Servicios</h2>
+          <button class="btn btn-primary btn-sm" onclick="adminNuevoServicio()">➕ Nuevo Servicio</button>
+        </div>
+        <div class="table-wrapper" style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Emoji</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th>Categoría</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="servicios-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Solicitudes ─────────────────────────────────────── -->
+      <div id="tab-solicitudes" class="tab-pane hidden">
+        <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
+          <h2 style="font-size:1.1rem;font-weight:700">Solicitudes Recibidas</h2>
+          <span style="font-size:0.8rem;color:var(--text-muted)">⚡ Actualización en tiempo real</span>
+        </div>
+        <div class="table-wrapper" style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Prioridad</th>
+                <th>Cliente</th>
+                <th>WhatsApp</th>
+                <th>Servicio</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="solicitudes-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: FAQ ─────────────────────────────────────────────── -->
+      <div id="tab-faq" class="tab-pane hidden">
+        <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
+          <h2 style="font-size:1.1rem;font-weight:700">Preguntas Frecuentes</h2>
+          <button class="btn btn-primary btn-sm" onclick="adminNuevaFAQ()">➕ Nueva FAQ</button>
+        </div>
+        <div id="faq-list">
+          <div style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></div>
+        </div>
+      </div>
+
+      <!-- TAB: Configuración ──────────────────────────────────── -->
+      <div id="tab-config" class="tab-pane hidden">
+        <div style="max-width:420px">
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1.25rem">⚙️ Configuración del Panel</h2>
+
+          <div class="card" style="padding:1.5rem">
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem">🔑 Cambiar Contraseña de Acceso</h3>
+            <div class="form-group">
+              <label class="form-label" for="cfg-pass-actual">Contraseña actual</label>
+              <input type="password" id="cfg-pass-actual" class="form-input" placeholder="Contraseña actual">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-pass-nueva">Nueva contraseña</label>
+              <input type="password" id="cfg-pass-nueva" class="form-input" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-pass-confirmar">Confirmar nueva contraseña</label>
+              <input type="password" id="cfg-pass-confirmar" class="form-input" placeholder="Repite la nueva contraseña">
+            </div>
+            <p id="cfg-pass-msg" style="font-size:0.82rem;min-height:1.2rem;margin-bottom:0.75rem"></p>
+            <button class="btn btn-primary w-full" id="btn-cambiar-pass">💾 Guardar nueva contraseña</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /admin-panel -->
+  </div>
+</div>
+
+<!-- ── Modal: Nuevo/Editar Servicio ─────────────────────────── -->
+<div class="modal-backdrop" id="modal-servicio" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative;max-width:500px">
+    <button class="modal-close" onclick="closeServicioModal()">✕</button>
+    <h2 class="modal-title mb-2">➕ Nuevo Servicio</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:0.75rem">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="srv-nombre">Nombre del servicio *</label>
+        <input type="text" id="srv-nombre" class="form-input" placeholder="Ej: Formateo PC">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="srv-emoji">Emoji</label>
+        <input type="text" id="srv-emoji" class="form-input" placeholder="💻" maxlength="4">
+      </div>
+    </div>
+
+    <div class="form-group mt-2">
+      <label class="form-label" for="srv-descripcion">Descripción</label>
+      <textarea id="srv-descripcion" class="form-textarea" rows="2" placeholder="Descripción breve del servicio"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="srv-precio">Precio *</label>
+        <input type="number" id="srv-precio" class="form-input" placeholder="15" min="0" step="0.5">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="srv-moneda">Moneda</label>
+        <select id="srv-moneda" class="form-select">
+          <option value="USD">USD</option>
+          <option value="BS">Bs.</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="srv-categoria">Categoría *</label>
+        <select id="srv-categoria" class="form-select">
+          <option value="">-- Seleccionar --</option>
+          <option value="soporte">💻 Soporte</option>
+          <option value="redes">📡 Redes</option>
+          <option value="cctv">📹 CCTV</option>
+          <option value="web">🌐 Web/Apps</option>
+          <option value="movil">📱 Móvil</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group mt-2">
+      <label class="form-label" for="srv-estado">Estado de publicación</label>
+      <select id="srv-estado" class="form-select">
+        <option value="borrador">📦 Borrador (no visible al público)</option>
+        <option value="publicado">🚀 Publicado (visible al público)</option>
+      </select>
+    </div>
+
+    <div class="alert alert-warn mt-2">
+      <span>⚠️</span>
+      <span>Los servicios en <strong>Borrador</strong> no son visibles para los clientes hasta que los publiques.</span>
+    </div>
+
+    <div class="flex mt-2" style="gap:0.75rem">
+      <button class="btn btn-secondary w-full" onclick="closeServicioModal()">Cancelar</button>
+      <button class="btn btn-primary w-full" id="btn-guardar-servicio" onclick="adminGuardarServicio()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Nueva/Editar FAQ ─────────────────────────────── -->
+<div class="modal-backdrop" id="modal-faq" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative;max-width:480px">
+    <button class="modal-close" onclick="closeFAQModal()">✕</button>
+    <h2 class="modal-title mb-2">❓ FAQ</h2>
+
+    <div class="form-group">
+      <label class="form-label" for="faq-pregunta">Pregunta *</label>
+      <input type="text" id="faq-pregunta" class="form-input" placeholder="¿Cuánto tiempo tarda el servicio?">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="faq-respuesta">Respuesta *</label>
+      <textarea id="faq-respuesta" class="form-textarea" rows="3" placeholder="Respuesta clara y concisa..."></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="faq-orden">Orden</label>
+        <input type="number" id="faq-orden" class="form-input" placeholder="1" min="1">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="faq-estado">Estado</label>
+        <select id="faq-estado" class="form-select">
+          <option value="borrador">📦 Borrador</option>
+          <option value="publicado">🚀 Publicado</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex mt-2" style="gap:0.75rem">
+      <button class="btn btn-secondary w-full" onclick="closeFAQModal()">Cancelar</button>
+      <button class="btn btn-primary w-full" onclick="adminGuardarFAQ()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { initAdmin } from './admin.js';
+  import { loginGoogle, loginEmail, logout, currentUser, onAuthChange, forceAdmin } from './auth.js';
+  import { db, collection, query, orderBy, getDocs, where } from './firebase.js';
+
+  // ── Gestión de contraseña con SHA-256 ──────────────────────────
+  const PASS_KEY     = 'ives_admin_hash';
+  const DEFAULT_PASS = 'Admin2024!';
+
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function getStoredHash() {
+    return localStorage.getItem(PASS_KEY) || await sha256(DEFAULT_PASS);
+  }
+
+  async function checkLocalPass(pass) {
+    const hash = await sha256(pass);
+    return hash === await getStoredHash();
+  }
+
+  // Login: verifica hash, luego Firebase
+  const btnLogin = document.getElementById('btn-login-admin');
+  const emailInput = document.getElementById('login-email');
+  const passInput  = document.getElementById('login-password');
+  const errorEl    = document.getElementById('login-error');
+
+  btnLogin?.addEventListener('click', async () => {
+    errorEl.textContent = '';
+    const email = emailInput.value.trim();
+    const pass  = passInput.value;
+
+    if (!email || !pass) { errorEl.textContent = 'Ingresa correo y contraseña.'; return; }
+
+    // Acceso local con hash
+    if (email === 'tecnicouzcategui@gmail.com' && await checkLocalPass(pass)) {
+      forceAdmin();
+      return;
+    }
+
+    // Intentar con Firebase
+    btnLogin.disabled = true;
+    btnLogin.textContent = 'Entrando...';
+    try {
+      await loginEmail(email, pass);
+    } catch (err) {
+      errorEl.textContent = err.message;
+      btnLogin.disabled = false;
+      btnLogin.textContent = '→ Entrar al panel';
+    }
+  });
+
+  passInput?.addEventListener('keydown', e => { if (e.key === 'Enter') btnLogin.click(); });
+
+  // ── Cambiar contraseña desde panel ───────────────────────────
+  document.getElementById('btn-cambiar-pass')?.addEventListener('click', async () => {
+    const msgEl    = document.getElementById('cfg-pass-msg');
+    const actual   = document.getElementById('cfg-pass-actual').value;
+    const nueva    = document.getElementById('cfg-pass-nueva').value;
+    const confirma = document.getElementById('cfg-pass-confirmar').value;
+
+    msgEl.style.color = '#fc8181';
+    if (!actual || !nueva || !confirma) { msgEl.textContent = 'Completa todos los campos.'; return; }
+    if (nueva.length < 6)              { msgEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres.'; return; }
+    if (nueva !== confirma)            { msgEl.textContent = 'Las contraseñas no coinciden.'; return; }
+    if (!await checkLocalPass(actual)) { msgEl.textContent = 'La contraseña actual no es correcta.'; return; }
+
+    const newHash = await sha256(nueva);
+    localStorage.setItem(PASS_KEY, newHash);
+    msgEl.style.color = '#68d391';
+    msgEl.textContent = '✅ Contraseña cambiada exitosamente.';
+    document.getElementById('cfg-pass-actual').value   = '';
+    document.getElementById('cfg-pass-nueva').value    = '';
+    document.getElementById('cfg-pass-confirmar').value = '';
+  });
+
+  document.getElementById('btn-force-admin')?.addEventListener('click', forceAdmin);
+  document.getElementById('btn-logout-admin')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
+  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
+
+  // Actualizar bienvenida
+  onAuthChange((user, isAdmin) => {
+    const welcome = document.getElementById('admin-welcome');
+    if (welcome && user) {
+      welcome.textContent = `Bienvenido, ${user.displayName || user.email}`;
+    }
+    const avatar = document.getElementById('user-avatar');
+    if (avatar && user) {
+      avatar.classList.remove('hidden');
+      avatar.innerHTML = user.photoURL
+        ? `<img src="${user.photoURL}" alt="${user.displayName}">`
+        : user.displayName?.charAt(0).toUpperCase() || 'A';
+    }
+    // Actualizar stats
+    if (isAdmin) updateStats();
+  });
+
+  async function updateStats() {
+    try {
+      const { collection: col, query: q, getDocs: gd, where: wh, orderBy: ob } = await import('./firebase.js');
+      // stats servicios
+      const srvSnap = await gd(col(db, 'servicios'));
+      const all = srvSnap.docs.map(d => d.data());
+      document.getElementById('stat-servicios').textContent = all.filter(s => s.estado === 'publicado').length;
+      document.getElementById('stat-borradores').textContent = all.filter(s => s.estado === 'borrador').length;
+
+      const solSnap = await gd(col(db, 'solicitudes'));
+      const allSol = solSnap.docs.map(d => d.data());
+      document.getElementById('stat-solicitudes').textContent = allSol.length;
+      document.getElementById('stat-pendientes').textContent = allSol.filter(s => !s.leida).length;
+    } catch (err) { console.warn('Stats error:', err); }
+  }
+
+  // Inicializar panel admin
+  initAdmin();
+</script>
+
+</body>
+</html>
