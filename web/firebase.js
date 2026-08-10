@@ -61,6 +61,7 @@ const COLS = {
   solicitudes:  'solicitudes',
   faq:          'faq',
   clientes:     'clientes',
+  valoraciones: 'valoraciones',
 };
 
 // ── Exportaciones ────────────────────────────────────────────
@@ -199,4 +200,58 @@ export async function seedFirestoreIfEmpty() {
     }
     console.log('[Seed] Servicios inicializados.');
   }
+}
+
+/** Actualiza el estado de un caso (Help Desk) */
+export async function actualizarEstadoCaso(solicitudId, nuevoEstado) {
+  return updateDoc(doc(db, COLS.solicitudes, solicitudId), {
+    estadoCaso: nuevoEstado,
+    estadoCasoUpdatedAt: serverTimestamp()
+  });
+}
+
+/** Guarda la valoración de un cliente */
+export async function guardarValoracion(datos) {
+  return addDoc(collection(db, COLS.valoraciones), {
+    ...datos,
+    timestamp: serverTimestamp()
+  });
+}
+
+/** Obtiene todas las valoraciones (admin) */
+export async function getValoraciones() {
+  const snap = await getDocs(collection(db, COLS.valoraciones));
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results.sort((a, b) => {
+    const ta = a.timestamp?.seconds || 0;
+    const tb = b.timestamp?.seconds || 0;
+    return tb - ta;
+  });
+  return results;
+}
+
+/** Obtiene solicitudes de un cliente por número de WhatsApp */
+export async function getSolicitudesByWhatsApp(whatsapp) {
+  const q = query(
+    collection(db, COLS.solicitudes),
+    where('whatsapp', '==', whatsapp)
+  );
+  const snap = await getDocs(q);
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results.sort((a, b) => {
+    const ta = a.timestamp?.seconds || 0;
+    const tb = b.timestamp?.seconds || 0;
+    return tb - ta;
+  });
+  return results;
+}
+
+/** Verifica si ya existe una valoración para una solicitud */
+export async function getValoracionBySolicitud(solicitudId) {
+  const q = query(
+    collection(db, COLS.valoraciones),
+    where('solicitudId', '==', solicitudId)
+  );
+  const snap = await getDocs(q);
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 }

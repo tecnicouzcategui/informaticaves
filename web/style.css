@@ -931,3 +931,166 @@ tr:hover td { background: var(--bg-card); }
 .gap-1 { gap: 0.5rem; }
 .gap-2 { gap: 1rem; }
 .w-full { width: 100%; }
+
+/* ════════════════════════════════════════════════════════════
+   HELP DESK — Estado de Casos
+   ════════════════════════════════════════════════════════════ */
+.estado-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.estado-pendiente  { background: rgba(246,224,94,0.15);  color: #f6e05e;  border: 1px solid rgba(246,224,94,0.3); }
+.estado-tomado     { background: rgba(99,179,237,0.15);  color: #63b3ed;  border: 1px solid rgba(99,179,237,0.3); }
+.estado-progreso   { background: rgba(237,137,54,0.15);  color: #ed8936;  border: 1px solid rgba(237,137,54,0.3); }
+.estado-finalizado { background: rgba(104,211,145,0.15); color: #68d391;  border: 1px solid rgba(104,211,145,0.3); }
+
+/* ════════════════════════════════════════════════════════════
+   STAR RATING — Valoraciones
+   ════════════════════════════════════════════════════════════ */
+.star-rating {
+  display: flex;
+  gap: 0.3rem;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+.star-rating input { display: none; }
+.star-rating label {
+  font-size: 2rem;
+  cursor: pointer;
+  color: var(--border);
+  transition: color 0.15s;
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+  color: #f6c90e;
+}
+
+.star-display {
+  display: inline-flex;
+  gap: 0.1rem;
+  font-size: 1rem;
+}
+.star-display .star-on  { color: #f6c90e; }
+.star-display .star-off { color: var(--border); }
+
+/* ════════════════════════════════════════════════════════════
+   MIS SOLICITUDES — Página del cliente
+   ════════════════════════════════════════════════════════════ */
+.caso-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s;
+}
+.caso-card:hover { border-color: var(--accent); }
+.caso-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.caso-service-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+}
+.caso-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.caso-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0.75rem 0;
+}
+.caso-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 0.35rem;
+}
+.caso-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s;
+}
+.caso-step-dot.active  { border-color: var(--accent); background: var(--accent); color: #000; }
+.caso-step-dot.done    { border-color: var(--green);  background: var(--green);  color: #000; }
+.caso-step-label { font-size: 0.65rem; color: var(--text-dim); text-align: center; }
+.caso-step-line {
+  height: 2px;
+  flex: 1;
+  background: var(--border);
+  margin-top: -14px;
+  z-index: 0;
+}
+.caso-step-line.done { background: var(--green); }
+
+/* Valoración inline */
+.val-form {
+  background: rgba(104,211,145,0.06);
+  border: 1px solid rgba(104,211,145,0.2);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+.val-submitted {
+  background: rgba(104,211,145,0.08);
+  border: 1px solid rgba(104,211,145,0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — Tab Clientes / Valoraciones
+   ════════════════════════════════════════════════════════════ */
+.val-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.val-card-stars { font-size: 1.1rem; white-space: nowrap; }
+.val-card-body { flex: 1; }
+.val-card-name  { font-weight: 700; color: var(--text); font-size: 0.9rem; }
+.val-card-srv   { font-size: 0.8rem; color: var(--text-muted); }
+.val-card-cmt   { font-size: 0.85rem; color: var(--text); margin-top: 0.3rem; font-style: italic; }
+.val-card-date  { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.25rem; }

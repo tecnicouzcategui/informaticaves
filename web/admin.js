@@ -8,7 +8,8 @@ import {
   db, auth, collection, doc,
   getDocs, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp, where,
-  getTodosServicios, COLS
+  getTodosServicios, COLS,
+  actualizarEstadoCaso, getValoraciones
 } from './firebase.js';
 import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 
@@ -45,6 +46,7 @@ export function initAdmin() {
     cargarServicios();
     cargarSolicitudes();
     cargarFAQ();
+    cargarClientes();
   });
 }
 
@@ -317,21 +319,34 @@ async function cargarSolicitudes() {
 
     solicitudesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!solicitudesList.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)">No hay solicitudes aún.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-dim)">No hay solicitudes aún.</td></tr>';
       return;
     }
+
+    const estadoChip = (e) => {
+      const map = {
+        pendiente:   { cls: 'estado-pendiente',  lbl: '🟡 Pendiente' },
+        tomado:      { cls: 'estado-tomado',      lbl: '📋 Tomado' },
+        en_progreso: { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
+        finalizado:  { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
+      };
+      const s = map[e] || map['pendiente'];
+      return `<span class="estado-chip ${s.cls}">${s.lbl}</span>`;
+    };
 
     tbody.innerHTML = solicitudesList.map(s => {
       const fecha = s.timestamp?.toDate?.()?.toLocaleString('es-VE', {
         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
       }) || '—';
       const urgEmoji = s.urgencia === 'alta' ? '🔴' : s.urgencia === 'media' ? '🟡' : '🟢';
+      const estadoActual = s.estadoCaso || 'pendiente';
       return `
         <tr style="${!s.leida ? 'background:rgba(99,179,237,0.04)' : ''}">
           <td>${urgEmoji}</td>
           <td style="color:var(--text);font-weight:${s.leida ? '400' : '700'}">${s.nombre}</td>
           <td><a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></td>
           <td style="color:var(--text-muted)">${s.servicio}</td>
+          <td>${estadoChip(estadoActual)}</td>
           <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
           <td>
             <button class="btn btn-sm btn-secondary" onclick="verDetalles('${s.id}')">👁 Ver</button>
@@ -373,24 +388,36 @@ function playNotificationSound() {
   }
 }
 
+let currentDetalleSolicitudId = null;
+
 window.verDetalles = function(id) {
   const s = solicitudesList.find(x => x.id === id);
   if (!s) return;
 
+  currentDetalleSolicitudId = id;
   const modal = document.getElementById('modal-detalle-solicitud');
   const content = document.getElementById('detalle-solicitud-content');
   if (!modal || !content) return;
 
   const fecha = s.timestamp?.toDate?.()?.toLocaleString('es-VE') || 'Fecha desconocida';
-  const mapaLink = s.ubicacionCoords 
+  const mapaLink = s.ubicacionCoords
     ? `<a href="https://www.google.com/maps/search/?api=1&query=${s.ubicacionCoords.lat},${s.ubicacionCoords.lng}" target="_blank" style="color:var(--blue)">🗺️ Ver en Mapa</a>`
     : '<span style="color:var(--text-dim)">Sin ubicación GPS</span>';
+
+  const estadoMap = {
+    pendiente:   '🟡 Pendiente',
+    tomado:      '📋 Tomado por el Técnico',
+    en_progreso: '▶️ En Progreso',
+    finalizado:  '✅ Finalizado',
+  };
+  const estadoLabel = estadoMap[s.estadoCaso || 'pendiente'] || '🟡 Pendiente';
 
   content.innerHTML = `
     <p><strong>Cliente:</strong> ${s.nombre || '—'}</p>
     <p><strong>WhatsApp:</strong> <a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></p>
     <p><strong>Servicio:</strong> ${s.servicio}</p>
     <p><strong>Urgencia:</strong> <span style="text-transform:capitalize">${s.urgencia}</span></p>
+    <p><strong>Estado actual:</strong> ${estadoLabel}</p>
     <p><strong>Dirección:</strong> ${s.direccion || '—'}</p>
     <p><strong>Mapa:</strong> ${mapaLink}</p>
     <p><strong>Fecha:</strong> ${fecha}</p>
@@ -401,8 +428,30 @@ window.verDetalles = function(id) {
   modal.classList.add('open');
 };
 
+window.cambiarEstado = async function(nuevoEstado) {
+  if (!currentDetalleSolicitudId) return;
+  try {
+    await actualizarEstadoCaso(currentDetalleSolicitudId, nuevoEstado);
+    const estadoMap = {
+      pendiente:   '🟡 Pendiente',
+      tomado:      '📋 Tomado',
+      en_progreso: '▶️ En Progreso',
+      finalizado:  '✅ Finalizado',
+    };
+    showToast(`Estado cambiado a: ${estadoMap[nuevoEstado]}`, 'success');
+    // Update the local list
+    const idx = solicitudesList.findIndex(x => x.id === currentDetalleSolicitudId);
+    if (idx >= 0) solicitudesList[idx].estadoCaso = nuevoEstado;
+    // Re-render content in modal
+    verDetalles(currentDetalleSolicitudId);
+  } catch (err) {
+    showToast(`❌ Error: ${err.message}`, 'error');
+  }
+};
+
 window.closeDetalleSolicitud = function() {
   document.getElementById('modal-detalle-solicitud')?.classList.remove('open');
+  currentDetalleSolicitudId = null;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -521,3 +570,85 @@ window.adminGuardarFAQ = async function() {
     showToast(`❌ Error: ${err.message}`, 'error');
   }
 };
+
+// ════════════════════════════════════════════════════════════
+// CLIENTES — Historial y Valoraciones
+// ════════════════════════════════════════════════════════════
+async function cargarClientes() {
+  // Cargar valoraciones
+  const valList    = document.getElementById('val-list');
+  const valBadge   = document.getElementById('val-promedio-badge');
+  const histTbody  = document.getElementById('historial-tbody');
+
+  try {
+    const valoraciones = await getValoraciones();
+
+    // Calcular promedio
+    if (valList) {
+      if (!valoraciones.length) {
+        valList.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-dim)">Aún no hay valoraciones recibidas.</div>';
+        if (valBadge) valBadge.textContent = '';
+      } else {
+        const promedio = (valoraciones.reduce((s, v) => s + (v.estrellas || 0), 0) / valoraciones.length).toFixed(1);
+        if (valBadge) valBadge.textContent = `⭐ Promedio: ${promedio} / 5  (${valoraciones.length} reseñas)`;
+
+        const starsHTML = (n) => {
+          let h = '';
+          for (let i = 1; i <= 5; i++) h += `<span class="${i <= n ? 'star-on' : 'star-off'}">★</span>`;
+          return `<span class="star-display">${h}</span>`;
+        };
+
+        valList.innerHTML = valoraciones.map(v => {
+          const fecha = v.timestamp?.toDate?.()?.toLocaleDateString('es-VE') || '';
+          return `
+            <div class="val-card">
+              <div class="val-card-stars">${starsHTML(v.estrellas)}</div>
+              <div class="val-card-body">
+                <div class="val-card-name">${v.clienteNombre || 'Cliente'}</div>
+                <div class="val-card-srv">Servicio: ${v.servicio || '—'}</div>
+                ${v.comentario ? `<div class="val-card-cmt">"${v.comentario}"</div>` : ''}
+                <div class="val-card-date">${fecha} · WA: ${v.clienteWA || '—'}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Historial de todas las solicitudes
+    if (histTbody) {
+      const snap = await getDocs(collection(db, COLS.solicitudes));
+      const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      todas.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+      const estadoMap = {
+        pendiente:   { cls: 'estado-pendiente',  lbl: '🟡 Pendiente' },
+        tomado:      { cls: 'estado-tomado',      lbl: '📋 Tomado' },
+        en_progreso: { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
+        finalizado:  { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
+      };
+
+      if (!todas.length) {
+        histTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim)">Sin solicitudes aún.</td></tr>';
+      } else {
+        histTbody.innerHTML = todas.map(s => {
+          const fecha = s.timestamp?.toDate?.()?.toLocaleDateString('es-VE') || '—';
+          const eKey  = s.estadoCaso || 'pendiente';
+          const eInfo = estadoMap[eKey] || estadoMap['pendiente'];
+          return `
+            <tr>
+              <td style="color:var(--text);font-weight:600">${s.nombre || '—'}</td>
+              <td><a href="https://wa.me/${sanitizeNum(s.whatsapp || '')}" target="_blank" style="color:var(--green)">${s.whatsapp || '—'}</a></td>
+              <td style="color:var(--text-muted)">${s.servicio || '—'}</td>
+              <td><span class="estado-chip ${eInfo.cls}">${eInfo.lbl}</span></td>
+              <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    if (valList) valList.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
+    console.error('[Clientes]', err);
+  }
+}

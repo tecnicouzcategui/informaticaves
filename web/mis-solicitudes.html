@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Solicitudes | InformaticaVES</title>
+  <meta name="description" content="Consulta el estado de tus solicitudes de servicio t\u00e9cnico con El T\u00e9cnico Luis.">
+  <meta name="theme-color" content="#63b3ed">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&amp;display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none;">
+      <img src="logo_oficial.png" alt="InformaticaVES" style="height:110px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="servicios.html">Servicios</a></li>
+      <li><a href="solicitud.html">Solicitar</a></li>
+      <li><a href="mis-solicitudes.html" class="active">Mis Solicitudes</a></li>
+    </ul>
+    <div class="nav-actions">
+      <span class="admin-badge hidden" id="admin-badge">Admin</span>
+      <div class="user-avatar hidden" id="user-avatar"></div>
+      <button class="btn-nav-auth hidden" id="btn-login">Iniciar Sesi\u00f3n</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container" style="padding-top:2rem;padding-bottom:4rem;max-width:700px">
+
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem">\ud83d\udccb</div>
+      <h1 style="font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#63b3ed,#9f7aea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Mis Solicitudes</h1>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-top:0.4rem">Consulta el estado de tu servicio t\u00e9cnico en tiempo real</p>
+    </div>
+
+    <div class="card" style="padding:1.5rem;margin-bottom:2rem">
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:1rem">\ud83d\udd0d Buscar mis solicitudes</h2>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <input type="tel" id="input-wa-buscar" class="form-input" placeholder="+58 424-000-0000"
+               style="flex:1;min-width:180px" autocomplete="tel">
+        <button class="btn btn-primary" id="btn-buscar" style="white-space:nowrap">\ud83d\udd0e Buscar</button>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.6rem">
+        Ingresa el mismo n\u00famero de WhatsApp que usaste al solicitar el servicio.
+      </p>
+    </div>
+
+    <div id="resultados-container" style="display:none">
+      <div id="resultados-list"></div>
+    </div>
+
+    <div id="estado-inicial" style="text-align:center;padding:3rem;color:var(--text-dim)">
+      <div style="font-size:3rem;margin-bottom:1rem">\ud83d\udcf1</div>
+      <p>Ingresa tu n\u00famero de WhatsApp para ver tus solicitudes</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de Valoraci\u00f3n -->
+<div class="modal-backdrop" id="modal-valoracion" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative;max-width:420px">
+    <button class="modal-close" id="btn-cerrar-val">\u2715</button>
+    <h2 class="modal-title mb-2">\u2b50 Calificar Servicio</h2>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.25rem" id="val-servicio-desc">
+      Comparte tu experiencia con El T\u00e9cnico Luis
+    </p>
+    <div style="margin-bottom:1rem">
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;font-weight:600">Tu valoraci\u00f3n *</p>
+      <div class="star-rating" id="star-rating-widget">
+        <input type="radio" name="estrellas" id="s5" value="5"><label for="s5">\u2605</label>
+        <input type="radio" name="estrellas" id="s4" value="4"><label for="s4">\u2605</label>
+        <input type="radio" name="estrellas" id="s3" value="3"><label for="s3">\u2605</label>
+        <input type="radio" name="estrellas" id="s2" value="2"><label for="s2">\u2605</label>
+        <input type="radio" name="estrellas" id="s1" value="1"><label for="s1">\u2605</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="val-comentario">Comentario breve <span style="color:var(--text-dim)">(m\u00e1x. 10 palabras)</span></label>
+      <input type="text" id="val-comentario" class="form-input"
+             placeholder="Ej: Excelente servicio, muy r\u00e1pido y profesional" maxlength="80">
+      <p id="val-palabras-count" style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3rem">0 / 10 palabras</p>
+    </div>
+    <p id="val-error" style="color:#fc8181;font-size:0.82rem;min-height:1rem;margin-bottom:0.5rem"></p>
+    <div class="flex" style="gap:0.75rem;margin-top:1rem">
+      <button class="btn btn-secondary w-full" id="btn-cancelar-val">Cancelar</button>
+      <button class="btn btn-primary w-full" id="btn-enviar-val">\u2b50 Enviar Valoraci\u00f3n</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud } from './firebase.js';
+  import { showToast } from './auth.js';
+
+  const ESTADO_INFO = {
+    pendiente:   { cls:'estado-pendiente',  icon:'\ud83d\udfe1', lbl:'Pendiente',              desc:'Tu solicitud fue recibida y est\u00e1 en espera.' },
+    tomado:      { cls:'estado-tomado',      icon:'\ud83d\udccb', lbl:'Tomado por el T\u00e9cnico',  desc:'El T\u00e9cnico Luis ya tom\u00f3 tu caso y te contactar\u00e1 pronto.' },
+    en_progreso: { cls:'estado-progreso',    icon:'\u25b6\ufe0f', lbl:'En Progreso',             desc:'El t\u00e9cnico est\u00e1 trabajando en tu solicitud ahora.' },
+    finalizado:  { cls:'estado-finalizado',  icon:'\u2705', lbl:'Finalizado',              desc:'\u00a1Tu servicio fue completado! Puedes dejar tu valoraci\u00f3n.' },
+  };
+  const PASOS = ['pendiente', 'tomado', 'en_progreso', 'finalizado'];
+
+  let solicitudesEncontradas = [];
+  let valoracionSolicitudId  = null;
+  let waCliente = '', nombreCliente = '';
+
+  document.getElementById('btn-buscar').addEventListener('click', buscar);
+  document.getElementById('input-wa-buscar').addEventListener('keydown', e => { if (e.key==='Enter') buscar(); });
+
+  async function buscar() {
+    const wa = document.getElementById('input-wa-buscar').value.trim();
+    if (!wa) { showToast('\u26a0\ufe0f Ingresa tu n\u00famero de WhatsApp','error'); return; }
+    waCliente = wa;
+    const btn = document.getElementById('btn-buscar');
+    btn.disabled = true; btn.textContent = 'Buscando...';
+    try {
+      solicitudesEncontradas = await getSolicitudesByWhatsApp(wa);
+      document.getElementById('estado-inicial').style.display = 'none';
+      document.getElementById('resultados-container').style.display = 'block';
+      await renderResultados();
+    } catch(err) { showToast('\u274c Error al buscar: '+err.message,'error'); }
+    finally { btn.disabled=false; btn.textContent='\ud83d\udd0e Buscar'; }
+  }
+
+  async function renderResultados() {
+    const container = document.getElementById('resultados-list');
+    if (!solicitudesEncontradas.length) {
+      container.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--text-dim)">
+        <div style="font-size:2.5rem;margin-bottom:1rem">\ud83d\udd0d</div>
+        <p>No encontramos solicitudes con ese n\u00famero de WhatsApp.</p>
+        <p style="font-size:0.82rem;margin-top:0.5rem">Aseg\u00farate de usar el mismo n\u00famero que ingresaste al solicitar el servicio.</p>
+      </div>`;
+      return;
+    }
+    nombreCliente = solicitudesEncontradas[0].nombre || '';
+    const urgMap = { baja:'\ud83d\udfe2 Puede esperar', media:'\ud83d\udfe1 Lo m\u00e1s pronto posible', alta:'\ud83d\udd34 URGENTE' };
+
+    const cards = await Promise.all(solicitudesEncontradas.map(async s => {
+      const estado   = s.estadoCaso || 'pendiente';
+      const eInfo    = ESTADO_INFO[estado] || ESTADO_INFO['pendiente'];
+      const pasoIdx  = PASOS.indexOf(estado);
+      const fecha    = s.timestamp?.toDate?.()?.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric'}) || '\u2014';
+      const valoracion = await getValoracionBySolicitud(s.id);
+
+      let progSteps = '';
+      PASOS.forEach((p,i) => {
+        const done = i < pasoIdx, active = i === pasoIdx, pInfo = ESTADO_INFO[p];
+        if (i>0) progSteps += `<div class="caso-step-line ${done?'done':''}"></div>`;
+        progSteps += `<div class="caso-step">
+          <div class="caso-step-dot ${active?'active':''} ${done?'done':''}">${done?'\u2713':i+1}</div>
+          <div class="caso-step-label">${pInfo.lbl}</div>
+        </div>`;
+      });
+
+      let ratingSection = '';
+      if (valoracion) {
+        let stars='';
+        for(let i=1;i<=5;i++) stars+=`<span class="${i<=valoracion.estrellas?'star-on':'star-off'}">\u2605</span>`;
+        ratingSection = `<div class="val-submitted">\u2705 Ya valoraste: <span class="star-display">${stars}</span>${valoracion.comentario?` &mdash; <em>"${valoracion.comentario}"</em>`:''}</div>`;
+      } else if (estado==='finalizado') {
+        ratingSection = `<div class="val-form">
+          <p style="font-size:0.85rem;color:var(--green);margin-bottom:0.75rem;font-weight:600">\u2705 \u00a1Tu servicio fue completado! \u00bfQu\u00e9 tal te fue?</p>
+          <button class="btn btn-primary btn-sm" onclick="abrirValoracion('${s.id}','${(s.servicio||'').replace(/'/g,'&apos;')}')">\u2b50 Dejar Valoraci\u00f3n</button>
+        </div>`;
+      }
+
+      return `<div class="caso-card">
+        <div class="caso-card-header">
+          <div class="caso-service-name">${s.emoji||'\ud83d\udd27'} ${s.servicio||'\u2014'}</div>
+          <span class="estado-chip ${eInfo.cls}">${eInfo.icon} ${eInfo.lbl}</span>
+        </div>
+        <div class="caso-meta">
+          <span>\ud83d\udcc5 ${fecha}</span>
+          <span>${urgMap[s.urgencia]||s.urgencia}</span>
+          ${s.direccion?`<span>\ud83d\udccd ${s.direccion}</span>`:''}
+        </div>
+        <div class="caso-progress">${progSteps}</div>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid var(--accent)">${eInfo.desc}</p>
+        ${ratingSection}
+      </div>`;
+    }));
+
+    container.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
+      \ud83d\udccb ${solicitudesEncontradas.length} solicitud${solicitudesEncontradas.length>1?'es':''} encontrada${solicitudesEncontradas.length>1?'s':''}
+    </p>${cards.join('')}`;
+  }
+
+  window.abrirValoracion = function(id, srv) {
+    valoracionSolicitudId = id;
+    document.getElementById('val-servicio-desc').textContent = 'Servicio: '+srv;
+    document.getElementById('val-comentario').value='';
+    document.getElementById('val-palabras-count').textContent='0 / 10 palabras';
+    document.getElementById('val-error').textContent='';
+    document.querySelectorAll('#star-rating-widget input').forEach(r=>r.checked=false);
+    document.getElementById('modal-valoracion').classList.add('open');
+  };
+
+  ['btn-cerrar-val','btn-cancelar-val'].forEach(id=>{
+    document.getElementById(id).addEventListener('click',()=>document.getElementById('modal-valoracion').classList.remove('open'));
+  });
+
+  document.getElementById('val-comentario').addEventListener('input', function() {
+    const p = this.value.trim()===''?0:this.value.trim().split(/\s+/).length;
+    const el = document.getElementById('val-palabras-count');
+    el.textContent = p+' / 10 palabras';
+    el.style.color = p>10?'#fc8181':'var(--text-dim)';
+  });
+
+  document.getElementById('btn-enviar-val').addEventListener('click', async()=>{
+    const errEl = document.getElementById('val-error');
+    const estrellas = parseInt(document.querySelector('#star-rating-widget input:checked')?.value||'0');
+    const comentario = document.getElementById('val-comentario').value.trim();
+    const palabras = comentario===''?0:comentario.split(/\s+/).length;
+    const s = solicitudesEncontradas.find(x=>x.id===valoracionSolicitudId);
+    errEl.textContent='';
+    if(!estrellas){errEl.textContent='\u26a0\ufe0f Selecciona una cantidad de estrellas.';return;}
+    if(palabras>10){errEl.textContent='\u26a0\ufe0f El comentario no puede superar 10 palabras.';return;}
+    const btn=document.getElementById('btn-enviar-val');
+    btn.disabled=true; btn.textContent='Enviando...';
+    try {
+      await guardarValoracion({ solicitudId:valoracionSolicitudId, clienteNombre:nombreCliente, clienteWA:waCliente, servicio:s?.servicio||'\u2014', estrellas, comentario });
+      document.getElementById('modal-valoracion').classList.remove('open');
+      showToast('\ud83c\udf1f \u00a1Gracias por tu valoraci\u00f3n!','success');
+      await renderResultados();
+    } catch(err){ errEl.textContent='\u274c Error: '+err.message; }
+    finally { btn.disabled=false; btn.textContent='\u2b50 Enviar Valoraci\u00f3n'; }
+  });
+</script>
+
+</body>
+</html>

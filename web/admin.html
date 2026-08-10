@@ -23,6 +23,7 @@
       <li><a href="index.html">Inicio</a></li>
       <li><a href="servicios.html">Servicios</a></li>
       <li><a href="solicitud.html">Solicitar</a></li>
+      <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
       <li><a href="admin.html" class="active">Admin</a></li>
     </ul>
     <div class="nav-actions">
@@ -101,6 +102,7 @@
       <div class="admin-tabs" style="margin-bottom:1.5rem">
         <button class="admin-tab active" data-tab="servicios">🔧 Servicios</button>
         <button class="admin-tab" data-tab="solicitudes">📥 Solicitudes</button>
+        <button class="admin-tab" data-tab="clientes">👥 Clientes</button>
         <button class="admin-tab" data-tab="faq">❓ FAQ</button>
         <button class="admin-tab" data-tab="config">⚙️ Configuración</button>
       </div>
@@ -144,12 +146,48 @@
                 <th>Cliente</th>
                 <th>WhatsApp</th>
                 <th>Servicio</th>
+                <th>Estado Caso</th>
                 <th>Fecha</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="solicitudes-tbody">
-              <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Clientes ───────────────────────────────── -->
+      <div id="tab-clientes" class="tab-pane hidden">
+        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1.5rem">👥 Historial de Clientes y Valoraciones</h2>
+
+        <!-- Valoraciones -->
+        <div style="margin-bottom:2rem">
+          <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <h3 style="font-size:0.95rem;font-weight:700">⭐ Valoraciones Recibidas</h3>
+            <span id="val-promedio-badge" style="font-size:0.85rem;color:var(--text-muted)"></span>
+          </div>
+          <div id="val-list">
+            <div style="text-align:center;padding:2rem;color:var(--text-dim)">⏳ Cargando valoraciones...</div>
+          </div>
+        </div>
+
+        <!-- Historial de solicitudes -->
+        <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem">📜 Historial de Todas las Solicitudes</h3>
+        <div class="table-wrapper" style="overflow-x:auto">
+          <table id="historial-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>WhatsApp</th>
+                <th>Servicio</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="historial-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
             </tbody>
           </table>
         </div>
@@ -264,51 +302,28 @@
   </div>
 </div>
 
-<!-- ── Modal: Nueva/Editar FAQ ─────────────────────────────── -->
-<div class="modal-backdrop" id="modal-faq" role="dialog" aria-modal="true">
-  <div class="modal-box" style="position:relative;max-width:480px">
-    <button class="modal-close" onclick="closeFAQModal()">✕</button>
-    <h2 class="modal-title mb-2">❓ FAQ</h2>
-
-    <div class="form-group">
-      <label class="form-label" for="faq-pregunta">Pregunta *</label>
-      <input type="text" id="faq-pregunta" class="form-input" placeholder="¿Cuánto tiempo tarda el servicio?">
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="faq-respuesta">Respuesta *</label>
-      <textarea id="faq-respuesta" class="form-textarea" rows="3" placeholder="Respuesta clara y concisa..."></textarea>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" for="faq-orden">Orden</label>
-        <input type="number" id="faq-orden" class="form-input" placeholder="1" min="1">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" for="faq-estado">Estado</label>
-        <select id="faq-estado" class="form-select">
-          <option value="borrador">📦 Borrador</option>
-          <option value="publicado">🚀 Publicado</option>
-        </select>
-      </div>
-    </div>
-    <div class="flex mt-2" style="gap:0.75rem">
-      <button class="btn btn-secondary w-full" onclick="closeFAQModal()">Cancelar</button>
-      <button class="btn btn-primary w-full" onclick="adminGuardarFAQ()">💾 Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Modal: Detalle Solicitud ─────────────────────────────── -->
+<!-- ── Modal: Detalle Solicitud ───────────────────────────── -->
 <div class="modal-backdrop" id="modal-detalle-solicitud" role="dialog" aria-modal="true">
-  <div class="modal-box" style="position:relative;max-width:480px">
+  <div class="modal-box" style="position:relative;max-width:500px">
     <button class="modal-close" onclick="closeDetalleSolicitud()">✕</button>
     <h2 class="modal-title mb-2">📋 Detalle de Solicitud</h2>
-    
+
     <div id="detalle-solicitud-content" style="color:var(--text); line-height: 1.6; font-size: 0.95rem;">
       <!-- Filled via JS -->
     </div>
 
-    <div class="flex mt-2" style="gap:0.75rem">
+    <!-- Botones de cambio de estado Help Desk -->
+    <div style="margin-top:1.25rem">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem;font-weight:600">CAMBIAR ESTADO DEL CASO:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem" id="estado-btns">
+        <button class="btn btn-sm" style="background:#2d3748;color:#f6e05e;border:1px solid #f6e05e" onclick="cambiarEstado('pendiente')">🟡 Pendiente</button>
+        <button class="btn btn-sm" style="background:#2d3748;color:#63b3ed;border:1px solid #63b3ed" onclick="cambiarEstado('tomado')">📋 Tomar Caso</button>
+        <button class="btn btn-sm" style="background:#2d3748;color:#ed8936;border:1px solid #ed8936" onclick="cambiarEstado('en_progreso')">▶️ En Progreso</button>
+        <button class="btn btn-sm" style="background:#2d3748;color:#68d391;border:1px solid #68d391" onclick="cambiarEstado('finalizado')">✅ Finalizado</button>
+      </div>
+    </div>
+
+    <div class="flex mt-2" style="gap:0.75rem;margin-top:1rem">
       <button class="btn btn-secondary w-full" onclick="closeDetalleSolicitud()">Cerrar</button>
     </div>
   </div>
