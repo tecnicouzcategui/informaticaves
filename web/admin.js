@@ -93,8 +93,13 @@ async function cargarServicios() {
   tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>';
 
   try {
-    const snap = await getDocs(query(collection(db, COLS.servicios), orderBy('categoria'), orderBy('nombre')));
+    const snap = await getDocs(collection(db, COLS.servicios));
     servicios  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    servicios.sort((a, b) => {
+      if (a.categoria < b.categoria) return -1;
+      if (a.categoria > b.categoria) return 1;
+      return (a.nombre || '').localeCompare(b.nombre || '');
+    });
     renderTablaServicios();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:var(--red);padding:2rem">Error: ${err.message}</td></tr>`;
@@ -106,7 +111,16 @@ function renderTablaServicios() {
   if (!tbody) return;
 
   if (!servicios.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:2rem;color:var(--text-dim)">No hay servicios registrados.</td></tr>';
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center" style="padding:3rem;color:var(--text-dim)">
+          No hay servicios registrados.
+          <div style="margin-top:1rem">
+            <button class="btn btn-primary btn-sm" onclick="adminCargarServiciosDefault()">📥 Cargar Catálogo por Defecto</button>
+          </div>
+        </td>
+      </tr>
+    `;
     return;
   }
 
@@ -130,6 +144,28 @@ function renderTablaServicios() {
     </tr>
   `).join('');
 }
+
+window.adminCargarServiciosDefault = async function() {
+  if (!confirm('¿Deseas cargar los servicios predeterminados? Esto los guardará en la base de datos para que puedas editarlos.')) return;
+  try {
+    const btn = document.querySelector('button[onclick="adminCargarServiciosDefault()"]');
+    if (btn) btn.innerHTML = '<span class="spinner"></span> Cargando...';
+    
+    // Asumimos que SERVICIOS_DEFAULT viene importado de firebase.js
+    const { SERVICIOS_DEFAULT } = await import('./firebase.js');
+    for (const s of SERVICIOS_DEFAULT) {
+      const data = { ...s };
+      delete data.id; // Limpiar ID por si acaso
+      data.creadoEn = serverTimestamp();
+      data.updatedAt = serverTimestamp();
+      await addDoc(collection(db, COLS.servicios), data);
+    }
+    showToast('✅ Catálogo cargado exitosamente', 'success');
+    await cargarServicios();
+  } catch (err) {
+    showToast(`❌ Error al cargar: ${err.message}`, 'error');
+  }
+};
 
 // ── CRUD Servicios ────────────────────────────────────────────
 window.adminEditarServicio = function(id) {
@@ -380,8 +416,9 @@ async function cargarFAQ() {
   if (!container) return;
 
   try {
-    const snap = await getDocs(query(collection(db, COLS.faq), orderBy('orden')));
+    const snap = await getDocs(collection(db, COLS.faq));
     faqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    faqs.sort((a, b) => (a.orden || 0) - (b.orden || 0));
     renderFAQList();
   } catch (err) {
     container.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;

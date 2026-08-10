@@ -81,12 +81,16 @@ export {
 export async function getServiciosPublicados() {
   const q = query(
     collection(db, COLS.servicios),
-    where('estado', '==', 'publicado'),
-    orderBy('categoria'),
-    orderBy('nombre')
+    where('estado', '==', 'publicado')
   );
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results.sort((a, b) => {
+    if (a.categoria < b.categoria) return -1;
+    if (a.categoria > b.categoria) return 1;
+    return (a.nombre || '').localeCompare(b.nombre || '');
+  });
+  return results;
 }
 
 /** Obtiene todos los servicios (admin) */
@@ -122,11 +126,12 @@ export async function getCliente(uid) {
 export async function getFAQsPublicadas() {
   const q = query(
     collection(db, COLS.faq),
-    where('estado', '==', 'publicado'),
-    orderBy('orden')
+    where('estado', '==', 'publicado')
   );
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  return results;
 }
 
 // ── Datos iniciales (seed) ────────────────────────────────────
