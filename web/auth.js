@@ -34,16 +34,19 @@ provider.addScope('email');
 
 // ── Login con Google ─────────────────────────────────────────
 export async function loginGoogle() {
-  // signInWithRedirect NO funciona en Capacitor WebView
+  // En Capacitor WebView, Google OAuth no funciona — redirigir al panel admin
   if (window.Capacitor) {
-    alert('En la app móvil usa el acceso con correo y contraseña.');
+    window.location.href = 'admin.html';
     return;
   }
   try {
-    await signInWithRedirect(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    if (result?.user) {
+      showToast('✅ Sesión iniciada correctamente', 'success');
+    }
   } catch (err) {
     console.error('[Auth] Error login:', err);
-    alert('Error al iniciar sesión: ' + err.message);
+    showToast('Error al iniciar sesión: ' + err.message, 'error');
     throw err;
   }
 }
@@ -131,18 +134,7 @@ onAuthStateChanged(auth, async user => {
   notifyListeners();
 });
 
-// ── Manejar redirect result (solo en navegador web, NO en Capacitor)
-if (!window.Capacitor) {
-  getRedirectResult(auth).then(result => {
-    if (result?.user) {
-      showToast('✅ Sesión iniciada correctamente', 'success');
-    }
-  }).catch(err => {
-    if (err.code !== 'auth/no-current-user') {
-      console.error('[Auth] Redirect error:', err);
-    }
-  });
-}
+// ── Ya no usamos getRedirectResult porque usamos signInWithPopup ──
 
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
