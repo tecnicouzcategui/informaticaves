@@ -649,20 +649,9 @@ h1.hero-name {
 .urgencia-option .emoji { font-size: 1.6rem; }
 .urgencia-option:hover { transform: translateY(-2px); }
 
-.urgencia-option[data-value="baja"]  { --color: #68d391; }
-.urgencia-option[data-value="media"] { --color: #f6e05e; }
-.urgencia-option[data-value="alta"]  { --color: #fc8181; }
-
-.urgencia-option[data-value="baja"]:hover  { border-color: var(--green); background: rgba(104,211,145,0.07); }
-.urgencia-option[data-value="media"]:hover { border-color: var(--yellow); background: rgba(246,224,94,0.07); }
-.urgencia-option[data-value="alta"]:hover  { border-color: var(--red); background: rgba(252,129,129,0.07); }
-
-.urgencia-option.selected {
-  border-color: var(--color);
-  background: color-mix(in srgb, var(--color) 10%, transparent);
-  color: var(--color);
-  box-shadow: 0 0 20px color-mix(in srgb, var(--color) 20%, transparent);
-}
+.urgencia-option[data-value="baja"].selected  { border-color: var(--green); background: rgba(104,211,145,0.25); color: var(--green); box-shadow: 0 0 15px rgba(104,211,145,0.4); transform: scale(1.05); }
+.urgencia-option[data-value="media"].selected { border-color: var(--yellow); background: rgba(246,224,94,0.25); color: var(--yellow); box-shadow: 0 0 15px rgba(246,224,94,0.4); transform: scale(1.05); }
+.urgencia-option[data-value="alta"].selected  { border-color: var(--red); background: rgba(252,129,129,0.25); color: var(--red); box-shadow: 0 0 15px rgba(252,129,129,0.4); transform: scale(1.05); }
 
 /* ── Modal ── */
 .modal-backdrop {
