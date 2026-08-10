@@ -312,11 +312,38 @@ async function cargarSolicitudes() {
       snap.docChanges().forEach(change => {
         if (change.type === 'added' && change.doc.data().leida === false) {
           playNotificationSound();
+          
+          // Notificación nativa en Capacitor (APK)
+          if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+            const data = change.doc.data();
+            window.Capacitor.Plugins.LocalNotifications.schedule({
+              notifications: [
+                {
+                  title: "¡Nueva Solicitud!",
+                  body: `De: ${data.nombre} - ${data.servicio}`,
+                  id: new Date().getTime(),
+                  schedule: { at: new Date(Date.now() + 100) },
+                  sound: null,
+                  attachments: null,
+                  actionTypeId: "",
+                  extra: null
+                }
+              ]
+            }).catch(e => console.warn('Error local notif:', e));
+          }
           showToast('🔔 ¡Nueva solicitud recibida!', 'success');
         }
       });
     }
-    solicitudesInitialLoad = false;
+
+    // Setup inicial de solicitudes
+    if (solicitudesInitialLoad) {
+      solicitudesInitialLoad = false;
+      // Pedir permiso para notificaciones nativas en Capacitor
+      if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+        window.Capacitor.Plugins.LocalNotifications.requestPermissions().catch(console.warn);
+      }
+    }
 
     solicitudesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!solicitudesList.length) {

@@ -6,10 +6,6 @@
 import { guardarSolicitud, getServiciosPublicados, COLS } from './firebase.js';
 import { currentUser, getWhatsApp, getUserDisplayName, getUserEmail, showToast } from './auth.js';
 
-// ── Constantes ───────────────────────────────────────────────
-const TELEGRAM_BOT_TOKEN = '8801695316:AAEXcpwhu4kLvSxUMDE6DZaCAN5pJefyCes';
-const TELEGRAM_CHAT_ID   = '8801695316';
-const TELEGRAM_API       = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
 const URGENCIA_CONFIG = {
   baja:  { emoji: '🟢', label: 'Puede esperar',         color: '#68d391' },
@@ -265,14 +261,6 @@ async function handleSubmit(e) {
     // 1. Guardar en Firestore
     await guardarSolicitud(solicitudData);
 
-    // 2. Enviar alerta a Telegram (no bloqueante)
-    try {
-      await enviarAlertaTelegram(solicitudData, urgConfig);
-    } catch (telegramErr) {
-      console.warn('[Solicitud] Error de Telegram (ignorado):', telegramErr);
-      // No lanzamos error para que la solicitud igual se procese
-    }
-
     // Éxito
     showToast('✅ Solicitud enviada correctamente', 'success');
     mostrarConfirmacion(solicitudData, urgConfig);
@@ -291,60 +279,7 @@ async function handleSubmit(e) {
   }
 }
 
-// ── Alerta a Telegram ─────────────────────────────────────────
-async function enviarAlertaTelegram(data, urgConfig) {
-  const fecha = new Date().toLocaleString('es-VE', {
-    timeZone: 'America/Caracas',
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
 
-  const msg = `
-${urgConfig.emoji} <b>NUEVA SOLICITUD</b> ${urgConfig.emoji}
-━━━━━━━━━━━━━━━━━━━━━━━━
-📌 <b>Prioridad:</b> ${urgConfig.emoji} ${urgConfig.label.toUpperCase()}
-
-👤 <b>Cliente:</b> ${escapeHtml(data.nombre)}
-📱 <b>WhatsApp:</b> <a href="https://wa.me/${sanitizeWA(data.whatsapp)}">${escapeHtml(data.whatsapp)}</a>
-${data.email ? `📧 <b>Email:</b> ${escapeHtml(data.email)}\n` : ''}📍 <b>Dirección:</b> ${escapeHtml(data.direccion)}
-${data.ubicacionCoords ? `🗺️ <a href="https://www.google.com/maps/search/?api=1&query=${data.ubicacionCoords.lat},${data.ubicacionCoords.lng}">Ver en Google Maps</a>\n` : ''}
-🔧 <b>Servicio:</b> ${escapeHtml(data.servicio)}
-💰 <b>Precio base:</b> $${data.precio} ${data.moneda}
-
-📝 <b>Descripción:</b>
-<i>${escapeHtml(data.descripcion)}</i>
-
-🕐 <b>Fecha:</b> ${fecha}
-━━━━━━━━━━━━━━━━━━━━━━━━
-<i>InformaticaVES — El Técnico Luis</i>
-`.trim();
-
-  const response = await fetch(TELEGRAM_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id:    TELEGRAM_CHAT_ID,
-      text:       msg,
-      parse_mode: 'HTML',
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(`Telegram error: ${err.description}`);
-  }
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function sanitizeWA(num) {
-  return num.replace(/[^\d+]/g, '');
-}
 
 // ── Confirmación visual ───────────────────────────────────────
 function mostrarConfirmacion(data, urgConfig) {
