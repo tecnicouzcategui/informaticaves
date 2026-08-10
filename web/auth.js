@@ -34,20 +34,21 @@ provider.addScope('email');
 
 // ── Login con Google ─────────────────────────────────────────
 export async function loginGoogle() {
-  // En Capacitor WebView, Google OAuth no funciona — redirigir al panel admin
   if (window.Capacitor) {
+    // En la APK no funciona OAuth de Google. Redirigimos directo al panel 
+    // para que el administrador inicie sesión con correo/contraseña.
     window.location.href = 'admin.html';
     return;
   }
   try {
+    // Usamos Popup en lugar de Redirect para evitar problemas en PWAs
     const result = await signInWithPopup(auth, provider);
     if (result?.user) {
-      showToast('✅ Sesión iniciada correctamente', 'success');
+      showToast('✅ Sesión iniciada', 'success');
     }
   } catch (err) {
     console.error('[Auth] Error login:', err);
-    showToast('Error al iniciar sesión: ' + err.message, 'error');
-    throw err;
+    alert('Error al iniciar sesión: ' + err.message);
   }
 }
 
@@ -134,7 +135,18 @@ onAuthStateChanged(auth, async user => {
   notifyListeners();
 });
 
-// ── Ya no usamos getRedirectResult porque usamos signInWithPopup ──
+// ── Manejar redirect result (solo en navegador web, NO en Capacitor)
+if (!window.Capacitor) {
+  getRedirectResult(auth).then(result => {
+    if (result?.user) {
+      showToast('✅ Sesión iniciada correctamente', 'success');
+    }
+  }).catch(err => {
+    if (err.code !== 'auth/no-current-user') {
+      console.error('[Auth] Redirect error:', err);
+    }
+  });
+}
 
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
