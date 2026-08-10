@@ -28,6 +28,19 @@ export function initAdmin() {
     // Acceso concedido — cargar panel
     document.getElementById('admin-access-denied')?.classList.add('hidden');
     document.getElementById('admin-panel')?.classList.remove('hidden');
+    
+    // Actualizar navbar
+    const btnLoginNav = document.getElementById('btn-login');
+    if (btnLoginNav) btnLoginNav.classList.add('hidden');
+    const avatar = document.getElementById('user-avatar');
+    if (avatar) {
+      avatar.classList.remove('hidden');
+      avatar.textContent = 'A';
+      avatar.title = user.email;
+    }
+    const welcome = document.getElementById('admin-welcome');
+    if (welcome) welcome.textContent = `Bienvenido, ${user.email}`;
+
     initTabs();
     cargarServicios();
     cargarSolicitudes();
