@@ -377,15 +377,17 @@
             const anterior = solicitudesCargadas.find(v => v.id === nueva.id);
             if (anterior && anterior.estadoCaso !== nueva.estadoCaso) {
               mostrarToast(`🔔 Tu caso "${nueva.servicio}" cambió a: ${nueva.estadoCaso?.replace('_',' ').toUpperCase()}`, 'success');
-              // Notificación nativa en APK
+              // Notificación nativa en APK con canal de alta prioridad
               if (window.Capacitor?.Plugins?.LocalNotifications) {
                 window.Capacitor.Plugins.LocalNotifications.schedule({
                   notifications: [{
                     title: '📋 Actualización de tu caso',
                     body: `${nueva.servicio} → ${nueva.estadoCaso?.replace('_', ' ').toUpperCase()}`,
                     id: Math.floor(Math.random() * 2000000000),
-                    schedule: { at: new Date(Date.now() + 300) },
-                    sound: null, attachments: null, actionTypeId: '', extra: null
+                    channelId: 'ives_solicitudes_high',
+                    sound: 'default',
+                    actionTypeId: '',
+                    extra: null
                   }]
                 }).catch(console.warn);
               }

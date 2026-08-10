@@ -300,6 +300,56 @@ window.closeServicioModal = function() {
 let solicitudesList = [];
 let solicitudesInitialLoad = true;
 
+// ── Helpers de notificación nativa (Capacitor) ───────────────
+const NOTIF_CHANNEL_ID = 'ives_solicitudes_high';
+
+async function solicitarPermisoNotificaciones() {
+  if (!window.Capacitor?.Plugins?.LocalNotifications) return;
+  const LN = window.Capacitor.Plugins.LocalNotifications;
+  try {
+    // Crear el canal de alta prioridad (Android 8+)
+    await LN.createChannel({
+      id:          NOTIF_CHANNEL_ID,
+      name:        'Nuevas Solicitudes',
+      description: 'Alertas de nuevas solicitudes de clientes',
+      importance:  5,           // IMPORTANCE_HIGH
+      sound:       'default',   // Sonido de sistema
+      vibration:   true,
+      lights:      true,
+      visibility:  1,           // PUBLIC
+    });
+    // Pedir permiso al usuario
+    const perm = await LN.requestPermissions();
+    console.log('[Notif] Permiso:', perm.display);
+  } catch (e) {
+    console.warn('[Notif] Error configurando canal:', e);
+  }
+}
+
+async function dispararNotificacionNativa(data) {
+  if (!window.Capacitor?.Plugins?.LocalNotifications) return;
+  const LN = window.Capacitor.Plugins.LocalNotifications;
+  const urgEmoji = data.urgencia === 'alta' ? '🔴' : data.urgencia === 'media' ? '🟡' : '🟢';
+  try {
+    await LN.schedule({
+      notifications: [{
+        title:        `${urgEmoji} ¡Nueva Solicitud!`,
+        body:         `${data.nombre} solicita: ${data.servicio}`,
+        id:           Math.floor(Math.random() * 2000000000),
+        channelId:    NOTIF_CHANNEL_ID,
+        sound:        'default',
+        actionTypeId: '',
+        extra:        { solicitud: true },
+        // En Android activa heads-up (banner en pantalla) + sonido + vibración
+        // gracias al canal IMPORTANCE_HIGH creado en MainActivity.java
+      }]
+    });
+  } catch (e) {
+    console.warn('[Notif] Error disparando notificación:', e);
+  }
+}
+
+
 async function cargarSolicitudes() {
   const tbody = document.getElementById('solicitudes-tbody');
   if (!tbody) return;
@@ -312,25 +362,7 @@ async function cargarSolicitudes() {
       snap.docChanges().forEach(change => {
         if (change.type === 'added' && change.doc.data().leida === false) {
           playNotificationSound();
-          
-          // Notificación nativa en Capacitor (APK)
-          if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
-            const data = change.doc.data();
-            window.Capacitor.Plugins.LocalNotifications.schedule({
-              notifications: [
-                {
-                  title: "¡Nueva Solicitud!",
-                  body: `De: ${data.nombre} - ${data.servicio}`,
-                  id: Math.floor(Math.random() * 2000000000),
-                  schedule: { at: new Date(Date.now() + 500) },
-                  sound: null,
-                  attachments: null,
-                  actionTypeId: "",
-                  extra: null
-                }
-              ]
-            }).catch(e => console.warn('Error local notif:', e));
-          }
+          dispararNotificacionNativa(change.doc.data());
           showToast('🔔 ¡Nueva solicitud recibida!', 'success');
         }
       });
@@ -340,9 +372,7 @@ async function cargarSolicitudes() {
     if (solicitudesInitialLoad) {
       solicitudesInitialLoad = false;
       // Pedir permiso para notificaciones nativas en Capacitor
-      if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
-        window.Capacitor.Plugins.LocalNotifications.requestPermissions().catch(console.warn);
-      }
+      solicitarPermisoNotificaciones();
     }
 
     solicitudesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
