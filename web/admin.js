@@ -9,7 +9,8 @@ import {
   getDocs, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp, where,
   getTodosServicios, COLS,
-  actualizarEstadoCaso, getValoraciones
+  actualizarEstadoCaso, getValoraciones,
+  seedFAQsIfEmpty
 } from './firebase.js';
 import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 
@@ -465,6 +466,9 @@ async function cargarFAQ() {
   if (!container) return;
 
   try {
+    // Migrar FAQs por defecto si la colección está vacía
+    await seedFAQsIfEmpty();
+
     const snap = await getDocs(collection(db, COLS.faq));
     faqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     faqs.sort((a, b) => (a.orden || 0) - (b.orden || 0));

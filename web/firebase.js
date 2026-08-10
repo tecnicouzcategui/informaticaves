@@ -202,6 +202,28 @@ export async function seedFirestoreIfEmpty() {
   }
 }
 
+const FAQS_DEFAULT = [
+  { pregunta: '¿Cuánto tiempo tarda el servicio?',   respuesta: 'Depende del tipo de servicio. Un formateo puede tomar 2-3 horas, mientras que instalación de redes o CCTV puede tomar medio día.', orden: 1, estado: 'publicado' },
+  { pregunta: '¿Hacen servicio a domicilio?',          respuesta: 'Sí, se ofrece servicio a domicilio en el área de Caracas y alrededores. Consultar disponibilidad.',                        orden: 2, estado: 'publicado' },
+  { pregunta: '¿Qué formas de pago aceptan?',          respuesta: 'Efectivo en USD, transferencia bancaria, Pago Móvil y Zelle.',                                                            orden: 3, estado: 'publicado' },
+  { pregunta: '¿Tienen garantía los servicios?',       respuesta: 'Sí, todos los servicios tienen garantía de 30 días en mano de obra.',                                                     orden: 4, estado: 'publicado' },
+];
+
+/** Migra las FAQs por defecto a Firestore si la colección está vacía */
+export async function seedFAQsIfEmpty() {
+  const snap = await getDocs(collection(db, COLS.faq));
+  if (snap.empty) {
+    console.log('[Seed] Inicializando FAQs en Firestore...');
+    for (const faq of FAQS_DEFAULT) {
+      await addDoc(collection(db, COLS.faq), {
+        ...faq,
+        creadoEn: serverTimestamp()
+      });
+    }
+    console.log('[Seed] FAQs inicializadas.');
+  }
+}
+
 /** Actualiza el estado de un caso (Help Desk) */
 export async function actualizarEstadoCaso(solicitudId, nuevoEstado) {
   return updateDoc(doc(db, COLS.solicitudes, solicitudId), {

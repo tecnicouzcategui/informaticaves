@@ -200,23 +200,23 @@
     if (suggestion) suggestion.style.display = user ? 'none' : 'flex';
   });
 
-  // Cargar FAQs
+  // Cargar FAQs desde Firebase (administradas desde el panel)
   async function cargarFAQs() {
     const container = document.getElementById('faq-container');
     if (!container) return;
 
-    const defaults = [
-      { pregunta: '¿Cuánto tiempo tarda el servicio?', respuesta: 'Depende del tipo de servicio. Un formateo puede tomar 2-3 horas, mientras que instalación de redes o CCTV puede tomar medio día.' },
-      { pregunta: '¿Hacen servicio a domicilio?', respuesta: 'Sí, se ofrece servicio a domicilio en el área de Caracas y alrededores. Consultar disponibilidad.' },
-      { pregunta: '¿Qué formas de pago aceptan?', respuesta: 'Efectivo en USD, transferencia bancaria, Pago Móvil y Zelle.' },
-      { pregunta: '¿Tienen garantía los servicios?', respuesta: 'Sí, todos los servicios tienen garantía de 30 días en mano de obra.' },
-    ];
+    container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-dim)"><span class="spinner"></span></div>';
 
     try {
       const faqs = await getFAQsPublicadas();
-      const data = faqs.length ? faqs : defaults;
-      container.innerHTML = data.map(f => `
-        <details class="card" style="margin-bottom:0.75rem;cursor:pointer" open>
+
+      if (!faqs.length) {
+        container.innerHTML = '<p style="color:var(--text-dim);font-size:0.85rem;text-align:center;padding:1rem">No hay preguntas frecuentes disponibles por el momento.</p>';
+        return;
+      }
+
+      container.innerHTML = faqs.map(f => `
+        <details class="card" style="margin-bottom:0.75rem;cursor:pointer">
           <summary style="font-weight:600;color:var(--text);list-style:none;display:flex;justify-content:space-between;align-items:center;gap:1rem">
             <span>${f.pregunta}</span>
             <span style="color:var(--text-dim);font-size:1.2rem;transition:transform 0.2s">▾</span>
@@ -224,13 +224,9 @@
           <p style="margin-top:0.75rem;color:var(--text-muted);font-size:0.875rem;line-height:1.6">${f.respuesta}</p>
         </details>
       `).join('');
-    } catch (_) {
-      container.innerHTML = defaults.map(f => `
-        <details class="card" style="margin-bottom:0.75rem">
-          <summary style="font-weight:600;color:var(--text);list-style:none;cursor:pointer">${f.pregunta}</summary>
-          <p style="margin-top:0.75rem;color:var(--text-muted);font-size:0.875rem">${f.respuesta}</p>
-        </details>
-      `).join('');
+    } catch (err) {
+      console.warn('[FAQ] Error cargando desde Firebase:', err);
+      container.innerHTML = '<p style="color:var(--text-dim);font-size:0.85rem;text-align:center;padding:1rem">No se pudieron cargar las preguntas. Intenta de nuevo.</p>';
     }
   }
 
