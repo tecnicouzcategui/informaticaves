@@ -280,6 +280,12 @@ async function handleSubmit(e) {
 }
 
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 // ── Confirmación visual ───────────────────────────────────────
 function mostrarConfirmacion(data, urgConfig) {

@@ -321,8 +321,8 @@ async function cargarSolicitudes() {
                 {
                   title: "¡Nueva Solicitud!",
                   body: `De: ${data.nombre} - ${data.servicio}`,
-                  id: new Date().getTime(),
-                  schedule: { at: new Date(Date.now() + 100) },
+                  id: Math.floor(Math.random() * 2000000000),
+                  schedule: { at: new Date(Date.now() + 500) },
                   sound: null,
                   attachments: null,
                   actionTypeId: "",
