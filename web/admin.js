@@ -258,6 +258,8 @@ window.closeServicioModal = function() {
 // ════════════════════════════════════════════════════════════
 // SOLICITUDES
 // ════════════════════════════════════════════════════════════
+let solicitudesList = [];
+
 async function cargarSolicitudes() {
   const tbody = document.getElementById('solicitudes-tbody');
   if (!tbody) return;
@@ -265,13 +267,13 @@ async function cargarSolicitudes() {
   const q = query(collection(db, COLS.solicitudes), orderBy('timestamp', 'desc'));
 
   onSnapshot(q, snap => {
-    const solicitudes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (!solicitudes.length) {
+    solicitudesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!solicitudesList.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)">No hay solicitudes aún.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = solicitudes.map(s => {
+    tbody.innerHTML = solicitudesList.map(s => {
       const fecha = s.timestamp?.toDate?.()?.toLocaleString('es-VE', {
         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
       }) || '—';
@@ -302,7 +304,35 @@ window.marcarLeida = async function(id) {
 };
 
 window.verDetalles = function(id) {
-  showToast('ℹ️ Función de detalle en desarrollo', 'info');
+  const s = solicitudesList.find(x => x.id === id);
+  if (!s) return;
+
+  const modal = document.getElementById('modal-detalle-solicitud');
+  const content = document.getElementById('detalle-solicitud-content');
+  if (!modal || !content) return;
+
+  const fecha = s.timestamp?.toDate?.()?.toLocaleString('es-VE') || 'Fecha desconocida';
+  const mapaLink = s.ubicacionCoords 
+    ? `<a href="https://www.google.com/maps/search/?api=1&query=${s.ubicacionCoords.lat},${s.ubicacionCoords.lng}" target="_blank" style="color:var(--blue)">🗺️ Ver en Mapa</a>`
+    : '<span style="color:var(--text-dim)">Sin ubicación GPS</span>';
+
+  content.innerHTML = `
+    <p><strong>Cliente:</strong> ${s.nombre || '—'}</p>
+    <p><strong>WhatsApp:</strong> <a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></p>
+    <p><strong>Servicio:</strong> ${s.servicio}</p>
+    <p><strong>Urgencia:</strong> <span style="text-transform:capitalize">${s.urgencia}</span></p>
+    <p><strong>Dirección:</strong> ${s.direccion || '—'}</p>
+    <p><strong>Mapa:</strong> ${mapaLink}</p>
+    <p><strong>Fecha:</strong> ${fecha}</p>
+    <hr style="border:0;border-top:1px solid var(--border);margin:1rem 0">
+    <p><strong>Detalles adicionales:</strong><br>${s.detalles || 'Sin detalles'}</p>
+  `;
+
+  modal.classList.add('open');
+};
+
+window.closeDetalleSolicitud = function() {
+  document.getElementById('modal-detalle-solicitud')?.classList.remove('open');
 };
 
 // ════════════════════════════════════════════════════════════

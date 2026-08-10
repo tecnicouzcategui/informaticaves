@@ -91,6 +91,16 @@ export function forceAdmin() {
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
+  // 1. Si es admin local, ignoramos a Firebase
+  if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
+    currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
+    isAdmin = true;
+    notifyListeners();
+    updateNavUI();
+    return;
+  }
+
+  // 2. Si no es admin local, usamos Firebase
   currentUser  = user;
   isAdmin      = user?.email === ADMIN_EMAIL;
   userWhatsApp = null;

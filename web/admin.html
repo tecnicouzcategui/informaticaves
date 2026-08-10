@@ -298,6 +298,23 @@
   </div>
 </div>
 
+<!-- ── Modal: Detalle Solicitud ─────────────────────────────── -->
+<div class="modal-backdrop" id="modal-detalle-solicitud" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative;max-width:480px">
+    <button class="modal-close" onclick="closeDetalleSolicitud()">✕</button>
+    <h2 class="modal-title mb-2">📋 Detalle de Solicitud</h2>
+    
+    <div id="detalle-solicitud-content" style="color:var(--text); line-height: 1.6; font-size: 0.95rem;">
+      <!-- Filled via JS -->
+    </div>
+
+    <div class="flex mt-2" style="gap:0.75rem">
+      <button class="btn btn-secondary w-full" onclick="closeDetalleSolicitud()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
 <div id="toast-container"></div>
 
 <script type="module">
