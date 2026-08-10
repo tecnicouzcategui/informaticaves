@@ -166,7 +166,23 @@ function openServicioModal(servicio = null) {
   const fields = ['nombre', 'emoji', 'descripcion', 'precio', 'moneda', 'categoria', 'estado'];
   fields.forEach(f => {
     const el = document.getElementById(`srv-${f}`);
-    if (el) el.value = servicio?.[f] ?? (f === 'estado' ? 'borrador' : f === 'moneda' ? 'USD' : '');
+    if (el) {
+      if (f === 'categoria') {
+        const val = servicio?.categoria || '';
+        const options = Array.from(el.options).map(o => o.value);
+        const customEl = document.getElementById('srv-categoria-custom');
+        
+        if (val && !options.includes(val)) {
+          el.value = 'otra';
+          if (customEl) { customEl.style.display = 'block'; customEl.value = val; }
+        } else {
+          el.value = val;
+          if (customEl) { customEl.style.display = 'none'; customEl.value = ''; }
+        }
+      } else {
+        el.value = servicio?.[f] ?? (f === 'estado' ? 'borrador' : f === 'moneda' ? 'USD' : '');
+      }
+    }
   });
 
   modal.classList.add('open');
@@ -182,12 +198,19 @@ window.adminGuardarServicio = async function() {
   campos.forEach(f => {
     const el = document.getElementById(`srv-${f}`);
     if (!el) return;
-    if (!el.value.trim() && ['nombre', 'precio', 'categoria'].includes(f)) {
+    
+    let val = el.value.trim();
+    if (f === 'categoria' && val === 'otra') {
+      const customEl = document.getElementById('srv-categoria-custom');
+      val = customEl ? customEl.value.trim() : '';
+    }
+
+    if (!val && ['nombre', 'precio', 'categoria'].includes(f)) {
       showToast(`⚠️ El campo "${f}" es obligatorio`, 'error');
       valid = false;
       return;
     }
-    data[f] = f === 'precio' ? parseFloat(el.value) : el.value.trim();
+    data[f] = f === 'precio' ? parseFloat(val) : val;
   });
 
   if (!valid) return;

@@ -231,14 +231,16 @@
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label" for="srv-categoria">Categoría *</label>
-        <select id="srv-categoria" class="form-select">
+        <select id="srv-categoria" class="form-select" onchange="document.getElementById('srv-categoria-custom').style.display = this.value === 'otra' ? 'block' : 'none'">
           <option value="">-- Seleccionar --</option>
           <option value="soporte">💻 Soporte</option>
           <option value="redes">📡 Redes</option>
           <option value="cctv">📹 CCTV</option>
           <option value="web">🌐 Web/Apps</option>
           <option value="movil">📱 Móvil</option>
+          <option value="otra">➕ Otra (Escribir nueva)</option>
         </select>
+        <input type="text" id="srv-categoria-custom" class="form-input mt-2" placeholder="Escribe la nueva categoría" style="display:none">
       </div>
     </div>
 
