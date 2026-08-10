@@ -259,6 +259,7 @@ window.closeServicioModal = function() {
 // SOLICITUDES
 // ════════════════════════════════════════════════════════════
 let solicitudesList = [];
+let solicitudesInitialLoad = true;
 
 async function cargarSolicitudes() {
   const tbody = document.getElementById('solicitudes-tbody');
@@ -267,6 +268,17 @@ async function cargarSolicitudes() {
   const q = query(collection(db, COLS.solicitudes), orderBy('timestamp', 'desc'));
 
   onSnapshot(q, snap => {
+    // Detect new unread requests for sound alert
+    if (!solicitudesInitialLoad) {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added' && change.doc.data().leida === false) {
+          playNotificationSound();
+          showToast('🔔 ¡Nueva solicitud recibida!', 'success');
+        }
+      });
+    }
+    solicitudesInitialLoad = false;
+
     solicitudesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!solicitudesList.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)">No hay solicitudes aún.</td></tr>';
@@ -302,6 +314,28 @@ window.marcarLeida = async function(id) {
     await updateDoc(doc(db, COLS.solicitudes, id), { leida: true });
   } catch (err) { showToast(`❌ Error: ${err.message}`, 'error'); }
 };
+
+function playNotificationSound() {
+  // Simple short beep using Web Audio API
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15); // 150ms beep
+  } catch (e) {
+    console.warn('Audio no soportado o bloqueado');
+  }
+}
 
 window.verDetalles = function(id) {
   const s = solicitudesList.find(x => x.id === id);

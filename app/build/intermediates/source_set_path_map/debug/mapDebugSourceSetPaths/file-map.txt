@@ -1,0 +1,45 @@
+com.example.informaticaves.app-coordinatorlayout-1.1.0-0 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\01179842d444939ea3c9e612e53fb0e9\transformed\coordinatorlayout-1.1.0\res
+com.example.informaticaves.app-material-1.12.0-1 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\07ffedea83febad6cd34a5cae003ce1f\transformed\material-1.12.0\res
+com.example.informaticaves.app-jetified-annotation-experimental-1.4.0-2 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\0f9bf496a0d461e34aeec442ce5a61e6\transformed\jetified-annotation-experimental-1.4.0\res
+com.example.informaticaves.app-jetified-credentials-play-services-auth-1.2.0-rc01-3 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\216477405da572ae2677f8f4cdeb618d\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\res
+com.example.informaticaves.app-jetified-savedstate-1.2.1-4 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\21d903ed347de5324115de35d026748c\transformed\jetified-savedstate-1.2.1\res
+com.example.informaticaves.app-jetified-viewpager2-1.0.0-5 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\26bb5f5194521cc74e5adb0be187cb9a\transformed\jetified-viewpager2-1.0.0\res
+com.example.informaticaves.app-jetified-ads-adservices-1.0.0-beta05-6 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\2bf6cc79beed7c14e5e202d35eab7651\transformed\jetified-ads-adservices-1.0.0-beta05\res
+com.example.informaticaves.app-jetified-activity-1.8.0-7 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\2d328568e843e8bff89304de1dd15123\transformed\jetified-activity-1.8.0\res
+com.example.informaticaves.app-jetified-core-ktx-1.13.1-8 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\33bbfdfed11ee022a8d836dfd05144e1\transformed\jetified-core-ktx-1.13.1\res
+com.example.informaticaves.app-jetified-startup-runtime-1.1.1-9 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\4346a8b0630ff8c9f65b195458f37adc\transformed\jetified-startup-runtime-1.1.1\res
+com.example.informaticaves.app-jetified-lifecycle-viewmodel-savedstate-2.6.2-10 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\5312bab97e6de194624d947b824d4ca2\transformed\jetified-lifecycle-viewmodel-savedstate-2.6.2\res
+com.example.informaticaves.app-jetified-play-services-auth-20.7.0-11 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\63a7dd8176d30d7ea0a85f595e6b5d91\transformed\jetified-play-services-auth-20.7.0\res
+com.example.informaticaves.app-jetified-play-services-basement-18.4.0-12 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\66e53ad6c9215b4e364f39af16b5f987\transformed\jetified-play-services-basement-18.4.0\res
+com.example.informaticaves.app-jetified-appcompat-resources-1.7.0-13 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\6707226c339db8c96c435d5dba335425\transformed\jetified-appcompat-resources-1.7.0\res
+com.example.informaticaves.app-jetified-ads-adservices-java-1.0.0-beta05-14 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\7619a73660b0da06bfc685b63fb9bfed\transformed\jetified-ads-adservices-java-1.0.0-beta05\res
+com.example.informaticaves.app-core-1.13.1-15 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\79804157fd2d35efa27a5fa6696d50cc\transformed\core-1.13.1\res
+com.example.informaticaves.app-jetified-lifecycle-process-2.6.2-16 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\7e9c4a2e13e93b5d9b4424af6fe994d4\transformed\jetified-lifecycle-process-2.6.2\res
+com.example.informaticaves.app-constraintlayout-2.0.1-17 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\83306d8409b6a28c431dab807de48814\transformed\constraintlayout-2.0.1\res
+com.example.informaticaves.app-lifecycle-livedata-2.6.2-18 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\838be9d1823860da9ab5ab9919f31337\transformed\lifecycle-livedata-2.6.2\res
+com.example.informaticaves.app-lifecycle-viewmodel-2.6.2-19 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\87b92e0fc9555f42fe0a777e0b5a6bb4\transformed\lifecycle-viewmodel-2.6.2\res
+com.example.informaticaves.app-jetified-profileinstaller-1.3.1-20 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\87f3eb364d846f7f6659ea7ef6d92d3c\transformed\jetified-profileinstaller-1.3.1\res
+com.example.informaticaves.app-cardview-1.0.0-21 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\962dd6a1db03450fcd1985dba71247c3\transformed\cardview-1.0.0\res
+com.example.informaticaves.app-jetified-emoji2-1.3.0-22 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\98d7364e295d12467a0c498f1391ffe1\transformed\jetified-emoji2-1.3.0\res
+com.example.informaticaves.app-appcompat-1.7.0-23 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\9f586f08f504b1c2e5ec1af966cef4e2\transformed\appcompat-1.7.0\res
+com.example.informaticaves.app-lifecycle-livedata-core-2.6.2-24 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\a2f3cf312efc45c9f257e98ddb1d80f7\transformed\lifecycle-livedata-core-2.6.2\res
+com.example.informaticaves.app-browser-1.4.0-25 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\a5f945b495cea87949ed222f31344d6f\transformed\browser-1.4.0\res
+com.example.informaticaves.app-recyclerview-1.1.0-26 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\a6a7746f98866066a8a80121039f738e\transformed\recyclerview-1.1.0\res
+com.example.informaticaves.app-core-runtime-2.2.0-27 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\a8a8ee28dfbc634dee150621f0b1ebea\transformed\core-runtime-2.2.0\res
+com.example.informaticaves.app-fragment-1.5.4-28 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\aefd9ef3cadafd854696546db35ecfb5\transformed\fragment-1.5.4\res
+com.example.informaticaves.app-jetified-play-services-measurement-api-22.0.2-29 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\ba245f33ab2890d1104660dd1ee78fc1\transformed\jetified-play-services-measurement-api-22.0.2\res
+com.example.informaticaves.app-transition-1.5.0-30 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\bcbdcdf450307e70fa5270d63582aed0\transformed\transition-1.5.0\res
+com.example.informaticaves.app-lifecycle-runtime-2.6.2-31 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\d8a2f0daabbd326ef607e55340d11332\transformed\lifecycle-runtime-2.6.2\res
+com.example.informaticaves.app-jetified-credentials-1.2.0-rc01-32 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\ea7d9ceeda173b6d7b6dcb15c4b13cd6\transformed\jetified-credentials-1.2.0-rc01\res
+com.example.informaticaves.app-jetified-firebase-common-21.0.0-33 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\f13cb7e17d50b17aa7bbb6f094e88d69\transformed\jetified-firebase-common-21.0.0\res
+com.example.informaticaves.app-jetified-emoji2-views-helper-1.3.0-34 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\fbfe195fe5105c987ad027e4812f873b\transformed\jetified-emoji2-views-helper-1.3.0\res
+com.example.informaticaves.app-drawerlayout-1.1.1-35 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\ff3b901d1f2018a4154aba912f077c07\transformed\drawerlayout-1.1.1\res
+com.example.informaticaves.app-jetified-play-services-base-18.0.1-36 C:\Users\Amy Lorella\.gradle\caches\9.5.0\transforms\ff4a0796f01855eaaf119e1ea5e67f6e\transformed\jetified-play-services-base-18.0.1\res
+com.example.informaticaves.app-pngs-37 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\build\generated\res\pngs\debug
+com.example.informaticaves.app-res-38 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\build\generated\res\processDebugGoogleServices
+com.example.informaticaves.app-resValues-39 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\build\generated\res\resValues\debug
+com.example.informaticaves.app-packageDebugResources-40 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.informaticaves.app-packageDebugResources-41 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.informaticaves.app-debug-42 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.informaticaves.app-debug-43 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\src\debug\res
+com.example.informaticaves.app-main-44 C:\Users\Amy Lorella\OneDrive\Documentos\Informatica VES\app\src\main\res

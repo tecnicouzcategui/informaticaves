@@ -111,6 +111,9 @@ function bindEvents() {
   // Autocompletar datos si el usuario está logueado
   autocompletarDatos();
 
+  // GPS
+  document.getElementById('btn-gps')?.addEventListener('click', handleGPS);
+
   // Submit del formulario
   document.getElementById('form-solicitud')?.addEventListener('submit', handleSubmit);
 }
@@ -153,6 +156,60 @@ function autocompletarDatos() {
   if (email && inputEmail) inputEmail.value = email;
 }
 
+// ── Lógica GPS ────────────────────────────────────────────────
+async function handleGPS() {
+  const btn = document.getElementById('btn-gps');
+  const txt = document.getElementById('gps-text');
+  const icon = document.getElementById('gps-icon');
+  const inputDir = document.getElementById('input-direccion');
+  const inputCoords = document.getElementById('input-coords');
+  
+  if (!navigator.geolocation) {
+    showToast('Tu navegador no soporta geolocalización', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  txt.textContent = 'Obteniendo ubicación...';
+  icon.textContent = '⏳';
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      inputCoords.value = JSON.stringify({ lat: latitude, lng: longitude });
+      
+      // Intentar reverse geocoding con Nominatim (gratuito)
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+        if (data && data.display_name) {
+          inputDir.value = data.display_name.split(',').slice(0, 3).join(', ');
+        } else {
+          inputDir.value = `📍 Ubicación GPS capturada`;
+        }
+      } catch (err) {
+        inputDir.value = `📍 Ubicación GPS capturada`;
+      }
+      
+      showToast('Ubicación obtenida correctamente', 'success');
+      txt.textContent = 'Ubicación capturada';
+      icon.textContent = '✅';
+      btn.style.background = 'rgba(104,211,145,0.1)';
+      btn.style.color = '#68d391';
+      btn.style.borderColor = '#68d391';
+      btn.disabled = false;
+    },
+    (err) => {
+      console.warn('GPS Error:', err);
+      showToast('No se pudo obtener la ubicación. Verifica los permisos.', 'error');
+      txt.textContent = 'Usar mi ubicación actual (GPS)';
+      icon.textContent = '📍';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
 // ── Submit handler ────────────────────────────────────────────
 async function handleSubmit(e) {
   e.preventDefault();
@@ -171,12 +228,14 @@ async function handleSubmit(e) {
     return;
   }
 
-  const nombre     = document.getElementById('input-nombre')?.value.trim();
-  const whatsapp   = document.getElementById('input-whatsapp')?.value.trim();
+  const nombre      = document.getElementById('input-nombre')?.value.trim();
+  const whatsapp    = document.getElementById('input-whatsapp')?.value.trim();
+  const direccion   = document.getElementById('input-direccion')?.value.trim();
+  const coordsStr   = document.getElementById('input-coords')?.value;
   const descripcion = document.getElementById('input-descripcion')?.value.trim();
 
-  if (!nombre || !whatsapp) {
-    showToast('⚠️ Nombre y WhatsApp son obligatorios', 'error');
+  if (!nombre || !whatsapp || !direccion) {
+    showToast('⚠️ Nombre, WhatsApp y Dirección son obligatorios', 'error');
     return;
   }
 
@@ -197,6 +256,8 @@ async function handleSubmit(e) {
     moneda:       servicioSeleccionado.moneda,
     urgencia:     urgenciaSeleccionada,
     urgenciaLabel: urgConfig.label,
+    direccion,
+    ubicacionCoords: coordsStr ? JSON.parse(coordsStr) : null,
     descripcion:  descripcion || '—',
   };
 
@@ -240,8 +301,8 @@ ${urgConfig.emoji} <b>NUEVA SOLICITUD</b> ${urgConfig.emoji}
 
 👤 <b>Cliente:</b> ${escapeHtml(data.nombre)}
 📱 <b>WhatsApp:</b> <a href="https://wa.me/${sanitizeWA(data.whatsapp)}">${escapeHtml(data.whatsapp)}</a>
-${data.email ? `📧 <b>Email:</b> ${escapeHtml(data.email)}` : ''}
-
+${data.email ? `📧 <b>Email:</b> ${escapeHtml(data.email)}\n` : ''}📍 <b>Dirección:</b> ${escapeHtml(data.direccion)}
+${data.ubicacionCoords ? `🗺️ <a href="https://www.google.com/maps/search/?api=1&query=${data.ubicacionCoords.lat},${data.ubicacionCoords.lng}">Ver en Google Maps</a>\n` : ''}
 🔧 <b>Servicio:</b> ${escapeHtml(data.servicio)}
 💰 <b>Precio base:</b> $${data.precio} ${data.moneda}
 

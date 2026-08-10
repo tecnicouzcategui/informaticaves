@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luis Uzcátegui | El Técnico Luis — Soporte Técnico</title>
+  <meta name="description" content="Luis Uzcátegui — 30 años de experiencia en soporte técnico, Windows, Linux, CCTV, redes y desarrollo Android.">
+  <meta name="theme-color" content="#63b3ed">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Luis Uzcátegui | El Técnico Luis">
+  <meta property="og:description" content="30 años de experiencia en soporte técnico, Windows, Linux, CCTV y redes.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://eltecnicoluis.netlify.app">
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon">⚡</div>
+      <span>TécnicoLuis</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Inicio</a></li>
+      <li><a href="servicios.html">Servicios</a></li>
+      <li><a href="solicitud.html">Solicitar</a></li>
+      <li><a href="admin.html" id="nav-admin" class="hidden">Admin</a></li>
+    </ul>
+    <div class="nav-actions">
+      <span class="admin-badge hidden" id="admin-badge">Admin</span>
+      <div class="user-avatar hidden" id="user-avatar" title="Mi cuenta"></div>
+      <button class="btn-nav-auth" id="btn-login">Iniciar Sesión</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+
+  <!-- ── Hero ───────────────────────────────────────────────── -->
+  <main class="container">
+    <header class="hero">
+      <div class="avatar-wrapper">
+        <div class="avatar-pulse"></div>
+        <img src="https://eltecnicoluis.netlify.app/avatar.jpg"
+             onerror="this.style.display='none'"
+             alt="Luis Uzcátegui" class="avatar" id="hero-avatar">
+        <div class="avatar-ring"></div>
+        <div class="online-dot" title="Disponible"></div>
+      </div>
+
+      <div class="handle-badge">
+        <span class="dot"></span>
+        <span>@ELTECNICOLUIS</span>
+        <span style="opacity:0.4">•</span>
+        <span style="font-size:0.7rem">Disponible</span>
+      </div>
+
+      <h1 class="hero-name">Luis Uzcátegui</h1>
+      <p class="hero-subtitle">// Especialista en Soporte Técnico</p>
+      <p class="hero-bio">
+        "<strong>30 años de experiencia</strong> resolviendo problemas complejos en entornos
+        Windows, Ubuntu, CCTV bajo DVR y NVR, redes cableadas y WiFi,
+        Android para celulares, tabletas y PCs, diseños Web y aplicaciones Android"
+      </p>
+
+      <div class="flex-center gap-2" style="flex-wrap:wrap">
+        <a href="solicitud.html" class="btn btn-primary btn-lg">
+          <span>🔧</span> Solicitar Servicio
+        </a>
+        <a href="servicios.html" class="btn btn-secondary btn-lg">
+          <span>📋</span> Ver Precios
+        </a>
+      </div>
+    </header>
+
+    <!-- ── Links de Contacto ─────────────────────────────────── -->
+    <section class="section">
+      <h2 class="section-title">Contacto Directo</h2>
+      <div style="display:flex;flex-direction:column;gap:0.75rem">
+
+        <a href="https://wa.me/584242964339" target="_blank" class="link-card" id="link-whatsapp">
+          <div class="link-icon" style="background:rgba(37,211,102,0.1);border-color:rgba(37,211,102,0.2);color:#25D366">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          </div>
+          <div class="link-info">
+            <h3>WhatsApp</h3>
+            <p>+58 424-296-4339 · Escríbeme ahora</p>
+          </div>
+        </a>
+
+        <a href="https://t.me/eltecnicoluis" target="_blank" class="link-card" id="link-telegram">
+          <div class="link-icon" style="background:rgba(0,136,204,0.1);border-color:rgba(0,136,204,0.2);color:#0088CC">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </div>
+          <div class="link-info">
+            <h3>Telegram</h3>
+            <p>@eltecnicoluis · Canal oficial</p>
+          </div>
+        </a>
+
+        <a href="https://tiktok.com/@eltecnicoluis" target="_blank" class="link-card" id="link-tiktok">
+          <div class="link-icon" style="background:rgba(255,0,80,0.08);border-color:rgba(255,0,80,0.15);color:#ff0050">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+          </div>
+          <div class="link-info">
+            <h3>TikTok</h3>
+            <p>@eltecnicoluis · Videos técnicos</p>
+          </div>
+        </a>
+
+        <a href="https://twitter.com/eltecnicoluis" target="_blank" class="link-card" id="link-twitter">
+          <div class="link-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+          </div>
+          <div class="link-info">
+            <h3>Twitter / X</h3>
+            <p>@eltecnicoluis</p>
+          </div>
+        </a>
+
+        <a href="https://instagram.com/eltecnicoluis" target="_blank" class="link-card" id="link-instagram">
+          <div class="link-icon" style="background:rgba(193,53,132,0.08);border-color:rgba(193,53,132,0.15);color:#C13584">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+          </div>
+          <div class="link-info">
+            <h3>Instagram</h3>
+            <p>@eltecnicoluis</p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Dominio Técnico ─────────────────────────────────────── -->
+    <section class="section">
+      <h2 class="section-title">Dominio Técnico</h2>
+      <div class="skills-grid">
+        <div class="skill-chip">💻 Soporte PC</div>
+        <div class="skill-chip">📹 CCTV & DVR</div>
+        <div class="skill-chip">🐧 Linux/Ubuntu</div>
+        <div class="skill-chip">📡 Redes & WiFi</div>
+        <div class="skill-chip">📱 Android</div>
+        <div class="skill-chip">🌐 Diseño Web</div>
+        <div class="skill-chip">📱 Apps Android</div>
+        <div class="skill-chip">🔏 Biométricos</div>
+        <div class="skill-chip">🔧 Hardware</div>
+        <div class="skill-chip">☁️ Cloud & VPS</div>
+      </div>
+    </section>
+
+    <!-- ── CTA ────────────────────────────────────────────────── -->
+    <section class="section" style="text-align:center;padding-bottom:3rem">
+      <div class="card" style="background:linear-gradient(135deg,rgba(99,179,237,0.07),rgba(127,156,245,0.07));border-color:rgba(99,179,237,0.15)">
+        <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:0.5rem">¿Necesitas soporte técnico?</h2>
+        <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem">
+          Selecciona el servicio, elige la urgencia y recibe atención prioritaria.
+        </p>
+        <div class="flex-center gap-2" style="flex-wrap:wrap">
+          <a href="solicitud.html" class="btn btn-primary">🔧 Solicitar ahora</a>
+          <a href="servicios.html" class="btn btn-secondary">📋 Ver presupuestos</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ── Modal WhatsApp ─────────────────────────────────────────── -->
+<div class="modal-backdrop" id="modal-whatsapp" role="dialog" aria-modal="true" aria-labelledby="wa-modal-title">
+  <div class="modal-box" style="position:relative">
+    <button class="modal-close" id="wa-modal-skip" aria-label="Cerrar">✕</button>
+    <div style="text-align:center;margin-bottom:1rem">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem">💬</div>
+      <h2 class="modal-title" id="wa-modal-title">¡Bienvenido!</h2>
+      <p class="modal-desc">Para brindarte mejor servicio, comparte tu número de WhatsApp. Así Luis podrá contactarte directamente.</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="input-wa-numero">Número de WhatsApp</label>
+      <input type="tel" id="input-wa-numero" class="form-input" placeholder="+58 424-000-0000" autocomplete="tel">
+    </div>
+    <div class="flex" style="gap:0.75rem">
+      <button class="btn btn-secondary w-full" id="wa-modal-skip-btn">Más tarde</button>
+      <button class="btn btn-primary w-full" id="wa-modal-save">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ───────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Scripts ────────────────────────────────────────────────── -->
+<script type="module">
+  import { loginGoogle, logout, onAuthChange, openWhatsAppModal, closeWhatsAppModal, saveWhatsApp } from './auth.js';
+  import { seedFirestoreIfEmpty } from './firebase.js';
+
+  // Inicializar datos de Firestore si están vacíos
+  seedFirestoreIfEmpty().catch(console.warn);
+
+  // Registrar Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.warn);
+  }
+
+  // Login / Logout
+  document.getElementById('btn-login')?.addEventListener('click', async () => {
+    try { await loginGoogle(); }
+    catch (e) { console.error(e); }
+  });
+
+  document.getElementById('user-avatar')?.addEventListener('click', () => {
+    if (confirm('¿Cerrar sesión?')) logout();
+  });
+
+  // Modal WhatsApp
+  document.getElementById('wa-modal-save')?.addEventListener('click', () => {
+    const num = document.getElementById('input-wa-numero')?.value.trim();
+    if (!num) { alert('Por favor ingresa tu número'); return; }
+    saveWhatsApp(num);
+  });
+
+  document.getElementById('wa-modal-skip')?.addEventListener('click', closeWhatsAppModal);
+  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', closeWhatsAppModal);
+
+  // Online/Offline banner
+  function updateConnStatus() {
+    const banner = document.getElementById('offline-banner');
+    if (!banner) return;
+    banner.classList.toggle('show', !navigator.onLine);
+  }
+  window.addEventListener('online',  updateConnStatus);
+  window.addEventListener('offline', updateConnStatus);
+  updateConnStatus();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,196 @@
+// ============================================================
+// auth.js — Google Auth + WhatsApp Modal + Estado de Sesión
+// InformaticaVES | El Técnico Luis
+// ============================================================
+
+import {
+  auth, db,
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult, signOut, onAuthStateChanged,
+  guardarCliente, getCliente,
+  doc, setDoc, serverTimestamp
+} from './firebase.js';
+
+// ── Constantes ───────────────────────────────────────────────
+const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
+const WA_KEY         = 'ives_wa_number';
+const WA_PROMPTED    = 'ives_wa_prompted';
+
+// ── Estado global ────────────────────────────────────────────
+export let currentUser = null;
+export let isAdmin      = false;
+export let userWhatsApp = null;
+
+// ── Callbacks registrados ────────────────────────────────────
+const authListeners = [];
+export function onAuthChange(fn) { authListeners.push(fn); }
+function notifyListeners() { authListeners.forEach(fn => fn(currentUser, isAdmin)); }
+
+// ── Proveedor Google ─────────────────────────────────────────
+const provider = new GoogleAuthProvider();
+provider.addScope('profile');
+provider.addScope('email');
+
+// ── Login con Google ─────────────────────────────────────────
+export async function loginGoogle() {
+  try {
+    // Detect if we are inside Android WebView (no popup support)
+    const isWebView = /wv|WebView/.test(navigator.userAgent);
+    if (isWebView) {
+      await signInWithRedirect(auth, provider);
+    } else {
+      const result = await signInWithPopup(auth, provider);
+      return result.user;
+    }
+  } catch (err) {
+    console.error('[Auth] Error login:', err);
+    throw err;
+  }
+}
+
+// ── Logout ───────────────────────────────────────────────────
+export async function logout() {
+  await signOut(auth);
+  currentUser  = null;
+  isAdmin      = false;
+  userWhatsApp = null;
+  notifyListeners();
+}
+
+// ── Observador de sesión ─────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  currentUser  = user;
+  isAdmin      = user?.email === ADMIN_EMAIL;
+  userWhatsApp = null;
+
+  if (user) {
+    // Cargar WhatsApp del perfil de Firestore
+    try {
+      const perfil = await getCliente(user.uid);
+      if (perfil?.whatsapp) {
+        userWhatsApp = perfil.whatsapp;
+        localStorage.setItem(WA_KEY, perfil.whatsapp);
+      }
+    } catch (_) {}
+
+    // Si no tiene WhatsApp capturado, mostrar modal
+    const prompted = localStorage.getItem(WA_PROMPTED);
+    if (!userWhatsApp && !prompted) {
+      setTimeout(() => openWhatsAppModal(), 800);
+    }
+  }
+
+  updateNavUI();
+  notifyListeners();
+});
+
+// ── Manejar redirect result (WebView/Android) ─────────────────
+getRedirectResult(auth).then(result => {
+  if (result?.user) {
+    // El usuario volvió del redirect exitosamente
+    showToast('✅ Sesión iniciada correctamente', 'success');
+  }
+}).catch(err => {
+  if (err.code !== 'auth/no-current-user') {
+    console.error('[Auth] Redirect error:', err);
+  }
+});
+
+// ── Actualizar UI de navegación ───────────────────────────────
+function updateNavUI() {
+  const btnLogin   = document.getElementById('btn-login');
+  const userAvatar = document.getElementById('user-avatar');
+  const adminBadge = document.getElementById('admin-badge');
+  const adminLink  = document.getElementById('nav-admin');
+
+  if (!btnLogin) return; // La página no tiene nav
+
+  if (currentUser) {
+    btnLogin.classList.add('hidden');
+    userAvatar?.classList.remove('hidden');
+    if (currentUser.photoURL) {
+      userAvatar.innerHTML = `<img src="${currentUser.photoURL}" alt="${currentUser.displayName}">`;
+    } else {
+      const initials = (currentUser.displayName || currentUser.email || 'U').charAt(0).toUpperCase();
+      userAvatar.innerHTML = initials;
+    }
+
+    if (isAdmin) {
+      adminBadge?.classList.remove('hidden');
+      adminLink?.classList.remove('hidden');
+    }
+  } else {
+    btnLogin?.classList.remove('hidden');
+    userAvatar?.classList.add('hidden');
+    adminBadge?.classList.add('hidden');
+    adminLink?.classList.add('hidden');
+  }
+}
+
+// ── Modal de WhatsApp ─────────────────────────────────────────
+export function openWhatsAppModal() {
+  const modal = document.getElementById('modal-whatsapp');
+  if (!modal) return;
+  modal.classList.add('open');
+}
+
+export function closeWhatsAppModal() {
+  const modal = document.getElementById('modal-whatsapp');
+  if (!modal) return;
+  modal.classList.remove('open');
+  localStorage.setItem(WA_PROMPTED, '1');
+}
+
+export async function saveWhatsApp(numero) {
+  userWhatsApp = numero;
+  localStorage.setItem(WA_KEY, numero);
+  localStorage.setItem(WA_PROMPTED, '1');
+
+  // Guardar en Firestore si el usuario está autenticado
+  if (currentUser) {
+    try {
+      await guardarCliente(currentUser.uid, {
+        uid:        currentUser.uid,
+        email:      currentUser.email,
+        nombre:     currentUser.displayName,
+        whatsapp:   numero,
+        fotoURL:    currentUser.photoURL || null,
+      });
+    } catch (err) {
+      console.warn('[Auth] No se pudo guardar WhatsApp en Firestore:', err);
+    }
+  }
+
+  closeWhatsAppModal();
+  showToast('✅ WhatsApp guardado', 'success');
+}
+
+// ── Toast helper (importable) ─────────────────────────────────
+export function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container')
+    || (() => {
+      const d = document.createElement('div');
+      d.id = 'toast-container';
+      document.body.appendChild(d);
+      return d;
+    })();
+
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── Helpers de estado ─────────────────────────────────────────
+export function getWhatsApp() {
+  return userWhatsApp || localStorage.getItem(WA_KEY) || '';
+}
+
+export function getUserDisplayName() {
+  return currentUser?.displayName || 'Cliente';
+}
+
+export function getUserEmail() {
+  return currentUser?.email || '';
+}
