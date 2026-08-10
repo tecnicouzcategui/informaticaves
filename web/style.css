@@ -619,6 +619,13 @@ h1.hero-name {
   color: var(--text, #fff);
 }
 
+.form-select optgroup {
+  background: var(--bg-dark, #0d1117);
+  color: var(--accent, #63b3ed);
+  font-weight: 700;
+  font-style: normal;
+}
+
 .form-textarea { resize: vertical; min-height: 100px; }
 
 /* ── Urgencia Selector ── */
