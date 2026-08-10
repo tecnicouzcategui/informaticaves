@@ -265,8 +265,13 @@ async function handleSubmit(e) {
     // 1. Guardar en Firestore
     await guardarSolicitud(solicitudData);
 
-    // 2. Enviar alerta a Telegram
-    await enviarAlertaTelegram(solicitudData, urgConfig);
+    // 2. Enviar alerta a Telegram (no bloqueante)
+    try {
+      await enviarAlertaTelegram(solicitudData, urgConfig);
+    } catch (telegramErr) {
+      console.warn('[Solicitud] Error de Telegram (ignorado):', telegramErr);
+      // No lanzamos error para que la solicitud igual se procese
+    }
 
     // Éxito
     showToast('✅ Solicitud enviada correctamente', 'success');
