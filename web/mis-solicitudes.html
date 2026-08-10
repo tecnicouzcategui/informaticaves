@@ -4,242 +4,553 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mis Solicitudes | InformaticaVES</title>
-  <meta name="description" content="Consulta el estado de tus solicitudes de servicio t\u00e9cnico con El T\u00e9cnico Luis.">
+  <meta name="description" content="Consulta el estado de tus solicitudes de soporte técnico con El Técnico Luis.">
   <meta name="theme-color" content="#63b3ed">
+  <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&amp;display=swap" rel="stylesheet">
-  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Mis Solicitudes Styles ── */
+    .search-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+    }
+    .search-card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    .search-card p {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+    .search-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .search-row .form-input {
+      flex: 1;
+    }
+    /* Estado badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .status-pendiente  { background: rgba(246,224,94,0.15);  color: #f6e05e;  border: 1px solid rgba(246,224,94,0.3);  }
+    .status-tomado     { background: rgba(99,179,237,0.15);  color: #63b3ed;  border: 1px solid rgba(99,179,237,0.3);  }
+    .status-en_progreso{ background: rgba(168,85,247,0.15);  color: #a855f7;  border: 1px solid rgba(168,85,247,0.3);  }
+    .status-finalizado { background: rgba(104,211,145,0.15); color: #68d391;  border: 1px solid rgba(104,211,145,0.3); }
+    /* Timeline de estados */
+    .timeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 1rem 0;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .tl-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+      position: relative;
+    }
+    .tl-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      z-index: 1;
+      transition: all 0.3s;
+    }
+    .tl-dot.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+      box-shadow: 0 0 0 4px rgba(99,179,237,0.2);
+    }
+    .tl-dot.done {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+    .tl-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-top: 0.3rem;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .tl-label.active { color: var(--blue); font-weight: 700; }
+    .tl-label.done   { color: var(--green); }
+    .tl-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      min-width: 24px;
+    }
+    .tl-line.done { background: var(--green); }
+    /* Solicitud card */
+    .solicitud-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+    .solicitud-card:hover { border-color: rgba(99,179,237,0.4); }
+    .solicitud-card.urgente { border-left: 3px solid var(--red); }
+    .solicitud-card.media   { border-left: 3px solid #f6e05e; }
+    .solicitud-card.baja    { border-left: 3px solid var(--green); }
+    .sol-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .sol-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .sol-fecha {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .sol-detail {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+    .sol-detail span strong { color: var(--text); }
+    .valorar-btn {
+      margin-top: 0.75rem;
+      width: 100%;
+    }
+    /* Modal valoración */
+    .stars {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+    .star-btn {
+      font-size: 2rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      opacity: 0.3;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .star-btn.active, .star-btn:hover { opacity: 1; transform: scale(1.2); }
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-dim);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .empty-state h3 { font-size: 1rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .empty-state p  { font-size: 0.82rem; }
+  </style>
 </head>
 <body>
 
+<!-- Navbar -->
 <nav class="navbar">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo" style="text-decoration:none;">
-      <img src="logo_oficial.png" alt="InformaticaVES" style="height:110px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">
+      <img src="logo_oficial.png" alt="InformaticaVES" style="height:110px;object-fit:contain;filter:drop-shadow(0 0 5px rgba(255,255,255,0.2));">
     </a>
     <ul class="nav-links">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="servicios.html">Servicios</a></li>
       <li><a href="solicitud.html">Solicitar</a></li>
       <li><a href="mis-solicitudes.html" class="active">Mis Solicitudes</a></li>
+      <li><a href="admin.html" id="nav-admin" class="hidden">Admin</a></li>
     </ul>
     <div class="nav-actions">
       <span class="admin-badge hidden" id="admin-badge">Admin</span>
       <div class="user-avatar hidden" id="user-avatar"></div>
-      <button class="btn-nav-auth hidden" id="btn-login">Iniciar Sesi\u00f3n</button>
+      <button class="btn-nav-auth" id="btn-login">Iniciar Sesión</button>
     </div>
   </div>
 </nav>
 
-<div class="page-wrapper">
-  <div class="container" style="padding-top:2rem;padding-bottom:4rem;max-width:700px">
+<main class="container" style="padding-top:2rem;padding-bottom:3rem;max-width:700px;">
 
-    <div style="text-align:center;margin-bottom:2.5rem">
-      <div style="font-size:2.5rem;margin-bottom:0.75rem">\ud83d\udccb</div>
-      <h1 style="font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#63b3ed,#9f7aea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Mis Solicitudes</h1>
-      <p style="color:var(--text-muted);font-size:0.9rem;margin-top:0.4rem">Consulta el estado de tu servicio t\u00e9cnico en tiempo real</p>
-    </div>
-
-    <div class="card" style="padding:1.5rem;margin-bottom:2rem">
-      <h2 style="font-size:1rem;font-weight:700;margin-bottom:1rem">\ud83d\udd0d Buscar mis solicitudes</h2>
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-        <input type="tel" id="input-wa-buscar" class="form-input" placeholder="+58 424-000-0000"
-               style="flex:1;min-width:180px" autocomplete="tel">
-        <button class="btn btn-primary" id="btn-buscar" style="white-space:nowrap">\ud83d\udd0e Buscar</button>
-      </div>
-      <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.6rem">
-        Ingresa el mismo n\u00famero de WhatsApp que usaste al solicitar el servicio.
-      </p>
-    </div>
-
-    <div id="resultados-container" style="display:none">
-      <div id="resultados-list"></div>
-    </div>
-
-    <div id="estado-inicial" style="text-align:center;padding:3rem;color:var(--text-dim)">
-      <div style="font-size:3rem;margin-bottom:1rem">\ud83d\udcf1</div>
-      <p>Ingresa tu n\u00famero de WhatsApp para ver tus solicitudes</p>
-    </div>
-
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:1.5rem;">
+    <div style="font-size:2.5rem;margin-bottom:0.5rem;">📋</div>
+    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text);margin-bottom:0.4rem;">Mis Solicitudes</h1>
+    <p style="color:var(--text-dim);font-size:0.9rem;">Consulta el estado de tus solicitudes en tiempo real</p>
   </div>
-</div>
 
-<!-- Modal de Valoraci\u00f3n -->
-<div class="modal-backdrop" id="modal-valoracion" role="dialog" aria-modal="true">
-  <div class="modal-box" style="position:relative;max-width:420px">
-    <button class="modal-close" id="btn-cerrar-val">\u2715</button>
-    <h2 class="modal-title mb-2">\u2b50 Calificar Servicio</h2>
-    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.25rem" id="val-servicio-desc">
-      Comparte tu experiencia con El T\u00e9cnico Luis
-    </p>
-    <div style="margin-bottom:1rem">
-      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;font-weight:600">Tu valoraci\u00f3n *</p>
-      <div class="star-rating" id="star-rating-widget">
-        <input type="radio" name="estrellas" id="s5" value="5"><label for="s5">\u2605</label>
-        <input type="radio" name="estrellas" id="s4" value="4"><label for="s4">\u2605</label>
-        <input type="radio" name="estrellas" id="s3" value="3"><label for="s3">\u2605</label>
-        <input type="radio" name="estrellas" id="s2" value="2"><label for="s2">\u2605</label>
-        <input type="radio" name="estrellas" id="s1" value="1"><label for="s1">\u2605</label>
-      </div>
+  <!-- Buscar por WhatsApp -->
+  <div class="search-card" id="search-section">
+    <h2>🔍 Buscar solicitudes</h2>
+    <p>Ingresa el número de WhatsApp con el que enviaste la solicitud</p>
+    <div class="search-row">
+      <input type="tel" id="input-buscar-wa" class="form-input" placeholder="+58 424-000-0000" autocomplete="tel">
+      <button id="btn-buscar" class="btn btn-primary">Buscar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="val-comentario">Comentario breve <span style="color:var(--text-dim)">(m\u00e1x. 10 palabras)</span></label>
-      <input type="text" id="val-comentario" class="form-input"
-             placeholder="Ej: Excelente servicio, muy r\u00e1pido y profesional" maxlength="80">
-      <p id="val-palabras-count" style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3rem">0 / 10 palabras</p>
-    </div>
-    <p id="val-error" style="color:#fc8181;font-size:0.82rem;min-height:1rem;margin-bottom:0.5rem"></p>
-    <div class="flex" style="gap:0.75rem;margin-top:1rem">
-      <button class="btn btn-secondary w-full" id="btn-cancelar-val">Cancelar</button>
-      <button class="btn btn-primary w-full" id="btn-enviar-val">\u2b50 Enviar Valoraci\u00f3n</button>
-    </div>
+    <div id="buscar-error" style="color:var(--red);font-size:0.8rem;margin-top:0.5rem;display:none;"></div>
   </div>
-</div>
 
+  <!-- Resultado -->
+  <div id="resultado-container"></div>
+
+</main>
+
+<!-- Toast -->
 <div id="toast-container"></div>
 
+<!-- Modal de Valoración -->
+<div class="modal-backdrop hidden" id="modal-valoracion">
+  <div class="modal-box" style="max-width:400px;">
+    <button class="modal-close" id="cerrar-valoracion">✕</button>
+    <div style="text-align:center;margin-bottom:1rem;">
+      <div style="font-size:2rem;margin-bottom:0.5rem;">⭐</div>
+      <h2 class="modal-title">Califica el servicio</h2>
+      <p class="modal-desc" id="valoracion-servicio-nombre"></p>
+    </div>
+    <div class="stars" id="estrellas-container">
+      <button class="star-btn" data-val="1">⭐</button>
+      <button class="star-btn" data-val="2">⭐</button>
+      <button class="star-btn" data-val="3">⭐</button>
+      <button class="star-btn" data-val="4">⭐</button>
+      <button class="star-btn" data-val="5">⭐</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="valoracion-comentario">Comentario (opcional)</label>
+      <textarea id="valoracion-comentario" class="form-input" rows="3" placeholder="¿Cómo fue tu experiencia?"></textarea>
+    </div>
+    <button id="btn-enviar-valoracion" class="btn btn-primary w-full" disabled>Enviar Valoración</button>
+  </div>
+</div>
+
 <script type="module">
+  import {
+    db, collection, query, where, orderBy, onSnapshot,
+    COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud
+  } from './firebase.js';
+  import { loginGoogle, logout, currentUser, onAuthChange, isAdmin } from './auth.js';
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  import { getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud } from './firebase.js';
-  import { showToast } from './auth.js';
+  // ── Auth UI ────────────────────────────────────────────────
+  document.getElementById('btn-login')?.addEventListener('click', () => loginGoogle().catch(console.error));
+  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
 
-  const ESTADO_INFO = {
-    pendiente:   { cls:'estado-pendiente',  icon:'\ud83d\udfe1', lbl:'Pendiente',              desc:'Tu solicitud fue recibida y est\u00e1 en espera.' },
-    tomado:      { cls:'estado-tomado',      icon:'\ud83d\udccb', lbl:'Tomado por el T\u00e9cnico',  desc:'El T\u00e9cnico Luis ya tom\u00f3 tu caso y te contactar\u00e1 pronto.' },
-    en_progreso: { cls:'estado-progreso',    icon:'\u25b6\ufe0f', lbl:'En Progreso',             desc:'El t\u00e9cnico est\u00e1 trabajando en tu solicitud ahora.' },
-    finalizado:  { cls:'estado-finalizado',  icon:'\u2705', lbl:'Finalizado',              desc:'\u00a1Tu servicio fue completado! Puedes dejar tu valoraci\u00f3n.' },
-  };
-  const PASOS = ['pendiente', 'tomado', 'en_progreso', 'finalizado'];
+  onAuthChange(user => {
+    const navAdmin = document.getElementById('nav-admin');
+    const badge    = document.getElementById('admin-badge');
+    const avatar   = document.getElementById('user-avatar');
+    const btnLogin = document.getElementById('btn-login');
+    if (user) {
+      btnLogin?.classList.add('hidden');
+      avatar?.classList.remove('hidden');
+      avatar.textContent = user.displayName?.[0]?.toUpperCase() || '?';
+      if (isAdmin()) {
+        navAdmin?.classList.remove('hidden');
+        badge?.classList.remove('hidden');
+      }
+      // Auto-rellenar WhatsApp si está guardado
+      const wa = localStorage.getItem('ives_wa');
+      if (wa) {
+        document.getElementById('input-buscar-wa').value = wa;
+      }
+    } else {
+      btnLogin?.classList.remove('hidden');
+      avatar?.classList.add('hidden');
+    }
+  });
 
-  let solicitudesEncontradas = [];
-  let valoracionSolicitudId  = null;
-  let waCliente = '', nombreCliente = '';
+  // ── Estados helpers ────────────────────────────────────────
+  const ESTADOS = [
+    { key: 'pendiente',   label: 'Pendiente',    emoji: '📬' },
+    { key: 'tomado',      label: 'Tomado',        emoji: '📋' },
+    { key: 'en_progreso', label: 'En Progreso',   emoji: '▶️' },
+    { key: 'finalizado',  label: 'Finalizado',    emoji: '✅' },
+  ];
 
-  document.getElementById('btn-buscar').addEventListener('click', buscar);
-  document.getElementById('input-wa-buscar').addEventListener('keydown', e => { if (e.key==='Enter') buscar(); });
+  const ESTADO_IDX = { pendiente: 0, tomado: 1, en_progreso: 2, finalizado: 3 };
 
-  async function buscar() {
-    const wa = document.getElementById('input-wa-buscar').value.trim();
-    if (!wa) { showToast('\u26a0\ufe0f Ingresa tu n\u00famero de WhatsApp','error'); return; }
-    waCliente = wa;
-    const btn = document.getElementById('btn-buscar');
-    btn.disabled = true; btn.textContent = 'Buscando...';
-    try {
-      solicitudesEncontradas = await getSolicitudesByWhatsApp(wa);
-      document.getElementById('estado-inicial').style.display = 'none';
-      document.getElementById('resultados-container').style.display = 'block';
-      await renderResultados();
-    } catch(err) { showToast('\u274c Error al buscar: '+err.message,'error'); }
-    finally { btn.disabled=false; btn.textContent='\ud83d\udd0e Buscar'; }
+  function badgeEstado(estado) {
+    const e = ESTADOS.find(x => x.key === estado) || ESTADOS[0];
+    return `<span class="status-badge status-${estado}">${e.emoji} ${e.label}</span>`;
   }
 
-  async function renderResultados() {
-    const container = document.getElementById('resultados-list');
-    if (!solicitudesEncontradas.length) {
-      container.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--text-dim)">
-        <div style="font-size:2.5rem;margin-bottom:1rem">\ud83d\udd0d</div>
-        <p>No encontramos solicitudes con ese n\u00famero de WhatsApp.</p>
-        <p style="font-size:0.82rem;margin-top:0.5rem">Aseg\u00farate de usar el mismo n\u00famero que ingresaste al solicitar el servicio.</p>
-      </div>`;
+  function timeline(estadoActual) {
+    const idx = ESTADO_IDX[estadoActual] ?? 0;
+    let html = '';
+    ESTADOS.forEach((e, i) => {
+      const isDone   = i < idx;
+      const isActive = i === idx;
+      const dotClass = isDone ? 'done' : isActive ? 'active' : '';
+      const lblClass = isDone ? 'done' : isActive ? 'active' : '';
+      if (i > 0) html += `<div class="tl-line ${isDone ? 'done' : ''}"></div>`;
+      html += `
+        <div class="tl-step">
+          <div class="tl-dot ${dotClass}">${isDone ? '✓' : e.emoji}</div>
+          <div class="tl-label ${lblClass}">${e.label}</div>
+        </div>`;
+    });
+    return `<div class="timeline">${html}</div>`;
+  }
+
+  // ── Buscar solicitudes ─────────────────────────────────────
+  let unsubscribe = null;
+  let solicitudesCargadas = [];
+
+  function normalizeWA(num) {
+    return num.replace(/\s|-|\(|\)/g, '');
+  }
+
+  async function buscarSolicitudes() {
+    const wa = normalizeWA(document.getElementById('input-buscar-wa').value.trim());
+    const errEl = document.getElementById('buscar-error');
+    const container = document.getElementById('resultado-container');
+
+    errEl.style.display = 'none';
+
+    if (!wa || wa.length < 7) {
+      errEl.textContent = 'Por favor ingresa un número válido.';
+      errEl.style.display = 'block';
       return;
     }
-    nombreCliente = solicitudesEncontradas[0].nombre || '';
-    const urgMap = { baja:'\ud83d\udfe2 Puede esperar', media:'\ud83d\udfe1 Lo m\u00e1s pronto posible', alta:'\ud83d\udd34 URGENTE' };
 
-    const cards = await Promise.all(solicitudesEncontradas.map(async s => {
-      const estado   = s.estadoCaso || 'pendiente';
-      const eInfo    = ESTADO_INFO[estado] || ESTADO_INFO['pendiente'];
-      const pasoIdx  = PASOS.indexOf(estado);
-      const fecha    = s.timestamp?.toDate?.()?.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric'}) || '\u2014';
-      const valoracion = await getValoracionBySolicitud(s.id);
+    // Guardar para la próxima vez
+    localStorage.setItem('ives_wa', wa);
 
-      let progSteps = '';
-      PASOS.forEach((p,i) => {
-        const done = i < pasoIdx, active = i === pasoIdx, pInfo = ESTADO_INFO[p];
-        if (i>0) progSteps += `<div class="caso-step-line ${done?'done':''}"></div>`;
-        progSteps += `<div class="caso-step">
-          <div class="caso-step-dot ${active?'active':''} ${done?'done':''}">${done?'\u2713':i+1}</div>
-          <div class="caso-step-label">${pInfo.lbl}</div>
-        </div>`;
+    // Mostrar loader
+    container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span> Buscando solicitudes...</div>`;
+
+    // Cancelar listener anterior
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+
+    try {
+      // Escuchar EN TIEMPO REAL las solicitudes de este WhatsApp
+      const q = query(
+        collection(db, COLS.solicitudes),
+        where('whatsapp', '==', wa)
+      );
+
+      unsubscribe = onSnapshot(q, async snap => {
+        const lista = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        // Detectar cambios de estado para notificar
+        if (solicitudesCargadas.length > 0) {
+          lista.forEach(nueva => {
+            const anterior = solicitudesCargadas.find(v => v.id === nueva.id);
+            if (anterior && anterior.estadoCaso !== nueva.estadoCaso) {
+              mostrarToast(`🔔 Tu caso "${nueva.servicio}" cambió a: ${nueva.estadoCaso?.replace('_',' ').toUpperCase()}`, 'success');
+              // Notificación nativa en APK
+              if (window.Capacitor?.Plugins?.LocalNotifications) {
+                window.Capacitor.Plugins.LocalNotifications.schedule({
+                  notifications: [{
+                    title: '📋 Actualización de tu caso',
+                    body: `${nueva.servicio} → ${nueva.estadoCaso?.replace('_', ' ').toUpperCase()}`,
+                    id: Math.floor(Math.random() * 2000000000),
+                    schedule: { at: new Date(Date.now() + 300) },
+                    sound: null, attachments: null, actionTypeId: '', extra: null
+                  }]
+                }).catch(console.warn);
+              }
+            }
+          });
+        }
+        solicitudesCargadas = lista;
+
+        if (!lista.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">🤷</div>
+              <h3>Sin solicitudes encontradas</h3>
+              <p>No encontramos solicitudes para el número <strong>${wa}</strong>.<br>Verifica el número o <a href="solicitud.html" style="color:var(--blue)">envía una solicitud</a>.</p>
+            </div>`;
+          return;
+        }
+
+        // Renderizar cards
+        let html = `<p style="color:var(--text-dim);font-size:0.8rem;margin-bottom:1rem;">
+          Se encontraron <strong style="color:var(--text)">${lista.length}</strong> solicitudes — actualización en tiempo real 🟢
+        </p>`;
+
+        for (const s of lista) {
+          const urgClass = s.urgencia === 'alta' ? 'urgente' : s.urgencia === 'media' ? 'media' : 'baja';
+          const urgEmoji = s.urgencia === 'alta' ? '🔴' : s.urgencia === 'media' ? '🟡' : '🟢';
+          const estado   = s.estadoCaso || 'pendiente';
+          const fecha    = s.timestamp?.toDate?.()?.toLocaleString('es-VE', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          }) || '—';
+
+          // Check if already rated
+          const valoracion = await getValoracionBySolicitud(s.id);
+          const yaValorado = !!valoracion;
+
+          html += `
+            <div class="solicitud-card ${urgClass}" id="card-${s.id}">
+              <div class="sol-header">
+                <div>
+                  <div class="sol-title">${urgEmoji} ${s.servicio || '—'}</div>
+                  <div style="margin-top:0.3rem;">${badgeEstado(estado)}</div>
+                </div>
+                <div class="sol-fecha">${fecha}</div>
+              </div>
+
+              ${timeline(estado)}
+
+              <div class="sol-detail">
+                <span><strong>Cliente:</strong> ${s.nombre}</span>
+                <span><strong>WhatsApp:</strong> ${s.whatsapp}</span>
+                <span><strong>Urgencia:</strong> ${urgEmoji} ${s.urgenciaLabel || s.urgencia}</span>
+                <span><strong>Precio base:</strong> $${s.precio} ${s.moneda}</span>
+                ${s.direccion ? `<span style="grid-column:1/-1"><strong>Dirección:</strong> ${s.direccion}</span>` : ''}
+                ${s.descripcion && s.descripcion !== '—' ? `<span style="grid-column:1/-1"><strong>Descripción:</strong> ${s.descripcion}</span>` : ''}
+              </div>
+
+              ${estado === 'finalizado' ? `
+                ${yaValorado
+                  ? `<div style="text-align:center;color:var(--green);font-size:0.82rem;">⭐ Ya valoraste este servicio — ¡Gracias!</div>`
+                  : `<button class="btn btn-primary valorar-btn" data-id="${s.id}" data-servicio="${s.servicio}">⭐ Valorar este servicio</button>`
+                }
+                <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, mi solicitud de ${s.servicio} ya fue finalizada. ¡Gracias!`)}"
+                   class="btn btn-secondary w-full" target="_blank" style="margin-top:0.5rem;">
+                  💬 Contactar por WhatsApp
+                </a>
+              ` : `
+                <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, quiero consultar el estado de mi solicitud de ${s.servicio}.`)}"
+                   class="btn btn-secondary w-full" target="_blank">
+                  💬 Consultar por WhatsApp
+                </a>
+              `}
+            </div>`;
+        }
+
+        container.innerHTML = html;
+
+        // Listeners para valorar
+        document.querySelectorAll('.valorar-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            abrirModalValoracion(btn.dataset.id, btn.dataset.servicio);
+          });
+        });
       });
 
-      let ratingSection = '';
-      if (valoracion) {
-        let stars='';
-        for(let i=1;i<=5;i++) stars+=`<span class="${i<=valoracion.estrellas?'star-on':'star-off'}">\u2605</span>`;
-        ratingSection = `<div class="val-submitted">\u2705 Ya valoraste: <span class="star-display">${stars}</span>${valoracion.comentario?` &mdash; <em>"${valoracion.comentario}"</em>`:''}</div>`;
-      } else if (estado==='finalizado') {
-        ratingSection = `<div class="val-form">
-          <p style="font-size:0.85rem;color:var(--green);margin-bottom:0.75rem;font-weight:600">\u2705 \u00a1Tu servicio fue completado! \u00bfQu\u00e9 tal te fue?</p>
-          <button class="btn btn-primary btn-sm" onclick="abrirValoracion('${s.id}','${(s.servicio||'').replace(/'/g,'&apos;')}')">\u2b50 Dejar Valoraci\u00f3n</button>
-        </div>`;
-      }
-
-      return `<div class="caso-card">
-        <div class="caso-card-header">
-          <div class="caso-service-name">${s.emoji||'\ud83d\udd27'} ${s.servicio||'\u2014'}</div>
-          <span class="estado-chip ${eInfo.cls}">${eInfo.icon} ${eInfo.lbl}</span>
-        </div>
-        <div class="caso-meta">
-          <span>\ud83d\udcc5 ${fecha}</span>
-          <span>${urgMap[s.urgencia]||s.urgencia}</span>
-          ${s.direccion?`<span>\ud83d\udccd ${s.direccion}</span>`:''}
-        </div>
-        <div class="caso-progress">${progSteps}</div>
-        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid var(--accent)">${eInfo.desc}</p>
-        ${ratingSection}
-      </div>`;
-    }));
-
-    container.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
-      \ud83d\udccb ${solicitudesEncontradas.length} solicitud${solicitudesEncontradas.length>1?'es':''} encontrada${solicitudesEncontradas.length>1?'s':''}
-    </p>${cards.join('')}`;
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error al buscar</h3><p>${err.message}</p></div>`;
+    }
   }
 
-  window.abrirValoracion = function(id, srv) {
-    valoracionSolicitudId = id;
-    document.getElementById('val-servicio-desc').textContent = 'Servicio: '+srv;
-    document.getElementById('val-comentario').value='';
-    document.getElementById('val-palabras-count').textContent='0 / 10 palabras';
-    document.getElementById('val-error').textContent='';
-    document.querySelectorAll('#star-rating-widget input').forEach(r=>r.checked=false);
-    document.getElementById('modal-valoracion').classList.add('open');
-  };
-
-  ['btn-cerrar-val','btn-cancelar-val'].forEach(id=>{
-    document.getElementById(id).addEventListener('click',()=>document.getElementById('modal-valoracion').classList.remove('open'));
+  document.getElementById('btn-buscar').addEventListener('click', buscarSolicitudes);
+  document.getElementById('input-buscar-wa').addEventListener('keydown', e => {
+    if (e.key === 'Enter') buscarSolicitudes();
   });
 
-  document.getElementById('val-comentario').addEventListener('input', function() {
-    const p = this.value.trim()===''?0:this.value.trim().split(/\s+/).length;
-    const el = document.getElementById('val-palabras-count');
-    el.textContent = p+' / 10 palabras';
-    el.style.color = p>10?'#fc8181':'var(--text-dim)';
+  // Si hay wa guardado, buscar automático
+  const waGuardado = localStorage.getItem('ives_wa');
+  if (waGuardado) {
+    document.getElementById('input-buscar-wa').value = waGuardado;
+    buscarSolicitudes();
+  }
+
+  // ── Toast ────────────────────────────────────────────────
+  function mostrarToast(msg, tipo = 'success') {
+    const tc = document.getElementById('toast-container');
+    const t  = document.createElement('div');
+    t.className = `toast toast-${tipo}`;
+    t.textContent = msg;
+    tc.appendChild(t);
+    setTimeout(() => t.classList.add('visible'), 50);
+    setTimeout(() => { t.classList.remove('visible'); setTimeout(() => t.remove(), 400); }, 4000);
+  }
+
+  // ── Modal valoración ──────────────────────────────────────
+  let valoracionSolicitudId   = null;
+  let valoracionServicioNombre = null;
+  let estrellasSeleccionadas  = 0;
+
+  function abrirModalValoracion(id, servicio) {
+    valoracionSolicitudId    = id;
+    valoracionServicioNombre = servicio;
+    estrellasSeleccionadas   = 0;
+    document.getElementById('valoracion-servicio-nombre').textContent = servicio;
+    document.getElementById('valoracion-comentario').value = '';
+    document.getElementById('btn-enviar-valoracion').disabled = true;
+    document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('modal-valoracion').classList.remove('hidden');
+  }
+
+  document.getElementById('cerrar-valoracion').addEventListener('click', () => {
+    document.getElementById('modal-valoracion').classList.add('hidden');
   });
 
-  document.getElementById('btn-enviar-val').addEventListener('click', async()=>{
-    const errEl = document.getElementById('val-error');
-    const estrellas = parseInt(document.querySelector('#star-rating-widget input:checked')?.value||'0');
-    const comentario = document.getElementById('val-comentario').value.trim();
-    const palabras = comentario===''?0:comentario.split(/\s+/).length;
-    const s = solicitudesEncontradas.find(x=>x.id===valoracionSolicitudId);
-    errEl.textContent='';
-    if(!estrellas){errEl.textContent='\u26a0\ufe0f Selecciona una cantidad de estrellas.';return;}
-    if(palabras>10){errEl.textContent='\u26a0\ufe0f El comentario no puede superar 10 palabras.';return;}
-    const btn=document.getElementById('btn-enviar-val');
-    btn.disabled=true; btn.textContent='Enviando...';
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      estrellasSeleccionadas = parseInt(btn.dataset.val);
+      document.querySelectorAll('.star-btn').forEach((b, i) => {
+        b.classList.toggle('active', i < estrellasSeleccionadas);
+      });
+      document.getElementById('btn-enviar-valoracion').disabled = false;
+    });
+  });
+
+  document.getElementById('btn-enviar-valoracion').addEventListener('click', async () => {
+    if (!estrellasSeleccionadas) return;
+    const btnEnv = document.getElementById('btn-enviar-valoracion');
+    btnEnv.disabled = true;
+    btnEnv.textContent = 'Enviando...';
     try {
-      await guardarValoracion({ solicitudId:valoracionSolicitudId, clienteNombre:nombreCliente, clienteWA:waCliente, servicio:s?.servicio||'\u2014', estrellas, comentario });
-      document.getElementById('modal-valoracion').classList.remove('open');
-      showToast('\ud83c\udf1f \u00a1Gracias por tu valoraci\u00f3n!','success');
-      await renderResultados();
-    } catch(err){ errEl.textContent='\u274c Error: '+err.message; }
-    finally { btn.disabled=false; btn.textContent='\u2b50 Enviar Valoraci\u00f3n'; }
+      await guardarValoracion({
+        solicitudId: valoracionSolicitudId,
+        servicio:    valoracionServicioNombre,
+        estrellas:   estrellasSeleccionadas,
+        comentario:  document.getElementById('valoracion-comentario').value.trim(),
+        whatsapp:    normalizeWA(document.getElementById('input-buscar-wa').value.trim()),
+      });
+      document.getElementById('modal-valoracion').classList.add('hidden');
+      mostrarToast('⭐ ¡Gracias por tu valoración!', 'success');
+      buscarSolicitudes(); // Refrescar para mostrar "ya valorado"
+    } catch (err) {
+      mostrarToast('Error al enviar valoración. Intenta de nuevo.', 'error');
+      btnEnv.disabled = false;
+      btnEnv.textContent = 'Enviar Valoración';
+    }
   });
 </script>
 

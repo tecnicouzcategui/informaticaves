@@ -4,7 +4,7 @@
 // ============================================================
 
 import { guardarSolicitud, getServiciosPublicados, COLS } from './firebase.js';
-import { currentUser, getWhatsApp, getUserDisplayName, getUserEmail, showToast } from './auth.js';
+import { currentUser, isAdmin, onAuthChange, getWhatsApp, getUserDisplayName, getUserEmail, showToast } from './auth.js';
 
 
 const URGENCIA_CONFIG = {
@@ -23,6 +23,48 @@ export async function initSolicitud() {
   await cargarServicios();
   bindEvents();
   preseleccionarDesdeURL();
+
+  // Bloquear formulario si es administrador
+  onAuthChange(() => {
+    if (isAdmin) bloquearFormAdmin();
+  });
+  if (isAdmin) bloquearFormAdmin();
+}
+
+function bloquearFormAdmin() {
+  const form = document.getElementById('form-solicitud');
+  if (!form) return;
+  // Evitar doble bloqueo
+  if (document.getElementById('admin-block-msg')) return;
+
+  // Deshabilitar todos los inputs y botón
+  form.querySelectorAll('input, textarea, select, button').forEach(el => el.disabled = true);
+
+  // Insertar aviso visible encima del formulario
+  const aviso = document.createElement('div');
+  aviso.id = 'admin-block-msg';
+  aviso.style.cssText = [
+    'background:rgba(252,129,129,0.1)',
+    'border:1px solid rgba(252,129,129,0.4)',
+    'border-radius:0.75rem',
+    'padding:1rem 1.25rem',
+    'margin-bottom:1.25rem',
+    'display:flex',
+    'align-items:center',
+    'gap:0.75rem',
+    'color:#fc8181',
+    'font-size:0.875rem',
+    'font-weight:600',
+  ].join(';');
+  aviso.innerHTML = `
+    <span style="font-size:1.5rem">🔒</span>
+    <div>
+      <div>Eres el administrador — no puedes enviarte solicitudes a ti mismo.</div>
+      <div style="font-weight:400;margin-top:0.2rem;color:var(--text-muted);font-size:0.8rem">
+        Usa el <a href="admin.html" style="color:var(--blue)">Panel Admin</a> para gestionar solicitudes.
+      </div>
+    </div>`;
+  form.insertAdjacentElement('beforebegin', aviso);
 }
 
 // ── Carga de servicios ────────────────────────────────────────
