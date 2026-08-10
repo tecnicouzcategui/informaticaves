@@ -102,7 +102,7 @@
 
 <script type="module">
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(console.warn);
+    navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
   import { getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud } from './firebase.js';

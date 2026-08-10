@@ -2,7 +2,7 @@
   "name": "El Técnico Luis | InformaticaVES",
   "short_name": "TécnicoLuis",
   "description": "Soporte técnico especializado: Windows, Linux, CCTV, Redes, Apps Android",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0b0f",
   "theme_color": "#63b3ed",
@@ -26,12 +26,12 @@
   "shortcuts": [
     {
       "name": "Solicitar Servicio",
-      "url": "/solicitud.html",
+      "url": "./solicitud.html",
       "description": "Envía una nueva solicitud de servicio técnico"
     },
     {
       "name": "Ver Servicios",
-      "url": "/servicios.html",
+      "url": "./servicios.html",
       "description": "Consulta el catálogo de servicios y precios"
     }
   ]
