@@ -34,6 +34,11 @@ provider.addScope('email');
 
 // ── Login con Google ─────────────────────────────────────────
 export async function loginGoogle() {
+  // signInWithRedirect NO funciona en Capacitor WebView
+  if (window.Capacitor) {
+    alert('En la app móvil usa el acceso con correo y contraseña.');
+    return;
+  }
   try {
     await signInWithRedirect(auth, provider);
   } catch (err) {
@@ -126,18 +131,18 @@ onAuthStateChanged(auth, async user => {
   notifyListeners();
 });
 
-// ── Manejar redirect result (WebView/Android) ─────────────────
-getRedirectResult(auth).then(result => {
-  if (result?.user) {
-    // El usuario volvió del redirect exitosamente
-    showToast('✅ Sesión iniciada correctamente', 'success');
-  }
-}).catch(err => {
-  if (err.code !== 'auth/no-current-user') {
-    console.error('[Auth] Redirect error:', err);
-    alert('Error al volver del login: ' + err.message);
-  }
-});
+// ── Manejar redirect result (solo en navegador web, NO en Capacitor)
+if (!window.Capacitor) {
+  getRedirectResult(auth).then(result => {
+    if (result?.user) {
+      showToast('✅ Sesión iniciada correctamente', 'success');
+    }
+  }).catch(err => {
+    if (err.code !== 'auth/no-current-user') {
+      console.error('[Auth] Redirect error:', err);
+    }
+  });
+}
 
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
