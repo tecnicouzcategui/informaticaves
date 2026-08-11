@@ -387,8 +387,7 @@ async function cargarSolicitudes() {
         tomado:            { cls: 'estado-tomado',      lbl: '📋 Tomado' },
         en_progreso:       { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
         finalizado:        { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
-        cancelado_admin:   { cls: 'estado-cancelado',   lbl: '❌ Cancelado (Admin)' },
-        cancelado_cliente: { cls: 'estado-cancelado',   lbl: '🚫 Cancelado (Cliente)' },
+        cancelado:         { cls: 'estado-cancelado',   lbl: '❌ Cancelado' },
       };
       const s = map[e] || map['pendiente'];
       return `<span class="estado-chip ${s.cls}">${s.lbl}</span>`;
@@ -469,8 +468,7 @@ window.verDetalles = function(id) {
     tomado:            '📋 Tomado por el Técnico',
     en_progreso:       '▶️ En Progreso',
     finalizado:        '✅ Finalizado',
-    cancelado_admin:   '❌ Cancelado (Admin)',
-    cancelado_cliente: '🚫 Cancelado (Cliente)',
+    cancelado:         '❌ Cancelado',
   };
   const estadoLabel = estadoMap[s.estadoCaso || 'pendiente'] || '🟡 Pendiente';
 
@@ -511,8 +509,7 @@ window.cambiarEstado = async function(nuevoEstado) {
       tomado:            '📋 Tomado',
       en_progreso:       '▶️ En Progreso',
       finalizado:        '✅ Finalizado',
-      cancelado_admin:   '❌ Cancelado (Admin)',
-      cancelado_cliente: '🚫 Cancelado (Cliente)',
+      cancelado:         '❌ Cancelado',
     };
     showToast(`Estado cambiado a: ${estadoMap[nuevoEstado]}`, 'success');
     
@@ -520,8 +517,13 @@ window.cambiarEstado = async function(nuevoEstado) {
     const idx = solicitudesList.findIndex(x => x.id === currentDetalleSolicitudId);
     if (idx >= 0) solicitudesList[idx].estadoCaso = nuevoEstado;
     
-    // Re-render content in modal
-    verDetalles(currentDetalleSolicitudId);
+    // Si cancela, cerramos el modal directamente
+    if (nuevoEstado === 'cancelado') {
+      closeDetalleSolicitud();
+    } else {
+      // Re-render content in modal
+      verDetalles(currentDetalleSolicitudId);
+    }
   } catch (err) {
     showToast(`❌ Error: ${err.message}`, 'error');
   }

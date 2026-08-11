@@ -81,19 +81,19 @@
 
       <!-- Stats rápidas -->
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:2rem" id="stats-grid">
-        <div class="card" style="text-align:center">
+        <div class="card" style="text-align:center;cursor:pointer;transition:transform 0.2s;" onclick="document.querySelector('[data-tab=\'servicios\']').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <div style="font-size:1.8rem;font-weight:900;color:var(--accent)" id="stat-servicios">—</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Servicios publicados</div>
         </div>
-        <div class="card" style="text-align:center">
+        <div class="card" style="text-align:center;cursor:pointer;transition:transform 0.2s;" onclick="document.querySelector('[data-tab=\'servicios\']').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <div style="font-size:1.8rem;font-weight:900;color:var(--yellow)" id="stat-borradores">—</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">En borrador</div>
         </div>
-        <div class="card" style="text-align:center">
+        <div class="card" style="text-align:center;cursor:pointer;transition:transform 0.2s;" onclick="document.querySelector('[data-tab=\'solicitudes\']').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <div style="font-size:1.8rem;font-weight:900;color:var(--green)" id="stat-solicitudes">—</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Solicitudes totales</div>
         </div>
-        <div class="card" style="text-align:center">
+        <div class="card" style="text-align:center;cursor:pointer;transition:transform 0.2s;" onclick="document.querySelector('[data-tab=\'solicitudes\']').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <div style="font-size:1.8rem;font-weight:900;color:var(--red)" id="stat-pendientes">—</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Sin leer</div>
         </div>
@@ -321,8 +321,7 @@
         <button class="btn btn-sm" style="background:#2d3748;color:#63b3ed;border:1px solid #63b3ed" onclick="cambiarEstado('tomado')">📋 Tomar Caso</button>
         <button class="btn btn-sm" style="background:#2d3748;color:#ed8936;border:1px solid #ed8936" onclick="cambiarEstado('en_progreso')">▶️ En Progreso</button>
         <button class="btn btn-sm" style="background:#2d3748;color:#68d391;border:1px solid #68d391" onclick="cambiarEstado('finalizado')">✅ Finalizado</button>
-        <button class="btn btn-sm" style="background:#2d3748;color:#fc8181;border:1px solid #fc8181" onclick="cambiarEstado('cancelado_admin')">❌ Cancelar (Admin)</button>
-        <button class="btn btn-sm" style="background:#2d3748;color:#a0aec0;border:1px solid #a0aec0" onclick="cambiarEstado('cancelado_cliente')">🚫 Cancelar (Cliente)</button>
+        <button class="btn btn-sm" style="background:#2d3748;color:#fc8181;border:1px solid #fc8181;grid-column:1/-1;" onclick="cambiarEstado('cancelado')">❌ Cancelar Trabajo</button>
       </div>
     </div>
 
