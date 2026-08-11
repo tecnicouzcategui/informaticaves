@@ -447,26 +447,43 @@ window.marcarLeida = async function(id) {
 
 function playNotificationSound() {
   try {
+    // Vibración nativa en navegador web (útil en Android Chrome)
+    // 5 vibraciones: encendido 200ms, apagado 100ms
+    if (navigator.vibrate) {
+      navigator.vibrate([200, 100, 200, 100, 200, 100, 200, 100, 200]);
+    }
+
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
     
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    const numChimes = 5;
+    const chimeDuration = 0.5; // 500ms por campanada
     
-    osc.type = 'sine';
-    // Jingle de dos notas para notificación
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.1);
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
-    
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
+    for (let i = 0; i < numChimes; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      // Onda tipo campana/timbre
+      osc.type = 'triangle';
+      
+      const startTime = ctx.currentTime + (i * chimeDuration);
+      
+      // Tono alto y claro
+      osc.frequency.setValueAtTime(987.77, startTime); // Nota B5
+      
+      // Envolvente de volumen: ataque rápido y decaimiento exponencial (más fuerte: 0.6)
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.6, startTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.45);
+      gain.gain.setValueAtTime(0, startTime + chimeDuration);
+      
+      osc.start(startTime);
+      osc.stop(startTime + chimeDuration);
+    }
   } catch (e) {
     console.warn('[Sound] AudioContext bloqueado o no soportado.', e);
   }
