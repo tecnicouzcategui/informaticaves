@@ -262,15 +262,16 @@
     db, collection, query, where, orderBy, onSnapshot,
     COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud
   } from './firebase.js';
-  import { loginGoogle, logout, currentUser, onAuthChange, isAdmin } from './auth.js';
+  import * as Auth from './auth.js';
+  import { onAuthChange, isAdmin } from './auth.js';
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  // ── Auth UI ────────────────────────────────────────────────
-  document.getElementById('btn-login')?.addEventListener('click', () => loginGoogle().catch(console.error));
-  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
+  // ── Auth UI ──────────────────────────────────────────
+  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
+  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) Auth.logout(); });
 
   onAuthChange(user => {
     const navAdmin = document.getElementById('nav-admin');
@@ -280,15 +281,17 @@
     if (user) {
       btnLogin?.classList.add('hidden');
       avatar?.classList.remove('hidden');
-      avatar.textContent = user.displayName?.[0]?.toUpperCase() || '?';
-      if (isAdmin()) {
+      const nombre = Auth.userNombre || user.displayName || user.email || 'U';
+      avatar.textContent = nombre.charAt(0).toUpperCase();
+      if (Auth.isAdmin) {
         navAdmin?.classList.remove('hidden');
         badge?.classList.remove('hidden');
       }
       // Auto-rellenar WhatsApp si está guardado
-      const wa = localStorage.getItem('ives_wa');
+      const wa = Auth.getWhatsApp();
       if (wa) {
-        document.getElementById('input-buscar-wa').value = wa;
+        const inputWa = document.getElementById('input-buscar-wa');
+        if (inputWa) inputWa.value = wa;
       }
     } else {
       btnLogin?.classList.remove('hidden');

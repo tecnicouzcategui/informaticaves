@@ -195,7 +195,7 @@
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
 <script type="module">
-  import { loginGoogle, logout, onAuthChange, openWhatsAppModal, closeWhatsAppModal, saveWhatsApp } from './auth.js';
+  import * as Auth from './auth.js';
   import { seedFirestoreIfEmpty } from './firebase.js';
 
   // Inicializar datos de Firestore si están vacíos
@@ -207,24 +207,21 @@
   }
 
   // Login / Logout
-  document.getElementById('btn-login')?.addEventListener('click', async () => {
-    try { await loginGoogle(); }
-    catch (e) { console.error(e); }
-  });
+  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
 
   document.getElementById('user-avatar')?.addEventListener('click', () => {
-    if (confirm('¿Cerrar sesión?')) logout();
+    if (confirm('¿Cerrar sesión?')) Auth.logout();
   });
 
   // Modal WhatsApp
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {
     const num = document.getElementById('input-wa-numero')?.value.trim();
     if (!num) { alert('Por favor ingresa tu número'); return; }
-    saveWhatsApp(num);
+    Auth.saveWhatsApp(num);
   });
 
-  document.getElementById('wa-modal-skip')?.addEventListener('click', closeWhatsAppModal);
-  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', closeWhatsAppModal);
+  document.getElementById('wa-modal-skip')?.addEventListener('click', Auth.closeWhatsAppModal);
+  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', Auth.closeWhatsAppModal);
 
   // Online/Offline banner
   function updateConnStatus() {

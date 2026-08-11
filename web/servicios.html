@@ -105,7 +105,7 @@
 
 <script type="module">
   import { getServiciosPublicados, SERVICIOS_DEFAULT } from './firebase.js';
-  import { loginGoogle, logout, closeWhatsAppModal, saveWhatsApp } from './auth.js';
+  import * as Auth from './auth.js';
 
   // ── Registrar SW ──
   if ('serviceWorker' in navigator) {
@@ -113,14 +113,14 @@
   }
 
   // ── Auth UI ──
-  document.getElementById('btn-login')?.addEventListener('click', () => loginGoogle().catch(console.error));
-  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
+  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
+  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) Auth.logout(); });
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {
     const num = document.getElementById('input-wa-numero')?.value.trim();
-    if (num) saveWhatsApp(num);
+    if (num) Auth.saveWhatsApp(num);
   });
-  document.getElementById('wa-modal-skip')?.addEventListener('click', closeWhatsAppModal);
-  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', closeWhatsAppModal);
+  document.getElementById('wa-modal-skip')?.addEventListener('click', Auth.closeWhatsAppModal);
+  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', Auth.closeWhatsAppModal);
 
   // ── Cargar servicios ──
   let todosServicios = [];
