@@ -419,6 +419,8 @@ export function showToast(msg, type = 'info') {
   container.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
+// Exponer globalmente para que admin-notifications.js lo use sin dependencia circular
+window._showToast = showToast;
 
 // ── Helpers de estado ─────────────────────────────────────────
 export function getWhatsApp() {
