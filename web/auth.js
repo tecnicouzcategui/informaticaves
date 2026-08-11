@@ -293,10 +293,19 @@ function updateNavUI() {
     btnLogin.classList.add('hidden');
     userAvatar?.classList.remove('hidden');
     
-    // Si no es admin y es cliente con nombre
     const nameToUse = userNombre || currentUser.displayName || currentUser.email || 'U';
     const initials = nameToUse.charAt(0).toUpperCase();
     userAvatar.innerHTML = initials;
+
+    // Adjuntar menú de perfil al avatar (solo una vez)
+    if (!userAvatar.dataset.profileBound) {
+      userAvatar.dataset.profileBound = '1';
+      userAvatar.style.cursor = 'pointer';
+      userAvatar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openProfileDropdown(userAvatar);
+      });
+    }
     
     if (isAdmin) {
       adminBadge?.classList.remove('hidden');
@@ -314,6 +323,79 @@ function updateNavUI() {
 export function openWhatsAppModal() {}
 export function closeWhatsAppModal() {}
 export function saveWhatsApp() {}
+
+// ── Menú desplegable de Perfil ─────────────────────────────────
+function openProfileDropdown(avatarEl) {
+  // Eliminar dropdown anterior si existe
+  const existing = document.getElementById('profile-dropdown');
+  if (existing) { existing.remove(); return; }
+
+  const nameToUse  = userNombre || currentUser?.displayName || 'Usuario';
+  const waToUse    = userWhatsApp || localStorage.getItem(WA_KEY) || '—';
+  const emailToUse = currentUser?.email || '';
+  // Ocultar el email tipo "04xx@informaticaves.app" que es interno
+  const emailDisplay = emailToUse.includes('@informaticaves.app') ? '' : emailToUse;
+
+  const dropdown = document.createElement('div');
+  dropdown.id = 'profile-dropdown';
+  dropdown.style.cssText = `
+    position: fixed;
+    top: 64px;
+    right: 1rem;
+    background: var(--bg-card, #1e293b);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    min-width: 240px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    z-index: 9999;
+    animation: fadeInDown 0.2s ease;
+  `;
+
+  dropdown.innerHTML = `
+    <style>
+      @keyframes fadeInDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+      #profile-dropdown .pd-avatar {
+        width: 52px; height: 52px; border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #06b6d4);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; font-weight: 700; color: white;
+        margin: 0 auto 0.75rem;
+      }
+      #profile-dropdown .pd-name { font-weight: 700; font-size: 1rem; color: var(--text, #fff); text-align: center; margin-bottom: 0.2rem; }
+      #profile-dropdown .pd-info { font-size: 0.8rem; color: var(--text-muted, #94a3b8); text-align: center; margin-bottom: 0.1rem; }
+      #profile-dropdown .pd-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.75rem 0; }
+      #profile-dropdown .pd-btn-logout {
+        width: 100%; padding: 0.6rem; border-radius: 0.5rem;
+        background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.3);
+        color: #fc8181; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        transition: background 0.2s;
+      }
+      #profile-dropdown .pd-btn-logout:hover { background: rgba(252,129,129,0.2); }
+    </style>
+    <div class="pd-avatar">${nameToUse.charAt(0).toUpperCase()}</div>
+    <div class="pd-name">${nameToUse}</div>
+    ${waToUse !== '—' ? `<div class="pd-info">📱 ${waToUse}</div>` : ''}
+    ${emailDisplay ? `<div class="pd-info">✉️ ${emailDisplay}</div>` : ''}
+    <hr class="pd-divider">
+    <button class="pd-btn-logout" id="pd-logout-btn">🚪 Cerrar Sesión</button>
+  `;
+
+  document.body.appendChild(dropdown);
+
+  document.getElementById('pd-logout-btn').addEventListener('click', async () => {
+    dropdown.remove();
+    await logout();
+  });
+
+  // Cerrar al hacer clic fuera
+  setTimeout(() => {
+    document.addEventListener('click', function handler() {
+      dropdown.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 50);
+}
 
 // ── Toast helper (importable) ─────────────────────────────────
 export function showToast(msg, type = 'info') {
