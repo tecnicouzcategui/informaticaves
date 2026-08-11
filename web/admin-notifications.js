@@ -15,16 +15,16 @@ let _seenIds       = new Set();
 let _isFirstLoad   = true;
 let _audioCtx      = null;
 
-// ── API pública ───────────────────────────────────────────────
-
 let _snapCount = 0;
 let _addedCount = 0;
 let _modCount = 0;
+let _lastError = '';
+let _docsLength = -1;
 
 function _updateIndicator() {
   const ind = document.getElementById('admin-monitor-indicator');
   if (ind) {
-    ind.innerHTML = `🟢 Monitor (Snaps: ${_snapCount} | Ids: ${_seenIds.size} | +${_addedCount} | ~${_modCount}) <span style="text-decoration:underline;margin-left:5px;">(Probar)</span>`;
+    ind.innerHTML = `🟢 (Snaps: ${_snapCount} | Docs: ${_docsLength} | Ids: ${_seenIds.size} | +${_addedCount} | ~${_modCount}) <span style="text-decoration:underline;margin-left:5px;">(Probar)</span><br><span style="color:red;font-size:0.6rem">${_lastError}</span>`;
   }
 }
 
@@ -36,15 +36,15 @@ export function initGlobalAdminNotifications() {
   _snapCount = 0;
   _addedCount = 0;
   _modCount = 0;
+  _lastError = '';
 
   console.log('[AdminNotif] Iniciando monitor global de solicitudes...');
 
-  // MIENTRAS ESTÉ EN ADMIN, USAMOS EXACTAMENTE LA MISMA QUERY QUE ADMIN.JS
-  // Esto obliga a Firebase a reutilizar el listener interno y garantiza que si la tabla se actualiza, esto también.
   const q = query(collection(db, COLS_SOLICITUDES), orderBy('timestamp', 'desc'));
 
   _unsubscribe = onSnapshot(q, snap => {
     _snapCount++;
+    _docsLength = snap.docs.length;
     
     snap.docChanges().forEach(change => {
       if (change.type === 'added') _addedCount++;
@@ -54,26 +54,17 @@ export function initGlobalAdminNotifications() {
         const id = change.doc.id;
         const data = change.doc.data();
         
-        // Si no está leída y no la hemos procesado en esta sesión de alertas
         if (!data.leida && !_seenIds.has(id)) {
-          
           let hacerRuido = false;
-          
           if (_isFirstLoad) {
-            // En el primer pantallazo, ignoramos las viejas.
-            // Solo pitamos si la solicitud fue creada hace menos de 60 segundos.
             if (data.timestamp) {
               const now = Date.now();
               const docTime = data.timestamp.toDate().getTime();
-              if (now - docTime < 60000) {
-                hacerRuido = true;
-              }
+              if (now - docTime < 60000) hacerRuido = true;
             } else {
-              // timestamp nulo significa que apenas está viajando al servidor
               hacerRuido = true;
             }
           } else {
-            // Si llega un snapshot nuevo y no lo habíamos visto, es nuevo 100%
             hacerRuido = true;
           }
 
@@ -81,14 +72,12 @@ export function initGlobalAdminNotifications() {
             console.log('[AdminNotif] ¡Nueva solicitud detectada!', data.nombre, change.type);
             _alertar({ id, ...data });
           }
-          
           _seenIds.add(id);
         }
       }
     });
 
     if (_isFirstLoad) {
-      // Registrar silenciosamente cualquier cosa vieja que ya estaba leída o no pitó
       snap.docs.forEach(d => _seenIds.add(d.id));
       _isFirstLoad = false;
       _pedirPermiso();
@@ -97,7 +86,7 @@ export function initGlobalAdminNotifications() {
       if (!ind) {
         ind = document.createElement('div');
         ind.id = 'admin-monitor-indicator';
-        ind.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:#68d391;padding:5px 10px;border-radius:20px;font-size:0.75rem;z-index:9999;border:1px solid #68d391;cursor:pointer;';
+        ind.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:#68d391;padding:5px 10px;border-radius:10px;font-size:0.75rem;z-index:9999;border:1px solid #68d391;cursor:pointer;';
         document.body.appendChild(ind);
         ind.onclick = () => {
           _alertar({ id: 'test', nombre: 'Prueba Local', whatsapp: '0000', urgencia: 'alta', servicio: 'Test Alerta' });
@@ -107,17 +96,17 @@ export function initGlobalAdminNotifications() {
     
     _updateIndicator();
   }, err => {
+    _lastError = err.message;
     console.error('[AdminNotif] Error en onSnapshot:', err.code, err.message);
-    _unsubscribe = null; // permitir reintentar
-    
-    // Si falló por permisos, probablemente Auth aún está cargando.
-    // Reintentar en 3 segundos automáticamente.
+    _unsubscribe = null;
+    _updateIndicator();
     setTimeout(() => {
-      console.log('[AdminNotif] Reintentando conexión al monitor...');
       initGlobalAdminNotifications();
     }, 3000);
   });
 }
+
+
 
 export function stopGlobalAdminNotifications() {
   if (_unsubscribe) {
