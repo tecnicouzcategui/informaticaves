@@ -331,6 +331,13 @@ async function solicitarPermisoNotificaciones() {
   }
 }
 
+// Request permission on first user interaction to avoid browser blocking
+document.body.addEventListener('click', () => {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}, { once: true });
+
 async function dispararNotificacionNativa(data) {
   const urgEmoji = data.urgencia === 'alta' ? '🔴' : data.urgencia === 'media' ? '🟡' : '🟢';
   const title = `${urgEmoji} ¡Nueva Solicitud!`;
@@ -372,7 +379,7 @@ async function cargarSolicitudes() {
     // Detect new unread requests for sound alert
     if (!solicitudesInitialLoad) {
       snap.docChanges().forEach(change => {
-        if (change.type === 'added' && change.doc.data().leida === false) {
+        if (change.type === 'added' && !change.doc.data().leida) {
           playNotificationSound();
           dispararNotificacionNativa(change.doc.data());
           showToast('🔔 ¡Nueva solicitud recibida!', 'success');
@@ -421,7 +428,7 @@ async function cargarSolicitudes() {
           <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
           <td>
             <button class="btn btn-sm btn-secondary" onclick="verDetalles('${s.id}')">👁 Ver</button>
-            ${!s.leida ? `<button class="btn btn-sm btn-ghost" onclick="marcarLeida('${s.id}')">✓ Leída</button>` : ''}
+            ${!s.leida ? `<button class="btn btn-sm btn-ghost" onclick="marcarLeida('${s.id}')" style="margin-left:0.25rem;">👁️ Marcar leída</button>` : ''}
           </td>
         </tr>
       `;
