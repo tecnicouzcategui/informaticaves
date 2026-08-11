@@ -217,9 +217,27 @@ function autocompletarDatos() {
   const inputName  = document.getElementById('input-nombre');
   const inputEmail = document.getElementById('input-email');
 
-  if (wa    && inputWA)    inputWA.value    = wa;
-  if (name  && inputName  && name !== 'Cliente') inputName.value  = name;
-  if (email && inputEmail) inputEmail.value = email;
+  if (Auth.currentUser) {
+    if (wa && inputWA) { 
+      inputWA.value = wa; 
+      inputWA.readOnly = true; 
+      inputWA.style.opacity = '0.7'; 
+      inputWA.style.cursor = 'not-allowed';
+    }
+    if (name && inputName && name !== 'Cliente') { 
+      inputName.value = name; 
+      inputName.readOnly = true; 
+      inputName.style.opacity = '0.7'; 
+      inputName.style.cursor = 'not-allowed';
+    }
+    if (email && inputEmail && !email.includes('@informaticaves.app')) { 
+      inputEmail.value = email; 
+    }
+  } else {
+    // Si no está logueado, liberar los campos por si acaso
+    if (inputWA) { inputWA.readOnly = false; inputWA.style.opacity = '1'; inputWA.style.cursor = 'text'; }
+    if (inputName) { inputName.readOnly = false; inputName.style.opacity = '1'; inputName.style.cursor = 'text'; }
+  }
 }
 
 // ── Lógica GPS ────────────────────────────────────────────────
