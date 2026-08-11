@@ -25,10 +25,9 @@ export function initGlobalAdminNotifications() {
 
   console.log('[AdminNotif] Iniciando monitor global de solicitudes...');
 
-  // Limitar la consulta a las solicitudes de las últimas 24 horas para no cargar historial viejo
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const q = query(collection(db, COLS_SOLICITUDES), orderBy('timestamp', 'desc'));
+  // Escuchar toda la colección sin orderBy para evitar que Firebase ignore
+  // las escrituras locales que aún no tienen serverTimestamp() resuelto.
+  const q = query(collection(db, COLS_SOLICITUDES));
 
   _unsubscribe = onSnapshot(q, snap => {
     if (_isFirstLoad) {
@@ -55,13 +54,17 @@ export function initGlobalAdminNotifications() {
     }
 
     snap.docChanges().forEach(change => {
-      if (change.type === 'added') {
+      // Firebase a veces dispara 'modified' en lugar de 'added' en escenarios de caché/sync rápidos
+      if (change.type === 'added' || change.type === 'modified') {
         const id = change.doc.id;
         const data = change.doc.data();
+        
+        // Si no lo habíamos visto antes y no está leída, es una solicitud nueva para nosotros
         if (!_seenIds.has(id)) {
           _seenIds.add(id);
+          
           if (!data.leida) {
-            console.log('[AdminNotif] ¡Nueva solicitud detectada!', data.nombre);
+            console.log('[AdminNotif] ¡Nueva solicitud detectada por red!', data.nombre, 'Tipo:', change.type);
             _alertar({ id, ...data });
           }
         }
