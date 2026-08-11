@@ -72,12 +72,25 @@ export async function loginEmail(email, password) {
 
 // ── Logout ───────────────────────────────────────────────────
 export async function logout() {
+  // Limpiar todo el estado local primero
   localStorage.removeItem('ives_local_admin');
-  await signOut(auth);
+  localStorage.removeItem(WA_KEY);
+  localStorage.removeItem(WA_PROMPTED);
+  
   currentUser  = null;
   isAdmin      = false;
   userWhatsApp = null;
+  
+  // Intentar cerrar sesión de Firebase (puede fallar si no hay sesión Firebase)
+  try {
+    await signOut(auth);
+  } catch (_) {}
+  
   notifyListeners();
+  updateNavUI();
+  
+  // Redirigir a inicio
+  window.location.href = 'index.html';
 }
 
 // ── Modo Admin Local (persiste en localStorage) ─────────────
