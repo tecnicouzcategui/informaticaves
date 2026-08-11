@@ -304,48 +304,60 @@ let solicitudesInitialLoad = true;
 const NOTIF_CHANNEL_ID = 'ives_solicitudes_high';
 
 async function solicitarPermisoNotificaciones() {
-  if (!window.Capacitor?.Plugins?.LocalNotifications) return;
-  const LN = window.Capacitor.Plugins.LocalNotifications;
-  try {
-    // Crear el canal de alta prioridad (Android 8+)
-    await LN.createChannel({
-      id:          NOTIF_CHANNEL_ID,
-      name:        'Nuevas Solicitudes',
-      description: 'Alertas de nuevas solicitudes de clientes',
-      importance:  5,           // IMPORTANCE_HIGH
-      sound:       'default',   // Sonido de sistema
-      vibration:   true,
-      lights:      true,
-      visibility:  1,           // PUBLIC
-    });
-    // Pedir permiso al usuario
-    const perm = await LN.requestPermissions();
-    console.log('[Notif] Permiso:', perm.display);
-  } catch (e) {
-    console.warn('[Notif] Error configurando canal:', e);
+  // Capacitor (Android app nativa)
+  if (window.Capacitor?.Plugins?.LocalNotifications) {
+    const LN = window.Capacitor.Plugins.LocalNotifications;
+    try {
+      await LN.createChannel({
+        id:          NOTIF_CHANNEL_ID,
+        name:        'Nuevas Solicitudes',
+        description: 'Alertas de nuevas solicitudes de clientes',
+        importance:  5,
+        sound:       'default',
+        vibration:   true,
+        lights:      true,
+        visibility:  1,
+      });
+      await LN.requestPermissions();
+    } catch (e) {
+      console.warn('[Notif] Error configurando canal:', e);
+    }
+  } 
+  // Navegador web estándar (Windows, Android Chrome)
+  else if ('Notification' in window) {
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
   }
 }
 
 async function dispararNotificacionNativa(data) {
-  if (!window.Capacitor?.Plugins?.LocalNotifications) return;
-  const LN = window.Capacitor.Plugins.LocalNotifications;
   const urgEmoji = data.urgencia === 'alta' ? '🔴' : data.urgencia === 'media' ? '🟡' : '🟢';
-  try {
-    await LN.schedule({
-      notifications: [{
-        title:        `${urgEmoji} ¡Nueva Solicitud!`,
-        body:         `${data.nombre} solicita: ${data.servicio}`,
-        id:           Math.floor(Math.random() * 2000000000),
-        channelId:    NOTIF_CHANNEL_ID,
-        sound:        'default',
-        actionTypeId: '',
-        extra:        { solicitud: true },
-        // En Android activa heads-up (banner en pantalla) + sonido + vibración
-        // gracias al canal IMPORTANCE_HIGH creado en MainActivity.java
-      }]
-    });
-  } catch (e) {
-    console.warn('[Notif] Error disparando notificación:', e);
+  const title = `${urgEmoji} ¡Nueva Solicitud!`;
+  const body = `${data.nombre} solicita: ${data.servicio}`;
+
+  // Capacitor (Android app nativa)
+  if (window.Capacitor?.Plugins?.LocalNotifications) {
+    const LN = window.Capacitor.Plugins.LocalNotifications;
+    try {
+      await LN.schedule({
+        notifications: [{
+          title:        title,
+          body:         body,
+          id:           Math.floor(Math.random() * 2000000000),
+          channelId:    NOTIF_CHANNEL_ID,
+          sound:        'default',
+          actionTypeId: '',
+          extra:        { solicitud: true }
+        }]
+      });
+    } catch (e) {
+      console.warn('[Notif] Error disparando notificación nativa:', e);
+    }
+  } 
+  // Navegador web estándar (Windows, Chrome)
+  else if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body: body, icon: 'logo_oficial.png' });
   }
 }
 
@@ -429,6 +441,7 @@ window.marcarLeida = async function(id) {
 function playNotificationSound() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -437,12 +450,19 @@ function playNotificationSound() {
     gain.connect(ctx.destination);
     
     osc.type = 'sine';
+    // Jingle de dos notas para notificación
     osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
     
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.15);
-  } catch (e) {}
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    console.warn('[Sound] AudioContext bloqueado o no soportado.', e);
+  }
 }
 
 let currentDetalleSolicitudId = null;
