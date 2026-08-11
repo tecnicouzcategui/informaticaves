@@ -295,22 +295,96 @@ window.closeServicioModal = function() {
 };
 
 // ════════════════════════════════════════════════════════════
-// SOLICITUDES
+// SOLICITUDES + NOTIFICACIONES (lógica unificada)
 // ════════════════════════════════════════════════════════════
 let solicitudesList = [];
 let solicitudesInitialLoad = true;
+let _notifSeenIds = new Set();
+let _audioCtx = null;
 
-// ── Notificaciones ahora manejadas globalmente en admin-notifications.js ──
+function _tocarAlarma() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    [[800,0.0],[800,0.15],[1000,0.35],[1000,0.50],[800,0.70]].forEach(([f,t]) => {
+      const o = _audioCtx.createOscillator();
+      const g = _audioCtx.createGain();
+      o.connect(g); g.connect(_audioCtx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.4, _audioCtx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + t + 0.12);
+      o.start(_audioCtx.currentTime + t);
+      o.stop(_audioCtx.currentTime + t + 0.13);
+    });
+  } catch(e) { console.warn('Audio error:', e); }
+}
 
+function _mostrarModalAlerta(datos) {
+  let modal = document.getElementById('modal-nueva-solicitud-alerta');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-nueva-solicitud-alerta';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:var(--bg-card,#1a1a2e);border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:16px;padding:2rem;max-width:380px;width:90%;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:1rem;">🔔</div>
+        <h2 style="color:var(--text,#fff);font-size:1.3rem;margin-bottom:1rem;">¡Nueva Solicitud Recibida!</h2>
+        <div id="alerta-contenido" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:1rem;text-align:left;margin-bottom:1.5rem;font-size:0.9rem;"></div>
+        <div style="display:flex;gap:1rem;justify-content:center;">
+          <button id="alerta-ver" style="background:#4a9eff;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;">📋 Ver Solicitud</button>
+          <button id="alerta-cerrar" style="background:transparent;color:#aaa;border:1px solid #555;padding:0.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;">Cerrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  const urgLabel = datos.urgencia === 'alta' ? '🔴 ALTA' : datos.urgencia === 'media' ? '🟡 MEDIA' : '🟢 BAJA';
+  document.getElementById('alerta-contenido').innerHTML =
+    `<p>👤 <strong>Cliente:</strong> ${datos.nombre || '—'}</p>
+     <p>📱 <strong>WhatsApp:</strong> <span style="color:#68d391">${datos.whatsapp || '—'}</span></p>
+     <p>⚡ <strong>Urgencia:</strong> ${urgLabel}</p>
+     <p>🔧 <strong>Servicio:</strong> ${datos.servicio || '—'}</p>`;
+  modal.style.display = 'flex';
+  document.getElementById('alerta-ver').onclick = () => { modal.style.display='none'; if(datos.id) window.verDetalles(datos.id); };
+  document.getElementById('alerta-cerrar').onclick = () => { modal.style.display='none'; };
+}
+
+function _alertarNuevaSolicitud(datos) {
+  _tocarAlarma();
+  _mostrarModalAlerta(datos);
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('⚡ Nueva Solicitud', { body: `${datos.nombre} — ${datos.servicio}`, icon: './img/logo.png' });
+  }
+}
 
 async function cargarSolicitudes() {
   const tbody = document.getElementById('solicitudes-tbody');
   if (!tbody) return;
 
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
   const q = query(collection(db, COLS.solicitudes), orderBy('timestamp', 'desc'));
 
   onSnapshot(q, snap => {
-    // La alerta sonora se hace globalmente en admin-notifications.js
+    // ── Detección de nuevas solicitudes (mismo onSnapshot que la tabla) ──
+
+    const ahora = Date.now();
+    snap.docChanges().forEach(change => {
+      const id = change.doc.id;
+      const data = change.doc.data();
+      if ((change.type === 'added' || change.type === 'modified') && !data.leida && !_notifSeenIds.has(id)) {
+        _notifSeenIds.add(id);
+        if (!solicitudesInitialLoad) {
+          // Solicitud nueva que llegó después del primer cargado — alertar siempre
+          _alertarNuevaSolicitud({ id, ...data });
+        } else if (data.timestamp) {
+          // Primera carga: solo alertar si es de los últimos 60 segundos
+          const docMs = data.timestamp.toDate ? data.timestamp.toDate().getTime() : 0;
+          if (ahora - docMs < 60000) _alertarNuevaSolicitud({ id, ...data });
+        }
+      }
+    });
+    solicitudesInitialLoad = false;
 
     solicitudesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!solicitudesList.length) {
@@ -368,6 +442,20 @@ window.marcarLeida = async function(id) {
   try {
     await updateDoc(doc(db, COLS.solicitudes, id), { leida: true });
   } catch (err) { showToast(`❌ Error: ${err.message}`, 'error'); }
+};
+
+window.borrarTodasSolicitudes = async function() {
+  if (!solicitudesList.length) return showToast('No hay solicitudes para borrar', 'info');
+  const btn = document.querySelector('button[onclick*="borrarTodasSolicitudes"]');
+  if (btn) btn.innerHTML = '<span class="spinner" style="width:14px;height:14px"></span> Borrando...';
+  try {
+    const promesas = solicitudesList.map(s => deleteDoc(doc(db, COLS.solicitudes, s.id)));
+    await Promise.all(promesas);
+    showToast(`✅ ${promesas.length} solicitudes borradas con éxito.`, 'success');
+  } catch (err) {
+    showToast(`❌ Error al borrar: ${err.message}`, 'error');
+  }
+  if (btn) btn.innerHTML = '🧹 Borrar Todas';
 };
 
 
