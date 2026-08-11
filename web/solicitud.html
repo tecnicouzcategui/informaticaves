@@ -115,11 +115,11 @@
         </div>
 
         <!-- Login sugerido -->
-        <div class="alert alert-info mb-2" id="login-suggestion" style="cursor:pointer" title="Iniciar sesión para autocompletar datos">
+        <div class="alert alert-info mb-2" id="login-suggestion" style="cursor:pointer" title="Registrarse o iniciar sesión">
           <span>🔐</span>
           <span>
-            <strong>Inicia sesión con Google</strong> para autocompletar tus datos y hacer seguimiento de tus solicitudes.
-            <span id="login-link" style="text-decoration:underline;cursor:pointer">Iniciar sesión →</span>
+            <strong>Registírate o inicia sesión</strong> para poder enviar tu solicitud y hacer seguimiento de tus casos.
+            <span id="login-link" style="text-decoration:underline;cursor:pointer">Acceder ahora →</span>
           </span>
         </div>
 
@@ -171,7 +171,7 @@
 
 <script type="module">
   import { initSolicitud } from './solicitud.js';
-  import { loginGoogle, logout, currentUser, onAuthChange, closeWhatsAppModal, saveWhatsApp } from './auth.js';
+  import * as Auth from './auth.js';
   import { getFAQsPublicadas } from './firebase.js';
 
   // Registrar SW
@@ -183,20 +183,19 @@
   initSolicitud();
 
   // Auth UI
-  document.getElementById('btn-login')?.addEventListener('click', () => loginGoogle().catch(console.error));
-  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
-  document.getElementById('login-link')?.addEventListener('click', () => loginGoogle().catch(console.error));
+  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
+  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) Auth.logout(); });
 
   // Modal WhatsApp
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {
     const num = document.getElementById('input-wa-numero')?.value.trim();
-    if (num) saveWhatsApp(num);
+    if (num) Auth.saveWhatsApp(num);
   });
-  document.getElementById('wa-modal-skip')?.addEventListener('click', closeWhatsAppModal);
-  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', closeWhatsAppModal);
+  document.getElementById('wa-modal-skip')?.addEventListener('click', Auth.closeWhatsAppModal);
+  document.getElementById('wa-modal-skip-btn')?.addEventListener('click', Auth.closeWhatsAppModal);
 
   // Ocultar sugerencia de login si ya está logueado
-  onAuthChange((user) => {
+  Auth.onAuthChange((user) => {
     const suggestion = document.getElementById('login-suggestion');
     if (suggestion) suggestion.style.display = user ? 'none' : 'flex';
   });

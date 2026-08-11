@@ -4,7 +4,10 @@
 // ============================================================
 
 import { guardarSolicitud, getServiciosPublicados, COLS } from './firebase.js';
-import { currentUser, isAdmin, onAuthChange, getWhatsApp, getUserDisplayName, getUserEmail, showToast } from './auth.js';
+import * as Auth from './auth.js';
+import { showToast } from './auth.js';
+// Nota: currentUser se lee dinámicamente via Auth.currentUser para evitar
+// el problema de módulos ES donde el valor primitivo importado queda "congelado".
 
 
 const URGENCIA_CONFIG = {
@@ -25,10 +28,12 @@ export async function initSolicitud() {
   preseleccionarDesdeURL();
 
   // Bloquear formulario si es administrador
-  onAuthChange(() => {
-    if (isAdmin) bloquearFormAdmin();
+  Auth.onAuthChange(() => {
+    if (Auth.isAdmin) bloquearFormAdmin();
+    actualizarUI();
   });
-  if (isAdmin) bloquearFormAdmin();
+  if (Auth.isAdmin) bloquearFormAdmin();
+  actualizarUI();
 }
 
 function bloquearFormAdmin() {
@@ -65,6 +70,20 @@ function bloquearFormAdmin() {
       </div>
     </div>`;
   form.insertAdjacentElement('beforebegin', aviso);
+}
+
+function actualizarUI() {
+  // Actualizar texto del banner de login según si hay sesión activa
+  const suggestion = document.getElementById('login-suggestion');
+  if (suggestion) {
+    if (Auth.currentUser) {
+      suggestion.style.display = 'none';
+    } else {
+      suggestion.style.display = '';
+    }
+  }
+  // Autocompletar con los datos frescos del usuario logueado
+  autocompletarDatos();
 }
 
 // ── Carga de servicios ────────────────────────────────────────
@@ -154,6 +173,15 @@ function bindEvents() {
 
   // Submit del formulario
   document.getElementById('form-solicitud')?.addEventListener('submit', handleSubmit);
+
+  // Clic en el banner de login abre el modal de autenticación
+  document.getElementById('login-suggestion')?.addEventListener('click', () => {
+    Auth.openAuthModal();
+  });
+  document.getElementById('login-link')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    Auth.openAuthModal();
+  });
 }
 
 function updateServiceDetail() {
@@ -181,9 +209,9 @@ function updateServiceDetail() {
 }
 
 function autocompletarDatos() {
-  const wa    = getWhatsApp();
-  const name  = getUserDisplayName();
-  const email = getUserEmail();
+  const wa    = Auth.getWhatsApp();
+  const name  = Auth.getUserDisplayName();
+  const email = Auth.getUserEmail();
 
   const inputWA    = document.getElementById('input-whatsapp');
   const inputName  = document.getElementById('input-nombre');
@@ -266,14 +294,10 @@ async function handleSubmit(e) {
     return;
   }
 
-  if (!currentUser) {
-    showToast('⚠️ Debes iniciar sesión o registrarte para solicitar el servicio', 'error');
-    const { openAuthModal } = await import('./auth.js');
-    if (openAuthModal) {
-      openAuthModal();
-    } else {
-      document.getElementById('btn-login')?.click();
-    }
+  // ─── Auth obligatorio ──────────────────────────────────────
+  if (!Auth.currentUser) {
+    showToast('⚠️ Debes registrarte o iniciar sesión para poder enviar una solicitud.', 'error');
+    Auth.openAuthModal();
     return;
   }
 
@@ -297,8 +321,8 @@ async function handleSubmit(e) {
   const solicitudData = {
     nombre,
     whatsapp,
-    email:        currentUser?.email || '',
-    uid:          currentUser?.uid   || 'anon',
+    email:        Auth.currentUser?.email || '',
+    uid:          Auth.currentUser?.uid   || 'anon',
     servicio:     servicioSeleccionado.nombre,
     servicioId:   servicioSeleccionado.id,
     precio:       servicioSeleccionado.precio,
