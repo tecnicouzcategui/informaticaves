@@ -39,19 +39,60 @@ export function initGlobalAdminNotifications() {
 
   console.log('[AdminNotif] Iniciando monitor global de solicitudes...');
 
-  // Escuchar toda la colección sin orderBy para evitar que Firebase ignore
-  // las escrituras locales que aún no tienen serverTimestamp() resuelto.
-  const q = query(collection(db, COLS_SOLICITUDES));
+  // MIENTRAS ESTÉ EN ADMIN, USAMOS EXACTAMENTE LA MISMA QUERY QUE ADMIN.JS
+  // Esto obliga a Firebase a reutilizar el listener interno y garantiza que si la tabla se actualiza, esto también.
+  const q = query(collection(db, COLS_SOLICITUDES), orderBy('timestamp', 'desc'));
 
   _unsubscribe = onSnapshot(q, snap => {
     _snapCount++;
+    
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added') _addedCount++;
+      if (change.type === 'modified') _modCount++;
+      
+      if (change.type === 'added' || change.type === 'modified') {
+        const id = change.doc.id;
+        const data = change.doc.data();
+        
+        // Si no está leída y no la hemos procesado en esta sesión de alertas
+        if (!data.leida && !_seenIds.has(id)) {
+          
+          let hacerRuido = false;
+          
+          if (_isFirstLoad) {
+            // En el primer pantallazo, ignoramos las viejas.
+            // Solo pitamos si la solicitud fue creada hace menos de 60 segundos.
+            if (data.timestamp) {
+              const now = Date.now();
+              const docTime = data.timestamp.toDate().getTime();
+              if (now - docTime < 60000) {
+                hacerRuido = true;
+              }
+            } else {
+              // timestamp nulo significa que apenas está viajando al servidor
+              hacerRuido = true;
+            }
+          } else {
+            // Si llega un snapshot nuevo y no lo habíamos visto, es nuevo 100%
+            hacerRuido = true;
+          }
+
+          if (hacerRuido) {
+            console.log('[AdminNotif] ¡Nueva solicitud detectada!', data.nombre, change.type);
+            _alertar({ id, ...data });
+          }
+          
+          _seenIds.add(id);
+        }
+      }
+    });
+
     if (_isFirstLoad) {
-      // Registrar todas las existentes para no alertar de las viejas
+      // Registrar silenciosamente cualquier cosa vieja que ya estaba leída o no pitó
       snap.docs.forEach(d => _seenIds.add(d.id));
       _isFirstLoad = false;
       _pedirPermiso();
       
-      // Mostrar indicador visual persistente de que el monitor está activo
       let ind = document.getElementById('admin-monitor-indicator');
       if (!ind) {
         ind = document.createElement('div');
@@ -62,33 +103,8 @@ export function initGlobalAdminNotifications() {
           _alertar({ id: 'test', nombre: 'Prueba Local', whatsapp: '0000', urgencia: 'alta', servicio: 'Test Alerta' });
         };
       }
-      _updateIndicator();
-
-      console.log(`[AdminNotif] Monitor listo. Ignorando ${_seenIds.size} previas.`);
-      return;
     }
-
-    snap.docChanges().forEach(change => {
-      if (change.type === 'added') _addedCount++;
-      if (change.type === 'modified') _modCount++;
-      
-      // Firebase a veces dispara 'modified' en lugar de 'added' en escenarios de caché/sync rápidos
-      if (change.type === 'added' || change.type === 'modified') {
-        const id = change.doc.id;
-        const data = change.doc.data();
-        
-        // Si no lo habíamos visto antes y no está leída, es una solicitud nueva para nosotros
-        if (!_seenIds.has(id)) {
-          _seenIds.add(id);
-          _updateIndicator();
-          
-          if (!data.leida) {
-            console.log('[AdminNotif] ¡Nueva solicitud detectada por red!', data.nombre, 'Tipo:', change.type);
-            _alertar({ id, ...data });
-          }
-        }
-      }
-    });
+    
     _updateIndicator();
   }, err => {
     console.error('[AdminNotif] Error en onSnapshot:', err.code, err.message);
