@@ -221,22 +221,28 @@ function autocompletarDatos() {
     if (wa && inputWA) { 
       inputWA.value = wa; 
       inputWA.readOnly = true; 
+      inputWA.disabled = true;
       inputWA.style.opacity = '0.7'; 
       inputWA.style.cursor = 'not-allowed';
     }
     if (name && inputName && name !== 'Cliente') { 
       inputName.value = name; 
       inputName.readOnly = true; 
+      inputName.disabled = true;
       inputName.style.opacity = '0.7'; 
       inputName.style.cursor = 'not-allowed';
     }
-    if (email && inputEmail && !email.includes('@informaticaves.app')) { 
-      inputEmail.value = email; 
+    if (email && inputEmail) { 
+      if (email.includes('@informaticaves.app')) {
+        inputEmail.value = ''; // Vaciar si es el correo interno generado
+      } else {
+        inputEmail.value = email;
+      }
     }
   } else {
     // Si no está logueado, liberar los campos por si acaso
-    if (inputWA) { inputWA.readOnly = false; inputWA.style.opacity = '1'; inputWA.style.cursor = 'text'; }
-    if (inputName) { inputName.readOnly = false; inputName.style.opacity = '1'; inputName.style.cursor = 'text'; }
+    if (inputWA) { inputWA.readOnly = false; inputWA.disabled = false; inputWA.style.opacity = '1'; inputWA.style.cursor = 'text'; }
+    if (inputName) { inputName.readOnly = false; inputName.disabled = false; inputName.style.opacity = '1'; inputName.style.cursor = 'text'; }
   }
 }
 
