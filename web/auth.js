@@ -11,6 +11,7 @@ import {
   guardarCliente, getCliente,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
+import { initGlobalAdminNotifications, stopGlobalAdminNotifications } from './admin-notifications.js';
 
 // ── Constantes ───────────────────────────────────────────────
 const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
@@ -25,7 +26,10 @@ export let userNombre   = null;
 // ── Callbacks registrados ────────────────────────────────────
 const authListeners = [];
 export function onAuthChange(fn) { authListeners.push(fn); }
-function notifyListeners() { authListeners.forEach(fn => fn(currentUser, isAdmin)); }
+function notifyListeners() { 
+  if (isAdmin) initGlobalAdminNotifications(); else stopGlobalAdminNotifications();
+  authListeners.forEach(fn => fn(currentUser, isAdmin)); 
+}
 
 // ── Auth Modal Custom ─────────────────────────────────────────
 export function openAuthModal() {
