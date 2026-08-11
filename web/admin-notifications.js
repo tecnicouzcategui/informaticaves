@@ -11,34 +11,48 @@ const COLS_SOLICITUDES = 'ives_solicitudes';
 const NOTIF_CHANNEL_ID = 'ives_solicitudes_high';
 
 let _unsubscribe   = null;
-let _initialLoad   = true;
+let _seenIds       = new Set();
+let _isFirstLoad   = true;
 let _audioCtx      = null;
 
 // ── API pública ───────────────────────────────────────────────
 
 export function initGlobalAdminNotifications() {
   if (_unsubscribe) return; // ya está escuchando
-  _initialLoad = true;
+
+  _seenIds.clear();
+  _isFirstLoad = true;
 
   console.log('[AdminNotif] Iniciando monitor global de solicitudes...');
 
+  // Limitar la consulta a las solicitudes de las últimas 24 horas para no cargar historial viejo
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
   const q = query(collection(db, COLS_SOLICITUDES), orderBy('timestamp', 'desc'));
 
   _unsubscribe = onSnapshot(q, snap => {
-    if (!_initialLoad) {
-      snap.docChanges().forEach(change => {
-        if (change.type === 'added' && !change.doc.data().leida) {
-          const data = { id: change.doc.id, ...change.doc.data() };
-          console.log('[AdminNotif] ¡Nueva solicitud detectada!', data.nombre);
-          _alertar(data);
-        }
-      });
-    } else {
-      // Primera carga: solo marcar como inicializado
-      _initialLoad = false;
+    if (_isFirstLoad) {
+      // Registrar todas las existentes para no alertar de las viejas
+      snap.docs.forEach(d => _seenIds.add(d.id));
+      _isFirstLoad = false;
       _pedirPermiso();
-      console.log('[AdminNotif] Monitor listo. Esperando nuevas solicitudes...');
+      console.log(`[AdminNotif] Monitor listo. Ignorando ${_seenIds.size} previas.`);
+      return;
     }
+
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const id = change.doc.id;
+        const data = change.doc.data();
+        if (!_seenIds.has(id)) {
+          _seenIds.add(id);
+          if (!data.leida) {
+            console.log('[AdminNotif] ¡Nueva solicitud detectada!', data.nombre);
+            _alertar({ id, ...data });
+          }
+        }
+      }
+    });
   }, err => {
     console.error('[AdminNotif] Error en onSnapshot:', err.code, err.message);
     _unsubscribe = null; // permitir reintentar
@@ -48,6 +62,8 @@ export function initGlobalAdminNotifications() {
 export function stopGlobalAdminNotifications() {
   if (_unsubscribe) {
     _unsubscribe();
+    _unsubscribe = null;
+    _seenIds.clear();
     _unsubscribe = null;
     _initialLoad = true;
     console.log('[AdminNotif] Monitor detenido.');
