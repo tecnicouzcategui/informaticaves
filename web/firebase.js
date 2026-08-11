@@ -28,6 +28,7 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -70,9 +71,14 @@ export {
   collection, doc,
   getDocs, getDoc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, where, orderBy, serverTimestamp, setDoc,
-  GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
-  signOut, onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
   COLS
 };
 

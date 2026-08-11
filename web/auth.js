@@ -1,13 +1,13 @@
 // ============================================================
-// auth.js — Google Auth + WhatsApp Modal + Estado de Sesión
+// auth.js — Autenticación Custom con WhatsApp y Modal
 // InformaticaVES | El Técnico Luis
 // ============================================================
 
 import {
   auth, db,
-  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-  getRedirectResult, signOut, onAuthStateChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged,
   guardarCliente, getCliente,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
@@ -15,56 +15,199 @@ import {
 // ── Constantes ───────────────────────────────────────────────
 const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
 const WA_KEY         = 'ives_wa_number';
-const WA_PROMPTED    = 'ives_wa_prompted';
 
 // ── Estado global ────────────────────────────────────────────
 export let currentUser = null;
 export let isAdmin      = false;
 export let userWhatsApp = null;
+export let userNombre   = null;
 
 // ── Callbacks registrados ────────────────────────────────────
 const authListeners = [];
 export function onAuthChange(fn) { authListeners.push(fn); }
 function notifyListeners() { authListeners.forEach(fn => fn(currentUser, isAdmin)); }
 
-// ── Proveedor Google ─────────────────────────────────────────
-const provider = new GoogleAuthProvider();
-provider.addScope('profile');
-provider.addScope('email');
+// ── Auth Modal Custom ─────────────────────────────────────────
+export function openAuthModal() {
+  let modal = document.getElementById('modal-auth-custom');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-auth-custom';
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width: 400px; padding: 2rem; position: relative;">
+        <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+        <h3 style="margin-bottom:0.5rem; text-align:center; font-size:1.3rem;">Acceso de Clientes</h3>
+        <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; margin-bottom:1.5rem;">Ingresa tu WhatsApp y una contraseña segura.</p>
+        
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label">WhatsApp (Solo números)</label>
+          <input type="tel" id="auth-wa" class="form-input" placeholder="04121234567" maxlength="15">
+        </div>
+        
+        <div class="form-group" style="position:relative; margin-bottom:0.5rem;">
+          <label class="form-label">Contraseña</label>
+          <input type="password" id="auth-pass" class="form-input" placeholder="Tu contraseña">
+          <button id="auth-toggle-pass" style="position:absolute; right:10px; top:36px; background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">👁️</button>
+        </div>
+        
+        <div class="auth-dots" style="display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.5rem; font-size:0.75rem; color:var(--text-dim);">
+          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-letters" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Mínimo 4 letras</div>
+          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-upper" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Al menos 1 mayúscula</div>
+          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-numbers" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Mínimo 4 números</div>
+        </div>
 
-// ── Login con Google ─────────────────────────────────────────
-export async function loginGoogle() {
-  if (window.Capacitor) {
-    // En la APK no funciona OAuth de Google. Redirigimos directo al panel 
-    // para que el administrador inicie sesión con correo/contraseña.
-    window.location.href = 'admin.html';
-    return;
+        <div id="auth-register-fields" style="display:none; margin-bottom:1.5rem;">
+          <p style="color:var(--accent); font-size:0.8rem; margin-bottom:0.5rem; text-align:center;">¡Parece que eres nuevo! Déjanos tu nombre:</p>
+          <div class="form-group">
+            <label class="form-label">Tu Nombre</label>
+            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: Luis Uzcátegui">
+          </div>
+        </div>
+        
+        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.5rem;">Ingresar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Lógica del modal
+    const passInput = document.getElementById('auth-pass');
+    const waInput = document.getElementById('auth-wa');
+    const toggleBtn = document.getElementById('auth-toggle-pass');
+    const submitBtn = document.getElementById('auth-btn-submit');
+    const closeBtn = document.getElementById('auth-close');
+    const dotLetters = document.getElementById('dot-letters');
+    const dotUpper = document.getElementById('dot-upper');
+    const dotNumbers = document.getElementById('dot-numbers');
+    
+    // Toggle Password Visibility
+    toggleBtn.addEventListener('click', () => {
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        toggleBtn.textContent = '🙈';
+      } else {
+        passInput.type = 'password';
+        toggleBtn.textContent = '👁️';
+      }
+    });
+
+    // Validar contraseña
+    passInput.addEventListener('input', () => {
+      const val = passInput.value;
+      const lettersCount = (val.match(/[a-zA-Z]/g) || []).length;
+      const upperCount = (val.match(/[A-Z]/g) || []).length;
+      const numCount = (val.match(/[0-9]/g) || []).length;
+
+      const hasLetters = lettersCount >= 4;
+      const hasUpper = upperCount >= 1;
+      const hasNumbers = numCount >= 4;
+
+      dotLetters.style.background = hasLetters ? 'var(--green)' : 'var(--red)';
+      dotUpper.style.background = hasUpper ? 'var(--green)' : 'var(--red)';
+      dotNumbers.style.background = hasNumbers ? 'var(--green)' : 'var(--red)';
+
+      if (hasLetters && hasUpper && hasNumbers && waInput.value.length >= 10) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = 1;
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = 0.5;
+      }
+    });
+
+    waInput.addEventListener('input', () => {
+      // Forzar solo números
+      waInput.value = waInput.value.replace(/[^0-9]/g, '');
+      passInput.dispatchEvent(new Event('input')); // Re-evaluar botón
+    });
+
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('open');
+    });
+
+    submitBtn.addEventListener('click', async () => {
+      const wa = waInput.value.trim();
+      const pass = passInput.value;
+      const fakeEmail = wa + '@informaticaves.app';
+      
+      const isRegistering = document.getElementById('auth-register-fields').style.display !== 'none';
+
+      submitBtn.textContent = 'Procesando...';
+      submitBtn.disabled = true;
+
+      try {
+        if (isRegistering) {
+          const nombre = document.getElementById('auth-nombre').value.trim();
+          if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+          const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
+          await guardarCliente(res.user.uid, {
+            uid: res.user.uid,
+            email: fakeEmail,
+            nombre: nombre,
+            whatsapp: wa
+          });
+          showToast('✅ Cuenta creada exitosamente', 'success');
+          modal.classList.remove('open');
+        } else {
+          try {
+            await signInWithEmailAndPassword(auth, fakeEmail, pass);
+            showToast('✅ Sesión iniciada', 'success');
+            modal.classList.remove('open');
+          } catch (e) {
+            // Si el usuario no existe, mostrar campos de registro
+            if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+              // Asumimos que no existe si las credenciales fallan, mostramos registro
+              document.getElementById('auth-register-fields').style.display = 'block';
+              submitBtn.textContent = 'Crear Cuenta Nueva';
+              submitBtn.disabled = false;
+              showToast('Número no registrado. Crea tu cuenta.', 'info');
+            } else {
+              throw e;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Auth]', err);
+        const msgs = {
+          'auth/wrong-password': 'Contraseña incorrecta.',
+          'auth/invalid-credential': 'Contraseña incorrecta.',
+          'auth/email-already-in-use': 'Este número ya tiene una cuenta. Revisa tu contraseña.',
+        };
+        showToast(msgs[err.code] || 'Error: ' + err.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = isRegistering ? 'Crear Cuenta Nueva' : 'Ingresar';
+      }
+    });
   }
-  try {
-    // Usamos Popup en lugar de Redirect para evitar problemas en PWAs
-    const result = await signInWithPopup(auth, provider);
-    if (result?.user) {
-      showToast('✅ Sesión iniciada', 'success');
-    }
-  } catch (err) {
-    console.error('[Auth] Error login:', err);
-    alert('Error al iniciar sesión: ' + err.message);
-  }
+  
+  // Limpiar campos y mostrar modal
+  document.getElementById('auth-wa').value = '';
+  document.getElementById('auth-pass').value = '';
+  document.getElementById('auth-pass').type = 'password';
+  document.getElementById('auth-toggle-pass').textContent = '👁️';
+  document.getElementById('auth-register-fields').style.display = 'none';
+  document.getElementById('auth-btn-submit').textContent = 'Ingresar';
+  document.getElementById('auth-btn-submit').disabled = true;
+  document.getElementById('auth-btn-submit').style.opacity = 0.5;
+  document.getElementById('dot-letters').style.background = 'var(--red)';
+  document.getElementById('dot-upper').style.background = 'var(--red)';
+  document.getElementById('dot-numbers').style.background = 'var(--red)';
+
+  modal.classList.add('open');
 }
 
-// ── Login con Email y Contraseña ───────────────────────────
+// Mantener compatibilidad con HTML existente (renombramos la función internamente)
+export const loginGoogle = openAuthModal;
+
+// ── Login de Admin (Usado en panel admin) ─────────────────────
 export async function loginEmail(email, password) {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
     return result.user;
   } catch (err) {
-    console.error('[Auth] Error email login:', err);
     const msgs = {
       'auth/invalid-credential':  'Correo o contraseña incorrectos.',
-      'auth/user-not-found':      'No existe una cuenta con ese correo.',
-      'auth/wrong-password':      'Contraseña incorrecta.',
-      'auth/too-many-requests':   'Demasiados intentos. Espera un momento.',
-      'auth/network-request-failed': 'Sin conexión a internet.',
+      'auth/user-not-found':      'No existe una cuenta con ese correo.'
     };
     throw new Error(msgs[err.code] || err.message);
   }
@@ -72,16 +215,14 @@ export async function loginEmail(email, password) {
 
 // ── Logout ───────────────────────────────────────────────────
 export async function logout() {
-  // Limpiar todo el estado local primero
   localStorage.removeItem('ives_local_admin');
   localStorage.removeItem(WA_KEY);
-  localStorage.removeItem(WA_PROMPTED);
   
   currentUser  = null;
   isAdmin      = false;
   userWhatsApp = null;
+  userNombre   = null;
   
-  // Intentar cerrar sesión de Firebase (puede fallar si no hay sesión Firebase)
   try {
     await signOut(auth);
   } catch (_) {}
@@ -89,7 +230,6 @@ export async function logout() {
   notifyListeners();
   updateNavUI();
   
-  // Redirigir a inicio
   window.location.href = 'index.html';
 }
 
@@ -103,7 +243,6 @@ export function forceAdmin() {
   notifyListeners();
 }
 
-// Restaurar sesión local si existe al cargar la página
 (function restoreLocalAdmin() {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
     currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
@@ -113,7 +252,6 @@ export function forceAdmin() {
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
-  // 1. Si es admin local, ignoramos a Firebase
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
     currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
     isAdmin = true;
@@ -122,44 +260,25 @@ onAuthStateChanged(auth, async user => {
     return;
   }
 
-  // 2. Si no es admin local, usamos Firebase
   currentUser  = user;
   isAdmin      = user?.email === ADMIN_EMAIL;
   userWhatsApp = null;
+  userNombre   = null;
 
   if (user) {
-    // Cargar WhatsApp del perfil de Firestore
     try {
       const perfil = await getCliente(user.uid);
-      if (perfil?.whatsapp) {
+      if (perfil) {
         userWhatsApp = perfil.whatsapp;
+        userNombre   = perfil.nombre;
         localStorage.setItem(WA_KEY, perfil.whatsapp);
       }
     } catch (_) {}
-
-    // Si no tiene WhatsApp capturado, mostrar modal
-    const prompted = localStorage.getItem(WA_PROMPTED);
-    if (!userWhatsApp && !prompted) {
-      setTimeout(() => openWhatsAppModal(), 800);
-    }
   }
 
   updateNavUI();
   notifyListeners();
 });
-
-// ── Manejar redirect result (solo en navegador web, NO en Capacitor)
-if (!window.Capacitor) {
-  getRedirectResult(auth).then(result => {
-    if (result?.user) {
-      showToast('✅ Sesión iniciada correctamente', 'success');
-    }
-  }).catch(err => {
-    if (err.code !== 'auth/no-current-user') {
-      console.error('[Auth] Redirect error:', err);
-    }
-  });
-}
 
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
@@ -168,18 +287,17 @@ function updateNavUI() {
   const adminBadge = document.getElementById('admin-badge');
   const adminLink  = document.getElementById('nav-admin');
 
-  if (!btnLogin) return; // La página no tiene nav
+  if (!btnLogin) return; 
 
   if (currentUser) {
     btnLogin.classList.add('hidden');
     userAvatar?.classList.remove('hidden');
-    if (currentUser.photoURL) {
-      userAvatar.innerHTML = `<img src="${currentUser.photoURL}" alt="${currentUser.displayName}">`;
-    } else {
-      const initials = (currentUser.displayName || currentUser.email || 'U').charAt(0).toUpperCase();
-      userAvatar.innerHTML = initials;
-    }
-
+    
+    // Si no es admin y es cliente con nombre
+    const nameToUse = userNombre || currentUser.displayName || currentUser.email || 'U';
+    const initials = nameToUse.charAt(0).toUpperCase();
+    userAvatar.innerHTML = initials;
+    
     if (isAdmin) {
       adminBadge?.classList.remove('hidden');
       adminLink?.classList.remove('hidden');
@@ -192,43 +310,10 @@ function updateNavUI() {
   }
 }
 
-// ── Modal de WhatsApp ─────────────────────────────────────────
-export function openWhatsAppModal() {
-  const modal = document.getElementById('modal-whatsapp');
-  if (!modal) return;
-  modal.classList.add('open');
-}
-
-export function closeWhatsAppModal() {
-  const modal = document.getElementById('modal-whatsapp');
-  if (!modal) return;
-  modal.classList.remove('open');
-  localStorage.setItem(WA_PROMPTED, '1');
-}
-
-export async function saveWhatsApp(numero) {
-  userWhatsApp = numero;
-  localStorage.setItem(WA_KEY, numero);
-  localStorage.setItem(WA_PROMPTED, '1');
-
-  // Guardar en Firestore si el usuario está autenticado
-  if (currentUser) {
-    try {
-      await guardarCliente(currentUser.uid, {
-        uid:        currentUser.uid,
-        email:      currentUser.email,
-        nombre:     currentUser.displayName,
-        whatsapp:   numero,
-        fotoURL:    currentUser.photoURL || null,
-      });
-    } catch (err) {
-      console.warn('[Auth] No se pudo guardar WhatsApp en Firestore:', err);
-    }
-  }
-
-  closeWhatsAppModal();
-  showToast('✅ WhatsApp guardado', 'success');
-}
+// ── Funciones dummy de compatibilidad para evitar errores en HTML viejo ──
+export function openWhatsAppModal() {}
+export function closeWhatsAppModal() {}
+export function saveWhatsApp() {}
 
 // ── Toast helper (importable) ─────────────────────────────────
 export function showToast(msg, type = 'info') {
@@ -253,7 +338,7 @@ export function getWhatsApp() {
 }
 
 export function getUserDisplayName() {
-  return currentUser?.displayName || 'Cliente';
+  return userNombre || currentUser?.displayName || 'Cliente';
 }
 
 export function getUserEmail() {
@@ -263,7 +348,6 @@ export function getUserEmail() {
 // ── Soporte Capacitor APK (Botón Atrás) ────────────────────────
 if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
   window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
-    // Si el modal está abierto, ciérralo primero
     if (document.querySelector('.modal-backdrop.open')) {
       document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
       return;

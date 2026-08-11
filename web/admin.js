@@ -382,6 +382,7 @@ async function cargarSolicitudes() {
         if (change.type === 'added' && !change.doc.data().leida) {
           playNotificationSound();
           dispararNotificacionNativa(change.doc.data());
+          mostrarAlertaModal({id: change.doc.id, ...change.doc.data()});
           showToast('🔔 ¡Nueva solicitud recibida!', 'success');
         }
       });
@@ -487,6 +488,37 @@ function playNotificationSound() {
   } catch (e) {
     console.warn('[Sound] AudioContext bloqueado o no soportado.', e);
   }
+}
+
+function mostrarAlertaModal(data) {
+  const urgEmoji = data.urgencia === 'alta' ? '🔴' : data.urgencia === 'media' ? '🟡' : '🟢';
+  let modal = document.getElementById('modal-incoming-request');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-incoming-request';
+    modal.className = 'modal-backdrop';
+    document.body.appendChild(modal);
+  }
+  
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width: 450px; text-align:center;">
+      <h2 style="font-size:1.5rem; margin-bottom:1rem; color:var(--accent);">¡Nueva Solicitud Recibida!</h2>
+      <div style="font-size:3rem; margin-bottom:1rem; animation: pulse 2s infinite;">🔔</div>
+      
+      <div style="background:var(--bg-card); padding:1rem; border-radius:var(--radius-sm); text-align:left; margin-bottom:1.5rem;">
+        <p><strong>Cliente:</strong> ${data.nombre}</p>
+        <p><strong>WhatsApp:</strong> <span style="color:var(--green)">${data.whatsapp}</span></p>
+        <p><strong>Urgencia:</strong> ${urgEmoji} ${data.urgencia.toUpperCase()}</p>
+        <p style="margin-top:0.5rem; font-weight:bold; color:var(--text-muted);">${data.servicio}</p>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; justify-content:center;">
+        <button class="btn btn-primary" onclick="verDetalles('${data.id}'); document.getElementById('modal-incoming-request').classList.remove('open');">Tomar Caso</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-incoming-request').classList.remove('open');">Cerrar</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
 }
 
 let currentDetalleSolicitudId = null;
