@@ -218,31 +218,26 @@ function autocompletarDatos() {
   const inputEmail = document.getElementById('input-email');
 
   if (Auth.currentUser) {
+    // Bloquear visualmente pero NO deshabilitar (disabled impide enviar el valor)
+    const lockStyle = 'opacity:0.75; cursor:not-allowed; pointer-events:none; background:rgba(255,255,255,0.04);';
     if (wa && inputWA) { 
-      inputWA.value = wa; 
-      inputWA.readOnly = true; 
-      inputWA.disabled = true;
-      inputWA.style.opacity = '0.7'; 
-      inputWA.style.cursor = 'not-allowed';
+      inputWA.value    = wa; 
+      inputWA.readOnly = true;
+      inputWA.setAttribute('style', lockStyle);
     }
     if (name && inputName && name !== 'Cliente') { 
-      inputName.value = name; 
-      inputName.readOnly = true; 
-      inputName.disabled = true;
-      inputName.style.opacity = '0.7'; 
-      inputName.style.cursor = 'not-allowed';
+      inputName.value    = name; 
+      inputName.readOnly = true;
+      inputName.setAttribute('style', lockStyle);
     }
-    if (email && inputEmail) { 
-      if (email.includes('@informaticaves.app')) {
-        inputEmail.value = ''; // Vaciar si es el correo interno generado
-      } else {
-        inputEmail.value = email;
-      }
+    // El correo es siempre editable; solo lo vacíamos si es interno
+    if (inputEmail) { 
+      inputEmail.value = (email && !email.includes('@informaticaves.app')) ? email : '';
     }
   } else {
-    // Si no está logueado, liberar los campos por si acaso
-    if (inputWA) { inputWA.readOnly = false; inputWA.disabled = false; inputWA.style.opacity = '1'; inputWA.style.cursor = 'text'; }
-    if (inputName) { inputName.readOnly = false; inputName.disabled = false; inputName.style.opacity = '1'; inputName.style.cursor = 'text'; }
+    const freeStyle = '';
+    if (inputWA)   { inputWA.readOnly   = false; inputWA.removeAttribute('style'); }
+    if (inputName) { inputName.readOnly = false; inputName.removeAttribute('style'); }
   }
 }
 
@@ -325,8 +320,9 @@ async function handleSubmit(e) {
     return;
   }
 
-  const nombre      = document.getElementById('input-nombre')?.value.trim();
-  const whatsapp    = document.getElementById('input-whatsapp')?.value.trim();
+  // Leer valores del formulario; si el campo está vacío por bug de caché, usar Auth como respaldo
+  const nombre      = (document.getElementById('input-nombre')?.value.trim()   || Auth.getUserDisplayName()  || '').trim();
+  const whatsapp    = (document.getElementById('input-whatsapp')?.value.trim() || Auth.getWhatsApp()         || '').trim();
   const direccion   = document.getElementById('input-direccion')?.value.trim();
   const coordsStr   = document.getElementById('input-coords')?.value;
   const descripcion = document.getElementById('input-descripcion')?.value.trim();

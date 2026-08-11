@@ -251,6 +251,8 @@ export function forceAdmin() {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
     currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
     isAdmin = true;
+    // Iniciar notificaciones globales de inmediato (no esperar a notifyListeners)
+    try { initGlobalAdminNotifications(); } catch(e) {}
   }
 })();
 
