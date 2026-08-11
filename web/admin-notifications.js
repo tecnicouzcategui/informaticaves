@@ -17,11 +17,25 @@ let _audioCtx      = null;
 
 // ── API pública ───────────────────────────────────────────────
 
+let _snapCount = 0;
+let _addedCount = 0;
+let _modCount = 0;
+
+function _updateIndicator() {
+  const ind = document.getElementById('admin-monitor-indicator');
+  if (ind) {
+    ind.innerHTML = `🟢 Monitor (Snaps: ${_snapCount} | Ids: ${_seenIds.size} | +${_addedCount} | ~${_modCount}) <span style="text-decoration:underline;margin-left:5px;">(Probar)</span>`;
+  }
+}
+
 export function initGlobalAdminNotifications() {
   if (_unsubscribe) return; // ya está escuchando
 
   _seenIds.clear();
   _isFirstLoad = true;
+  _snapCount = 0;
+  _addedCount = 0;
+  _modCount = 0;
 
   console.log('[AdminNotif] Iniciando monitor global de solicitudes...');
 
@@ -30,6 +44,7 @@ export function initGlobalAdminNotifications() {
   const q = query(collection(db, COLS_SOLICITUDES));
 
   _unsubscribe = onSnapshot(q, snap => {
+    _snapCount++;
     if (_isFirstLoad) {
       // Registrar todas las existentes para no alertar de las viejas
       snap.docs.forEach(d => _seenIds.add(d.id));
@@ -42,18 +57,21 @@ export function initGlobalAdminNotifications() {
         ind = document.createElement('div');
         ind.id = 'admin-monitor-indicator';
         ind.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:#68d391;padding:5px 10px;border-radius:20px;font-size:0.75rem;z-index:9999;border:1px solid #68d391;cursor:pointer;';
-        ind.innerHTML = '🟢 Monitor Activo <span style="text-decoration:underline;margin-left:5px;">(Probar)</span>';
+        document.body.appendChild(ind);
         ind.onclick = () => {
           _alertar({ id: 'test', nombre: 'Prueba Local', whatsapp: '0000', urgencia: 'alta', servicio: 'Test Alerta' });
         };
-        document.body.appendChild(ind);
       }
+      _updateIndicator();
 
       console.log(`[AdminNotif] Monitor listo. Ignorando ${_seenIds.size} previas.`);
       return;
     }
 
     snap.docChanges().forEach(change => {
+      if (change.type === 'added') _addedCount++;
+      if (change.type === 'modified') _modCount++;
+      
       // Firebase a veces dispara 'modified' en lugar de 'added' en escenarios de caché/sync rápidos
       if (change.type === 'added' || change.type === 'modified') {
         const id = change.doc.id;
@@ -62,6 +80,7 @@ export function initGlobalAdminNotifications() {
         // Si no lo habíamos visto antes y no está leída, es una solicitud nueva para nosotros
         if (!_seenIds.has(id)) {
           _seenIds.add(id);
+          _updateIndicator();
           
           if (!data.leida) {
             console.log('[AdminNotif] ¡Nueva solicitud detectada por red!', data.nombre, 'Tipo:', change.type);
@@ -70,6 +89,7 @@ export function initGlobalAdminNotifications() {
         }
       }
     });
+    _updateIndicator();
   }, err => {
     console.error('[AdminNotif] Error en onSnapshot:', err.code, err.message);
     _unsubscribe = null; // permitir reintentar
