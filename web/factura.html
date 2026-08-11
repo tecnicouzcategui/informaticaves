@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura de Servicio | InformaticaVES</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #1a202c;
+      --text-muted: #718096;
+      --border: #e2e8f0;
+      --primary: #3182ce;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+    .invoice-container {
+      background: var(--surface);
+      width: 100%;
+      max-width: 800px;
+      padding: 3rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 2rem;
+      margin-bottom: 2rem;
+    }
+    .header-logo img {
+      height: 80px;
+      object-fit: contain;
+    }
+    .header-info {
+      text-align: right;
+    }
+    .header-info h1 {
+      margin: 0 0 0.5rem 0;
+      color: var(--primary);
+      font-size: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .header-info p {
+      margin: 0.2rem 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .details-col {
+      flex: 1;
+    }
+    .details-col h3 {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.5px;
+    }
+    .details-col p {
+      margin: 0.3rem 0;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+    .details-col span {
+      font-weight: 400;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+    th {
+      background: var(--bg);
+      text-align: left;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 1rem;
+    }
+    .total-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 3rem;
+    }
+    .total-box {
+      background: var(--bg);
+      padding: 1.5rem;
+      border-radius: 8px;
+      min-width: 250px;
+      text-align: right;
+    }
+    .total-box div {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .total-box .grand-total {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      border-top: 1px solid var(--border);
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+    }
+    .actions {
+      text-align: center;
+      margin-top: 2rem;
+    }
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #2b6cb0;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+      margin-left: 1rem;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+    .loader {
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      margin-top: 2rem;
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .invoice-container {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+      }
+      .actions {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loader" class="loader">Generando factura...</div>
+
+  <div id="invoice" class="invoice-container" style="display:none;">
+    <div class="header">
+      <div class="header-logo">
+        <img src="logo_oficial.png" alt="InformaticaVES Logo">
+      </div>
+      <div class="header-info">
+        <h1>Factura</h1>
+        <p><strong>INFORMATICA VES</strong></p>
+        <p>El Técnico Luis</p>
+        <p>Tel: +58 424-2964339</p>
+        <p>Email: tecnicouzcategui@gmail.com</p>
+      </div>
+    </div>
+
+    <div class="details-row">
+      <div class="details-col">
+        <h3>Facturado a:</h3>
+        <p id="inv-cliente"></p>
+        <p><span>WhatsApp:</span> <span id="inv-wa"></span></p>
+        <p><span>Dirección:</span> <span id="inv-dir"></span></p>
+      </div>
+      <div class="details-col" style="text-align:right;">
+        <h3>Detalles de Factura:</h3>
+        <p><span>Nro. Caso:</span> <span id="inv-id" style="font-family:monospace;font-weight:600;"></span></p>
+        <p><span>Fecha de emisión:</span> <span id="inv-fecha"></span></p>
+        <p><span>Estado:</span> <strong style="color:#38a169;">Pagado / Finalizado</strong></p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción del Servicio</th>
+          <th style="text-align:center;">Cant.</th>
+          <th style="text-align:right;">Precio Base</th>
+          <th style="text-align:right;">Importe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong id="inv-servicio"></strong>
+            <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.3rem;" id="inv-desc"></div>
+          </td>
+          <td style="text-align:center;">1</td>
+          <td style="text-align:right;" id="inv-precio-base"></td>
+          <td style="text-align:right;" id="inv-importe"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="total-row">
+      <div class="total-box">
+        <div>
+          <span>Subtotal:</span>
+          <span id="inv-subtotal"></span>
+        </div>
+        <div class="grand-total">
+          <span>Total:</span>
+          <span id="inv-total"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Gracias por confiar en <strong>InformaticaVES</strong>. ¡Ha sido un placer atenderle!</p>
+      <p style="font-size:0.8rem;margin-top:0.5rem;">Documento generado automáticamente tras la finalización exitosa del servicio.</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+      <button class="btn btn-secondary" onclick="window.close()">Cerrar</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from './db.js';
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    async function loadInvoice() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+      
+      if (!id) {
+        document.getElementById('loader').textContent = 'Error: ID de factura no proporcionado.';
+        return;
+      }
+
+      try {
+        const snap = await getDoc(doc(db, "solicitudes", id));
+        if (!snap.exists()) {
+          document.getElementById('loader').textContent = 'Error: No se encontró la solicitud.';
+          return;
+        }
+
+        const data = snap.data();
+        
+        // Rellenar datos
+        document.getElementById('inv-cliente').textContent = data.nombre || 'Cliente';
+        document.getElementById('inv-wa').textContent = data.whatsapp || '—';
+        document.getElementById('inv-dir').textContent = data.direccion || 'No especificada';
+        
+        document.getElementById('inv-id').textContent = id.slice(0, 8).toUpperCase();
+        
+        let fechaStr = new Date().toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (data.estadoCasoUpdatedAt) {
+          fechaStr = data.estadoCasoUpdatedAt.toDate().toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        document.getElementById('inv-fecha').textContent = fechaStr;
+        
+        document.getElementById('inv-servicio').textContent = data.servicio || 'Servicio Técnico';
+        document.getElementById('inv-desc').textContent = data.descripcion || data.detalles || 'Sin detalles adicionales';
+        
+        const precio = `$${data.precio || '0.00'}`;
+        document.getElementById('inv-precio-base').textContent = precio;
+        document.getElementById('inv-importe').textContent = precio;
+        document.getElementById('inv-subtotal').textContent = precio;
+        document.getElementById('inv-total').textContent = precio;
+
+        // Mostrar factura
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('invoice').style.display = 'block';
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loader').textContent = 'Error al cargar los datos de la factura.';
+      }
+    }
+
+    loadInvoice();
+  </script>
+</body>
+</html>

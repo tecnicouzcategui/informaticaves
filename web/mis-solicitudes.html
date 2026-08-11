@@ -307,11 +307,19 @@
   const ESTADO_IDX = { pendiente: 0, tomado: 1, en_progreso: 2, finalizado: 3 };
 
   function badgeEstado(estado) {
+    if (estado === 'cancelado_admin' || estado === 'cancelado_cliente') {
+      return `<span class="status-badge" style="background:#fed7d7;color:#9b2c2c;border:1px solid #fc8181">❌ Cancelado</span>`;
+    }
     const e = ESTADOS.find(x => x.key === estado) || ESTADOS[0];
     return `<span class="status-badge status-${estado}">${e.emoji} ${e.label}</span>`;
   }
 
   function timeline(estadoActual) {
+    if (estadoActual === 'cancelado_admin' || estadoActual === 'cancelado_cliente') {
+      return `<div style="text-align:center; padding:1.5rem 1rem; color:var(--red); font-weight:600; background:#fff5f5; border-radius:0.75rem; margin:1.5rem 0;">
+        🚫 Esta solicitud ha sido cancelada.
+      </div>`;
+    }
     const idx = ESTADO_IDX[estadoActual] ?? 0;
     let html = '';
     ESTADOS.forEach((e, i) => {

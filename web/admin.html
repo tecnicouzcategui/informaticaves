@@ -321,10 +321,13 @@
         <button class="btn btn-sm" style="background:#2d3748;color:#63b3ed;border:1px solid #63b3ed" onclick="cambiarEstado('tomado')">📋 Tomar Caso</button>
         <button class="btn btn-sm" style="background:#2d3748;color:#ed8936;border:1px solid #ed8936" onclick="cambiarEstado('en_progreso')">▶️ En Progreso</button>
         <button class="btn btn-sm" style="background:#2d3748;color:#68d391;border:1px solid #68d391" onclick="cambiarEstado('finalizado')">✅ Finalizado</button>
+        <button class="btn btn-sm" style="background:#2d3748;color:#fc8181;border:1px solid #fc8181" onclick="cambiarEstado('cancelado_admin')">❌ Cancelar (Admin)</button>
+        <button class="btn btn-sm" style="background:#2d3748;color:#a0aec0;border:1px solid #a0aec0" onclick="cambiarEstado('cancelado_cliente')">🚫 Cancelar (Cliente)</button>
       </div>
     </div>
 
-    <div class="flex mt-2" style="gap:0.75rem;margin-top:1rem">
+    <div class="flex mt-2" style="gap:0.75rem;margin-top:1rem;justify-content:space-between">
+      <a href="#" id="btn-factura" class="btn btn-secondary hidden" target="_blank" style="background:var(--green); color:white; border-color:var(--green);">📄 Generar Factura</a>
       <button class="btn btn-secondary w-full" onclick="closeDetalleSolicitud()">Cerrar</button>
     </div>
   </div>

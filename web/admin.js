@@ -383,10 +383,12 @@ async function cargarSolicitudes() {
 
     const estadoChip = (e) => {
       const map = {
-        pendiente:   { cls: 'estado-pendiente',  lbl: '🟡 Pendiente' },
-        tomado:      { cls: 'estado-tomado',      lbl: '📋 Tomado' },
-        en_progreso: { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
-        finalizado:  { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
+        pendiente:         { cls: 'estado-pendiente',  lbl: '🟡 Pendiente' },
+        tomado:            { cls: 'estado-tomado',      lbl: '📋 Tomado' },
+        en_progreso:       { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
+        finalizado:        { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
+        cancelado_admin:   { cls: 'estado-cancelado',   lbl: '❌ Cancelado (Admin)' },
+        cancelado_cliente: { cls: 'estado-cancelado',   lbl: '🚫 Cancelado (Cliente)' },
       };
       const s = map[e] || map['pendiente'];
       return `<span class="estado-chip ${s.cls}">${s.lbl}</span>`;
@@ -424,8 +426,8 @@ window.marcarLeida = async function(id) {
   } catch (err) { showToast(`❌ Error: ${err.message}`, 'error'); }
 };
 
+
 function playNotificationSound() {
-  // Simple short beep using Web Audio API
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const ctx = new AudioContext();
@@ -436,14 +438,12 @@ function playNotificationSound() {
     gain.connect(ctx.destination);
     
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
     gain.gain.setValueAtTime(0.1, ctx.currentTime);
     
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.15); // 150ms beep
-  } catch (e) {
-    console.warn('Audio no soportado o bloqueado');
-  }
+    osc.stop(ctx.currentTime + 0.15);
+  } catch (e) {}
 }
 
 let currentDetalleSolicitudId = null;
@@ -451,6 +451,8 @@ let currentDetalleSolicitudId = null;
 window.verDetalles = function(id) {
   const s = solicitudesList.find(x => x.id === id);
   if (!s) return;
+
+  if (!s.leida) window.marcarLeida(id);
 
   currentDetalleSolicitudId = id;
   const modal = document.getElementById('modal-detalle-solicitud');
@@ -463,10 +465,12 @@ window.verDetalles = function(id) {
     : '<span style="color:var(--text-dim)">Sin ubicación GPS</span>';
 
   const estadoMap = {
-    pendiente:   '🟡 Pendiente',
-    tomado:      '📋 Tomado por el Técnico',
-    en_progreso: '▶️ En Progreso',
-    finalizado:  '✅ Finalizado',
+    pendiente:         '🟡 Pendiente',
+    tomado:            '📋 Tomado por el Técnico',
+    en_progreso:       '▶️ En Progreso',
+    finalizado:        '✅ Finalizado',
+    cancelado_admin:   '❌ Cancelado (Admin)',
+    cancelado_cliente: '🚫 Cancelado (Cliente)',
   };
   const estadoLabel = estadoMap[s.estadoCaso || 'pendiente'] || '🟡 Pendiente';
 
@@ -480,8 +484,16 @@ window.verDetalles = function(id) {
     <p><strong>Mapa:</strong> ${mapaLink}</p>
     <p><strong>Fecha:</strong> ${fecha}</p>
     <hr style="border:0;border-top:1px solid var(--border);margin:1rem 0">
-    <p><strong>Detalles adicionales:</strong><br>${s.detalles || 'Sin detalles'}</p>
+    <p><strong>Detalles adicionales:</strong><br>${s.detalles || s.descripcion || 'Sin detalles'}</p>
   `;
+
+  const btnFactura = document.getElementById('btn-factura');
+  if (s.estadoCaso === 'finalizado') {
+    btnFactura.classList.remove('hidden');
+    btnFactura.href = `factura.html?id=${id}`;
+  } else {
+    btnFactura.classList.add('hidden');
+  }
 
   modal.classList.add('open');
 };
@@ -489,17 +501,25 @@ window.verDetalles = function(id) {
 window.cambiarEstado = async function(nuevoEstado) {
   if (!currentDetalleSolicitudId) return;
   try {
-    await actualizarEstadoCaso(currentDetalleSolicitudId, nuevoEstado);
+    await updateDoc(doc(db, COLS.solicitudes, currentDetalleSolicitudId), {
+      estadoCaso: nuevoEstado,
+      estadoCasoUpdatedAt: new Date()
+    });
+    
     const estadoMap = {
-      pendiente:   '🟡 Pendiente',
-      tomado:      '📋 Tomado',
-      en_progreso: '▶️ En Progreso',
-      finalizado:  '✅ Finalizado',
+      pendiente:         '🟡 Pendiente',
+      tomado:            '📋 Tomado',
+      en_progreso:       '▶️ En Progreso',
+      finalizado:        '✅ Finalizado',
+      cancelado_admin:   '❌ Cancelado (Admin)',
+      cancelado_cliente: '🚫 Cancelado (Cliente)',
     };
     showToast(`Estado cambiado a: ${estadoMap[nuevoEstado]}`, 'success');
+    
     // Update the local list
     const idx = solicitudesList.findIndex(x => x.id === currentDetalleSolicitudId);
     if (idx >= 0) solicitudesList[idx].estadoCaso = nuevoEstado;
+    
     // Re-render content in modal
     verDetalles(currentDetalleSolicitudId);
   } catch (err) {
