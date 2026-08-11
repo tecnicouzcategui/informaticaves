@@ -10,6 +10,22 @@ import { db, collection, query, orderBy, onSnapshot } from './firebase.js';
 const COLS_SOLICITUDES = 'ives_solicitudes';
 const NOTIF_CHANNEL_ID = 'ives_solicitudes_high';
 
+// INTERCEPTOR GLOBAL DE ERRORES PARA DEPURACIÓN EXTREMA
+const _errorDiv = document.createElement('div');
+_errorDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:99999;padding:10px;font-size:12px;display:none;max-height:200px;overflow:auto;pointer-events:none;';
+document.body.appendChild(_errorDiv);
+function _logErr(msg) {
+  _errorDiv.style.display = 'block';
+  _errorDiv.innerHTML += msg + '<br>';
+}
+window.addEventListener('error', e => _logErr(`Error: ${e.message} at ${e.filename}:${e.lineno}`));
+window.addEventListener('unhandledrejection', e => _logErr(`Promise: ${e.reason}`));
+const _origErr = console.error;
+console.error = function(...args) {
+  _logErr('Console: ' + args.join(' '));
+  _origErr.apply(console, args);
+};
+
 let _unsubscribe   = null;
 let _seenIds       = new Set();
 let _isFirstLoad   = true;

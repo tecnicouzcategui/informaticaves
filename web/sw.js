@@ -1,7 +1,7 @@
 // ============================================================
 // sw.js — Service Worker PWA (Network-first strategy)
 // ============================================================
-const CACHE_NAME = 'ives-cache-v11';
+const CACHE_NAME = 'ives-cache-v12';
 const ASSETS = [
   '/',
   '/index.html',
