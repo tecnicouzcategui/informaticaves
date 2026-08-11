@@ -458,6 +458,11 @@ function playNotificationSound() {
     if (!AudioContext) return;
     const ctx = new AudioContext();
     
+    // Forzar que el contexto despierte si estaba suspendido (por estar en segundo plano)
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(e => console.warn('[Sound] No se pudo reanudar AudioContext:', e));
+    }
+    
     const numChimes = 5;
     const chimeDuration = 0.5; // 500ms por campanada
     
