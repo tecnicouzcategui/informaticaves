@@ -374,7 +374,7 @@
 <script type="module">
   // Service Worker — ruta relativa para funcionar tanto en web como en APK
   if ('serviceWorker' in navigator) {
-    const swPath = window.Capacitor ? 'sw.js' : '/sw.js';
+    const swPath = './sw.js';  // relativo: funciona en GitHub Pages y en APK
     navigator.serviceWorker.register(swPath).catch(console.warn);
   }
 
