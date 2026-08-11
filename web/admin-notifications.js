@@ -36,6 +36,20 @@ export function initGlobalAdminNotifications() {
       snap.docs.forEach(d => _seenIds.add(d.id));
       _isFirstLoad = false;
       _pedirPermiso();
+      
+      // Mostrar indicador visual persistente de que el monitor está activo
+      let ind = document.getElementById('admin-monitor-indicator');
+      if (!ind) {
+        ind = document.createElement('div');
+        ind.id = 'admin-monitor-indicator';
+        ind.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:#68d391;padding:5px 10px;border-radius:20px;font-size:0.75rem;z-index:9999;border:1px solid #68d391;cursor:pointer;';
+        ind.innerHTML = '🟢 Monitor Activo <span style="text-decoration:underline;margin-left:5px;">(Probar)</span>';
+        ind.onclick = () => {
+          _alertar({ id: 'test', nombre: 'Prueba Local', whatsapp: '0000', urgencia: 'alta', servicio: 'Test Alerta' });
+        };
+        document.body.appendChild(ind);
+      }
+
       console.log(`[AdminNotif] Monitor listo. Ignorando ${_seenIds.size} previas.`);
       return;
     }
