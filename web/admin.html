@@ -480,8 +480,8 @@
   });
 
   document.getElementById('btn-force-admin')?.addEventListener('click', forceAdmin);
-  document.getElementById('btn-logout-admin')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
-  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) logout(); });
+  document.getElementById('btn-logout-admin')?.addEventListener('click', () => logout());
+  // El avatar ahora es manejado por auth.js (openProfileDropdown)
 
   // Actualizar bienvenida
   onAuthChange((user, isAdmin) => {

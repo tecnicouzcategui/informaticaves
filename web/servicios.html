@@ -114,7 +114,7 @@
 
   // ── Auth UI ──
   document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
-  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) Auth.logout(); });
+  // El avatar ahora es manejado por auth.js (openProfileDropdown)
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {
     const num = document.getElementById('input-wa-numero')?.value.trim();
     if (num) Auth.saveWhatsApp(num);

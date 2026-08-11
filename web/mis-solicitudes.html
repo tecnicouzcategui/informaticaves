@@ -271,7 +271,7 @@
 
   // ── Auth UI ──────────────────────────────────────────
   document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
-  document.getElementById('user-avatar')?.addEventListener('click', () => { if (confirm('¿Cerrar sesión?')) Auth.logout(); });
+  // El avatar ahora es manejado por auth.js (openProfileDropdown)
 
   onAuthChange(user => {
     const navAdmin = document.getElementById('nav-admin');
