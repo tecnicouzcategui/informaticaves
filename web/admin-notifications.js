@@ -109,6 +109,13 @@ export function initGlobalAdminNotifications() {
   }, err => {
     console.error('[AdminNotif] Error en onSnapshot:', err.code, err.message);
     _unsubscribe = null; // permitir reintentar
+    
+    // Si falló por permisos, probablemente Auth aún está cargando.
+    // Reintentar en 3 segundos automáticamente.
+    setTimeout(() => {
+      console.log('[AdminNotif] Reintentando conexión al monitor...');
+      initGlobalAdminNotifications();
+    }, 3000);
   });
 }
 

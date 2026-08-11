@@ -251,8 +251,9 @@ export function forceAdmin() {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
     currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
     isAdmin = true;
-    // Iniciar notificaciones globales de inmediato (no esperar a notifyListeners)
-    try { initGlobalAdminNotifications(); } catch(e) {}
+    // IMPORTANTE: NO iniciar notificaciones aquí porque Firebase Auth aún no ha cargado el token,
+    // lo que causará que Firestore rechace la consulta por permisos y mate el listener permanentemente.
+    // Se iniciará en onAuthStateChanged.
   }
 })();
 
