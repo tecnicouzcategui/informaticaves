@@ -214,7 +214,7 @@
     <p style="color:var(--text-dim);font-size:0.9rem;">Consulta el estado de tus solicitudes en tiempo real</p>
   </div>
 
-  <!-- Buscar por WhatsApp -->
+  <!-- Buscar por WhatsApp (solo para usuarios no logueados) -->
   <div class="search-card" id="search-section">
     <h2>🔍 Buscar solicitudes</h2>
     <p>Ingresa el número de WhatsApp con el que enviaste la solicitud</p>
@@ -278,6 +278,7 @@
     const badge    = document.getElementById('admin-badge');
     const avatar   = document.getElementById('user-avatar');
     const btnLogin = document.getElementById('btn-login');
+    const searchSection = document.getElementById('search-section');
     if (user) {
       btnLogin?.classList.add('hidden');
       avatar?.classList.remove('hidden');
@@ -287,15 +288,22 @@
         navAdmin?.classList.remove('hidden');
         badge?.classList.remove('hidden');
       }
-      // Auto-rellenar WhatsApp si está guardado
+      // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
       const wa = Auth.getWhatsApp();
       if (wa) {
+        if (searchSection) searchSection.style.display = 'none';
         const inputWa = document.getElementById('input-buscar-wa');
         if (inputWa) inputWa.value = wa;
+        // Esperar un tick para que buscarSolicitudes esté definida
+        setTimeout(() => buscarSolicitudes(), 0);
+      } else {
+        // No tiene WhatsApp en Auth → mostrar buscador
+        if (searchSection) searchSection.style.display = '';
       }
     } else {
       btnLogin?.classList.remove('hidden');
       avatar?.classList.add('hidden');
+      if (searchSection) searchSection.style.display = '';
     }
   });
 
