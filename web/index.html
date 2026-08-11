@@ -23,9 +23,25 @@
 <!-- ── Navbar ─────────────────────────────────────────────── -->
 <nav class="navbar">
   <div class="nav-inner">
-    <a href="index.html" class="nav-logo" style="text-decoration:none;">
+    <a href="index.html" class="nav-logo" id="secret-admin-trigger" style="text-decoration:none;">
       <img src="logo_oficial.png" alt="InformaticaVES" style="height:110px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">
     </a>
+    <script>
+      let _tapCount = 0;
+      let _tapTimer = null;
+      document.getElementById('secret-admin-trigger').addEventListener('click', (e) => {
+        e.preventDefault(); 
+        _tapCount++;
+        if (_tapCount >= 3) {
+          window.location.href = 'admin.html';
+        }
+        clearTimeout(_tapTimer);
+        _tapTimer = setTimeout(() => {
+          if (_tapCount < 3) window.location.href = 'index.html';
+          _tapCount = 0;
+        }, 500);
+      });
+    </script>
     <ul class="nav-links">
       <li><a href="index.html" class="active">Inicio</a></li>
       <li><a href="servicios.html">Servicios</a></li>
