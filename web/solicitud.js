@@ -266,6 +266,17 @@ async function handleSubmit(e) {
     return;
   }
 
+  if (!currentUser) {
+    showToast('⚠️ Debes iniciar sesión o registrarte para solicitar el servicio', 'error');
+    const { openAuthModal } = await import('./auth.js');
+    if (openAuthModal) {
+      openAuthModal();
+    } else {
+      document.getElementById('btn-login')?.click();
+    }
+    return;
+  }
+
   const nombre      = document.getElementById('input-nombre')?.value.trim();
   const whatsapp    = document.getElementById('input-whatsapp')?.value.trim();
   const direccion   = document.getElementById('input-direccion')?.value.trim();
