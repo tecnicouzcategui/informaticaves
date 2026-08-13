@@ -317,7 +317,9 @@ export function forceAdmin() {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
     currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
     isAdmin = true;
-    // IMPORTANTE: NO iniciar notificaciones aquí porque Firebase Auth aún no ha cargado el token,
+  }
+})();
+
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
