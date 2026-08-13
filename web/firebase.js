@@ -137,6 +137,31 @@ export async function getClienteByWA(wa) {
   return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
 
+/** Convierte texto a hash SHA-256 (nativo del navegador, sin dependencias) */
+export async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Busca cliente por WA + hash de contraseña (login sin Firebase Auth) */
+export async function loginClienteByHash(wa, hash) {
+  const q = query(collection(db, COLS.clientes), where('whatsapp', '==', wa), where('passwordHash', '==', hash));
+  const snap = await getDocs(q);
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+}
+
+/** Admin: restablece la contraseña guardando el nuevo hash en Firestore */
+export async function setClientePasswordHash(wa, hash) {
+  const q = query(collection(db, COLS.clientes), where('whatsapp', '==', wa));
+  const snap = await getDocs(q);
+  if (snap.empty) return false;
+  await updateDoc(doc(db, COLS.clientes, snap.docs[0].id), {
+    passwordHash: hash,
+    updatedAt: serverTimestamp()
+  });
+  return true;
+}
+
 /** Obtiene FAQs publicadas */
 export async function getFAQsPublicadas() {
   const q = query(

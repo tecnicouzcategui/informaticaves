@@ -670,8 +670,7 @@ window.adminGuardarFAQ = async function() {
   }
 };
 
-window.gestionarClave = function(wa) {
-  const email = `${wa}@informaticaves.app`;
+window.gestionarClave = async function(wa) {
   const tempPass = 'IVES-' + Math.floor(1000 + Math.random() * 9000);
   
   let modal = document.getElementById('modal-gestionar-clave');
@@ -681,28 +680,70 @@ window.gestionarClave = function(wa) {
     modal.className = 'modal-backdrop';
     document.body.appendChild(modal);
   }
-  
-  const fbConsoleUrl = 'https://console.firebase.google.com/';
-  const waLink = `https://wa.me/58${wa.substring(wa.length > 10 ? wa.length - 10 : 0)}?text=${encodeURIComponent(`¡Hola! Hemos restablecido tu acceso a InformaticaVES.\n\nTu nueva contraseña temporal es: *${tempPass}*\n\nRecuerda que puedes cambiarla desde la sección Mis Solicitudes.`)}`;
 
+  // Mostrar estado de carga
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:500px;text-align:left">
-      <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
-      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem">🔑 Resetear Clave de Cliente</h2>
-      
-      <div style="background:rgba(99,179,237,0.1);border:1px solid var(--blue);padding:1rem;border-radius:8px;margin-bottom:1.5rem">
-        <p style="font-size:0.9rem;margin-bottom:0.5rem">Sigue estos 3 pasos rápidos:</p>
-        <ol style="font-size:0.9rem;color:var(--text);margin-left:1.2rem;line-height:1.6">
-          <li>Copia este correo falso: <br><strong style="color:var(--green);user-select:all">${email}</strong></li>
-          <li>Abre la <a href="${fbConsoleUrl}" target="_blank" style="color:var(--blue);text-decoration:underline">Consola de Firebase (Authentication)</a>, busca el correo, dale a "Cambiar contraseña" y pega esta clave temporal: <br><strong style="color:var(--green);user-select:all">${tempPass}</strong></li>
-          <li>¡Listo! Haz clic en el botón de abajo para enviarle la nueva clave al cliente por WhatsApp.</li>
-        </ol>
-      </div>
-
-      <a href="${waLink}" target="_blank" class="btn btn-primary w-full" style="background:#25D366;border:none;display:block;text-align:center;text-decoration:none">💬 Enviar Nueva Clave por WhatsApp</a>
+    <div class="modal-box" style="max-width:420px;text-align:center;padding:2rem">
+      <span class="spinner"></span>
+      <p style="margin-top:1rem;color:var(--text-muted)">Generando nueva clave…</p>
     </div>
   `;
   modal.classList.add('open');
+
+  try {
+    // Calcular hash SHA-256 del password temporal
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tempPass));
+    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+
+    // Guardar hash en Firestore directamente (NO requiere Firebase Console)
+    const { db, collection, query, where, getDocs, doc, updateDoc, serverTimestamp } = await import('./firebase.js');
+    const CLIENTES = 'clientes';
+    const q = query(collection(db, CLIENTES), where('whatsapp', '==', wa));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      await updateDoc(doc(db, CLIENTES, snap.docs[0].id), {
+        passwordHash: hash,
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    // Número limpio para WhatsApp (58 + últimos 10 dígitos)
+    const waNum = '58' + wa.replace(/\D/g,'').slice(-10);
+    const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(
+      `¡Hola! Hemos restablecido tu acceso a *InformaticaVES*.\n\n🔑 Tu nueva contraseña temporal es:\n\n*${tempPass}*\n\nPuedes cambiarla luego desde la sección Mis Solicitudes. ¡Saludos!`
+    )}`;
+
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width:420px;text-align:center">
+        <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
+        
+        <div style="font-size:2.5rem;margin-bottom:0.5rem">✅</div>
+        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.5rem">Clave restablecida automáticamente</h2>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">
+          El sistema ya actualizó la clave del cliente en la base de datos.<br>Solo envíale el mensaje por WhatsApp.
+        </p>
+
+        <div style="background:rgba(99,179,237,0.1);border:1px solid var(--blue);border-radius:8px;padding:1rem;margin-bottom:1.5rem">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.25rem">Nueva clave temporal</p>
+          <p style="font-size:1.6rem;font-weight:800;letter-spacing:0.15em;color:var(--green)">${tempPass}</p>
+        </div>
+
+        <a href="${waLink}" target="_blank" 
+           class="btn btn-primary w-full" 
+           style="background:#25D366;border:none;display:block;text-align:center;text-decoration:none;font-size:1rem;padding:0.85rem"
+           onclick="setTimeout(()=>document.getElementById('modal-gestionar-clave').classList.remove('open'),500)">
+          💬 Enviar por WhatsApp
+        </a>
+      </div>
+    `;
+  } catch(err) {
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width:420px;text-align:center">
+        <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
+        <p style="color:var(--red)">❌ Error al restablecer: ${err.message}</p>
+      </div>
+    `;
+  }
 };
 
 // ════════════════════════════════════════════════════════════

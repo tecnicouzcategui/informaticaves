@@ -9,6 +9,7 @@ import {
   createUserWithEmailAndPassword,
   signOut, onAuthStateChanged,
   guardarCliente, getCliente, getClienteByWA,
+  sha256, loginClienteByHash, setClientePasswordHash,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
 
@@ -165,38 +166,66 @@ export function openAuthModal() {
 
       try {
         if (isRegistering) {
+          // ── REGISTRO: crear cuenta Firebase Auth + guardar hash en Firestore
           const nombre = document.getElementById('auth-nombre').value.trim();
           if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+          const hash = await sha256(pass);
           const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
           await guardarCliente(res.user.uid, {
             uid: res.user.uid,
             email: fakeEmail,
             nombre: nombre,
-            whatsapp: wa
+            whatsapp: wa,
+            passwordHash: hash   // ← guardamos el hash para futuros resets
           });
           showToast('✅ Cuenta creada exitosamente', 'success');
           modal.classList.remove('open');
         } else {
-          // PASO 1: Verificar en Firestore si el número ya existe (evita mensajes contradictorios)
+          // ── LOGIN: Verificar si el número existe en Firestore
           const clienteExistente = await getClienteByWA(wa);
 
-          if (clienteExistente) {
-            // El número SÍ está registrado → intentar login. Si falla = contraseña incorrecta.
-            try {
-              await signInWithEmailAndPassword(auth, fakeEmail, pass);
-              showToast('✅ Sesión iniciada', 'success');
-              modal.classList.remove('open');
-            } catch (e) {
-              showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Ingresar';
-            }
-          } else {
-            // El número NO está registrado → mostrar formulario de registro
+          if (!clienteExistente) {
+            // Número NUEVO → mostrar formulario de registro
             document.getElementById('auth-register-fields').style.display = 'block';
             submitBtn.textContent = 'Crear Cuenta Nueva';
             submitBtn.disabled = false;
             showToast('Número nuevo. Por favor completa tu registro.', 'info');
+            return;
+          }
+
+          // PASO 1: ¿El admin le reseteó la clave? → verificar por hash en Firestore
+          const hash = await sha256(pass);
+          const loginPorHash = await loginClienteByHash(wa, hash);
+
+          if (loginPorHash) {
+            // Hash de Firestore coincide → autenticado. Ahora sincronizar con Firebase Auth.
+            try {
+              await signInWithEmailAndPassword(auth, fakeEmail, pass);
+            } catch (e) {
+              // Si Firebase Auth tiene otra clave (cuenta antigua), recrearla con la nueva clave
+              // Usamos sign-in con email+link no disponible, así que usamos signInAnonymously
+              // como sesión temporal para mantener acceso a Firestore
+              const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js');
+              await signInAnonymously(auth);
+              // Guardamos identidad real en localStorage (el UID anónimo se usa para Firestore)
+              localStorage.setItem('ives_rescued_wa', wa);
+            }
+            showToast('✅ Sesión iniciada', 'success');
+            modal.classList.remove('open');
+            return;
+          }
+
+          // PASO 2: Login normal con Firebase Auth (usuarios existentes o sin hash)
+          try {
+            await signInWithEmailAndPassword(auth, fakeEmail, pass);
+            // Éxito: guardar hash para futuras recuperaciones (migración progresiva)
+            await setClientePasswordHash(wa, hash);
+            showToast('✅ Sesión iniciada', 'success');
+            modal.classList.remove('open');
+          } catch (e) {
+            showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Ingresar';
           }
         }
       } catch (err) {
