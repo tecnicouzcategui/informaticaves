@@ -212,7 +212,7 @@
     <div style="font-size:2.5rem;margin-bottom:0.5rem;">📋</div>
     <h1 style="font-size:1.6rem;font-weight:800;color:var(--text);margin-bottom:0.4rem;">Mis Solicitudes</h1>
     <p style="color:var(--text-dim);font-size:0.9rem;">Consulta el estado de tus solicitudes en tiempo real</p>
-    <button id="btn-cambiar-pass" class="btn btn-sm hidden" style="background:var(--blue); color:white; border:none; margin-top:1rem;">🔑 Cambiar Contraseña</button>
+    <button id="btn-cambiar-pass" class="btn btn-sm" style="background:var(--blue); color:white; border:none; margin-top:1rem; display:none;">🔑 Cambiar Contraseña</button>
   </div>
 
   <!-- Buscar por WhatsApp (solo para usuarios no logueados) -->
@@ -305,15 +305,15 @@
     if (user) {
       btnLogin?.classList.add('hidden');
       avatar?.classList.remove('hidden');
-      if (btnCambiarPassGlobal) btnCambiarPassGlobal.classList.remove('hidden');
       const nombre = Auth.userNombre || user.displayName || user.email || 'U';
       avatar.textContent = nombre.charAt(0).toUpperCase();
       if (Auth.isAdmin) {
         navAdmin?.classList.remove('hidden');
         badge?.classList.remove('hidden');
-        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'none'; // Admin no usa este botón
+        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'none';
       } else {
-        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'block';
+        // Cliente normal: mostrar botón cambiar contraseña
+        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'inline-block';
       }
       // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
       const wa = Auth.getWhatsApp();
@@ -383,29 +383,24 @@
     return num.replace(/\s|-|\(|\)/g, '');
   }
 
-  // Modal Cambiar Contraseña
-  const btnCambiarPass = document.getElementById('btn-cambiar-pass');
-  const modalCp = document.getElementById('modal-cambiar-pass');
-  const btnGuardarCp = document.getElementById('btn-guardar-cp');
-  const errCp = document.getElementById('cp-error');
-  
-  if (btnCambiarPass) {
-    btnCambiarPass.addEventListener('click', () => {
-      document.getElementById('cp-nueva').value = '';
-      document.getElementById('cp-conf').value = '';
-      errCp.style.display = 'none';
-      modalCp.classList.add('open');   // ← correcto: agregar 'open' no quitar 'hidden'
-    });
-  }
+  // Modal Cambiar Contraseña — listener directo sin condiciones
+  document.getElementById('btn-cambiar-pass').onclick = () => {
+    document.getElementById('cp-nueva').value = '';
+    document.getElementById('cp-conf').value = '';
+    document.getElementById('cp-error').style.display = 'none';
+    document.getElementById('modal-cambiar-pass').classList.add('open');
+  };
 
-  if (btnGuardarCp) {
-    btnGuardarCp.addEventListener('click', async () => {
-      const p1 = document.getElementById('cp-nueva').value;
-      const p2 = document.getElementById('cp-conf').value;
-      
-      const hasLetters = (p1.match(/[a-zA-Z]/g) || []).length >= 4;
-      const hasUpper = (p1.match(/[A-Z]/g) || []).length >= 1;
-      const hasNumbers = (p1.match(/[0-9]/g) || []).length >= 4;
+  document.getElementById('btn-guardar-cp').addEventListener('click', async () => {
+    const p1 = document.getElementById('cp-nueva').value;
+    const p2 = document.getElementById('cp-conf').value;
+    const errCp = document.getElementById('cp-error');
+    const btnGuardarCp = document.getElementById('btn-guardar-cp');
+    const modalCp = document.getElementById('modal-cambiar-pass');
+    
+    const hasLetters = (p1.match(/[a-zA-Z]/g) || []).length >= 4;
+    const hasUpper = (p1.match(/[A-Z]/g) || []).length >= 1;
+    const hasNumbers = (p1.match(/[0-9]/g) || []).length >= 4;
 
       if (!hasLetters || !hasUpper || !hasNumbers) {
         errCp.textContent = 'La contraseña debe tener mínimo 4 letras, 1 mayúscula y 4 números.';
@@ -451,8 +446,7 @@
         btnGuardarCp.disabled = false;
         btnGuardarCp.textContent = 'Guardar Contraseña';
       }
-    });
-  }
+  });
 
   async function buscarSolicitudes() {
     const wa = normalizeWA(document.getElementById('input-buscar-wa').value.trim());
