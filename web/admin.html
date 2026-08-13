@@ -23,9 +23,9 @@
     <ul class="nav-links">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="servicios.html">Servicios</a></li>
-      <li><a href="solicitud.html" id="nav-solicitar">Solicitar</a></li>
-      <li><a href="mis-solicitudes.html" id="nav-mis-solicitudes">Mis Solicitudes</a></li>
-      <li><a href="admin.html" id="nav-admin" class="active">Administrador</a></li>
+      <li><a href="solicitud.html">Solicitar</a></li>
+      <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
+      <li><a href="admin.html" class="active">Administrador</a></li>
     </ul>
     <div class="nav-actions">
       <span class="admin-badge" id="admin-badge">Administrador</span>
@@ -430,26 +430,33 @@
     btnLogin.disabled = true;
     btnLogin.textContent = 'Verificando...';
 
-    // Solo autenticación local SHA-256, sin Firebase
-    if (email === 'tecnicouzcategui@gmail.com' && await checkLocalPass(pass)) {
-      // Actualizar navbar manualmente
-      const btnLoginNav = document.getElementById('btn-login');
-      if (btnLoginNav) btnLoginNav.classList.add('hidden');
-      const avatar = document.getElementById('user-avatar');
-      if (avatar) {
-        avatar.classList.remove('hidden');
-        avatar.textContent = 'A';
-        avatar.title = email;
+    try {
+      // MÉTODO 1: Firebase Auth real (fuente de verdad)
+      if (email === 'tecnicouzcategui@gmail.com') {
+        try {
+          await loginEmail(email, pass);
+          // Éxito Firebase → guardar hash local como cache y activar admin
+          const newHash = await sha256(pass);
+          localStorage.setItem(PASS_KEY, newHash);
+          forceAdmin();
+          return;
+        } catch (fbErr) {
+          // Firebase falló → intentar con hash local como fallback offline
+          if (await checkLocalPass(pass)) {
+            forceAdmin();
+            return;
+          }
+          // Ambos fallaron
+          errorEl.textContent = fbErr.message || 'Correo o contraseña incorrectos.';
+          return;
+        }
       }
-      const welcome = document.getElementById('admin-welcome');
-      if (welcome) welcome.textContent = `Bienvenido, ${email}`;
-      forceAdmin();
-      return;
+    } finally {
+      btnLogin.disabled = false;
+      btnLogin.textContent = '→ Entrar al panel';
     }
 
     errorEl.textContent = 'Correo o contraseña incorrectos.';
-    btnLogin.disabled = false;
-    btnLogin.textContent = '→ Entrar al panel';
   });
 
   // ── En APK Capacitor: restaurar sesión automáticamente si ya hay hash guardado

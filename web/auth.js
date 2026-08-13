@@ -25,9 +25,19 @@ export let userNombre   = null;
 
 // ── Callbacks registrados ────────────────────────────────────
 const authListeners = [];
-export function onAuthChange(fn) { authListeners.push(fn); }
-function notifyListeners() { 
-  authListeners.forEach(fn => fn(currentUser, isAdmin)); 
+let _authResolved = false;
+
+export function onAuthChange(fn) {
+  authListeners.push(fn);
+  // Si el estado ya fue resuelto, disparar inmediatamente con el estado actual
+  if (_authResolved) {
+    try { fn(currentUser, isAdmin); } catch(e) { console.error(e); }
+  }
+}
+
+function notifyListeners() {
+  _authResolved = true;
+  authListeners.forEach(fn => { try { fn(currentUser, isAdmin); } catch(e) { console.error(e); } });
 }
 
 // ── Auth Modal Custom ─────────────────────────────────────────
@@ -310,6 +320,7 @@ export function forceAdmin() {
   currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
   isAdmin = true;
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+  updateNavUI();
   notifyListeners();
 }
 
@@ -335,6 +346,11 @@ onAuthStateChanged(auth, async user => {
   isAdmin      = user?.email === ADMIN_EMAIL;
   userWhatsApp = null;
   userNombre   = null;
+
+  // Si Firebase Auth autenticó al admin, persistir la sesión local también
+  if (isAdmin && user) {
+    localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+  }
 
   if (user) {
     try {
