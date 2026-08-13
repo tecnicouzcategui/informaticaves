@@ -68,6 +68,11 @@ export function openAuthModal() {
         </div>
         
         <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.5rem;">Ingresar</button>
+        <a id="auth-forgot-pass" style="color:var(--blue); font-size:0.85rem; cursor:pointer; display:block; text-align:center; margin-top:1rem; text-decoration:underline;">¿Olvidaste tu contraseña?</a>
+        <div id="auth-forgot-panel" style="display:none; background:rgba(99,179,237,0.1); border:1px solid var(--blue); padding:1rem; border-radius:8px; margin-top:1rem; text-align:center;">
+          <p style="font-size:0.85rem; color:var(--text); margin-bottom:0.75rem;">Se abrirá tu WhatsApp para solicitar a Soporte el reinicio de tu clave.</p>
+          <button id="auth-btn-recover" class="btn btn-sm" style="background:#25D366; color:white; border:none; width:100%;">💬 Recuperar por WhatsApp</button>
+        </div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -82,6 +87,27 @@ export function openAuthModal() {
     const dotUpper = document.getElementById('dot-upper');
     const dotNumbers = document.getElementById('dot-numbers');
     
+    // Forgot Password Logic
+    const forgotPassLink = document.getElementById('auth-forgot-pass');
+    const forgotPanel = document.getElementById('auth-forgot-panel');
+    const recoverBtn = document.getElementById('auth-btn-recover');
+
+    forgotPassLink.addEventListener('click', () => {
+      forgotPanel.style.display = forgotPanel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    recoverBtn.addEventListener('click', () => {
+      const wa = waInput.value.trim().replace(/[^\d]/g, '');
+      if (!wa || wa.length < 10) {
+        authMsg.innerHTML = '<span style="color:var(--red)">Por favor, ingresa tu número de WhatsApp válido arriba primero.</span>';
+        return;
+      }
+      const adminWa = '584167474753'; // Admin's WhatsApp (we can hardcode or rely on the same config)
+      const text = `Hola Soporte IVES, soy el usuario ${wa} y he olvidado mi contraseña. Solicito un reinicio de clave.`;
+      window.open(`https://wa.me/${adminWa}?text=${encodeURIComponent(text)}`, '_blank');
+      authMsg.innerHTML = '<span style="color:var(--green)">Se abrió WhatsApp. Envía el mensaje para recibir tu nueva clave.</span>';
+    });
+
     // Toggle Password Visibility
     toggleBtn.addEventListener('click', () => {
       if (passInput.type === 'password') {
@@ -194,6 +220,7 @@ export function openAuthModal() {
   document.getElementById('dot-letters').style.background = 'var(--red)';
   document.getElementById('dot-upper').style.background = 'var(--red)';
   document.getElementById('dot-numbers').style.background = 'var(--red)';
+  document.getElementById('auth-forgot-panel').style.display = 'none';
 
   modal.classList.add('open');
 }
@@ -213,6 +240,13 @@ export async function loginEmail(email, password) {
     };
     throw new Error(msgs[err.code] || err.message);
   }
+}
+
+// ── Cambio de contraseña (Cliente) ───────────────────────────
+export async function changeUserPassword(newPass) {
+  if (!auth.currentUser) throw new Error('No hay usuario activo');
+  const { updatePassword } = await import('./firebase.js');
+  await updatePassword(auth.currentUser, newPass);
 }
 
 // ── Logout ───────────────────────────────────────────────────

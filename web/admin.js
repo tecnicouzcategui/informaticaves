@@ -670,6 +670,41 @@ window.adminGuardarFAQ = async function() {
   }
 };
 
+window.gestionarClave = function(wa) {
+  const email = `${wa}@informaticaves.app`;
+  const tempPass = 'IVES-' + Math.floor(1000 + Math.random() * 9000);
+  
+  let modal = document.getElementById('modal-gestionar-clave');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-gestionar-clave';
+    modal.className = 'modal-backdrop';
+    document.body.appendChild(modal);
+  }
+  
+  const fbConsoleUrl = 'https://console.firebase.google.com/';
+  const waLink = `https://wa.me/58${wa.substring(wa.length > 10 ? wa.length - 10 : 0)}?text=${encodeURIComponent(`¡Hola! Hemos restablecido tu acceso a InformaticaVES.\n\nTu nueva contraseña temporal es: *${tempPass}*\n\nRecuerda que puedes cambiarla desde la sección Mis Solicitudes.`)}`;
+
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:500px;text-align:left">
+      <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem">🔑 Resetear Clave de Cliente</h2>
+      
+      <div style="background:rgba(99,179,237,0.1);border:1px solid var(--blue);padding:1rem;border-radius:8px;margin-bottom:1.5rem">
+        <p style="font-size:0.9rem;margin-bottom:0.5rem">Sigue estos 3 pasos rápidos:</p>
+        <ol style="font-size:0.9rem;color:var(--text);margin-left:1.2rem;line-height:1.6">
+          <li>Copia este correo falso: <br><strong style="color:var(--green);user-select:all">${email}</strong></li>
+          <li>Abre la <a href="${fbConsoleUrl}" target="_blank" style="color:var(--blue);text-decoration:underline">Consola de Firebase (Authentication)</a>, busca el correo, dale a "Cambiar contraseña" y pega esta clave temporal: <br><strong style="color:var(--green);user-select:all">${tempPass}</strong></li>
+          <li>¡Listo! Haz clic en el botón de abajo para enviarle la nueva clave al cliente por WhatsApp.</li>
+        </ol>
+      </div>
+
+      <a href="${waLink}" target="_blank" class="btn btn-primary w-full" style="background:#25D366;border:none;display:block;text-align:center;text-decoration:none">💬 Enviar Nueva Clave por WhatsApp</a>
+    </div>
+  `;
+  modal.classList.add('open');
+};
+
 // ════════════════════════════════════════════════════════════
 // CLIENTES — Historial y Valoraciones
 // ════════════════════════════════════════════════════════════
@@ -728,7 +763,7 @@ async function cargarClientes() {
       };
 
       if (!todas.length) {
-        histTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim)">Sin solicitudes aún.</td></tr>';
+        histTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)">Sin solicitudes aún.</td></tr>';
       } else {
         histTbody.innerHTML = todas.map(s => {
           const fecha = s.timestamp?.toDate?.()?.toLocaleDateString('es-VE') || '—';
@@ -741,6 +776,9 @@ async function cargarClientes() {
               <td style="color:var(--text-muted)">${s.servicio || '—'}</td>
               <td><span class="estado-chip ${eInfo.cls}">${eInfo.lbl}</span></td>
               <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
+              <td>
+                <button class="btn btn-sm" style="background:var(--blue);color:white" onclick="window.gestionarClave('${sanitizeNum(s.whatsapp || '')}')">🔑 Clave</button>
+              </td>
             </tr>
           `;
         }).join('');

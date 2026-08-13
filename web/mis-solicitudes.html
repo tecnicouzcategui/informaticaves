@@ -208,10 +208,11 @@
 <main class="container" style="padding-top:2rem;padding-bottom:3rem;max-width:700px;">
 
   <!-- Header -->
-  <div style="text-align:center;margin-bottom:1.5rem;">
+  <div style="text-align:center;margin-bottom:1.5rem;position:relative;">
     <div style="font-size:2.5rem;margin-bottom:0.5rem;">📋</div>
     <h1 style="font-size:1.6rem;font-weight:800;color:var(--text);margin-bottom:0.4rem;">Mis Solicitudes</h1>
     <p style="color:var(--text-dim);font-size:0.9rem;">Consulta el estado de tus solicitudes en tiempo real</p>
+    <button id="btn-cambiar-pass" class="btn btn-sm hidden" style="background:var(--blue); color:white; border:none; margin-top:1rem;">🔑 Cambiar Contraseña</button>
   </div>
 
   <!-- Buscar por WhatsApp (solo para usuarios no logueados) -->
@@ -250,17 +251,37 @@
       <button class="star-btn" data-val="5">⭐</button>
     </div>
     <div class="form-group">
-      <label class="form-label" for="valoracion-comentario">Comentario (opcional)</label>
-      <textarea id="valoracion-comentario" class="form-input" rows="3" placeholder="¿Cómo fue tu experiencia?"></textarea>
+      <label class="form-label" for="valoracion-comentario">Comentario</label>
+      <div style="margin-top:1.5rem;">
+      <textarea id="valoracion-comentario" class="form-input" placeholder="Opcional: Deja un comentario (ej: muy rápido, excelente trato...)" rows="3"></textarea>
     </div>
-    <button id="btn-enviar-valoracion" class="btn btn-primary w-full" disabled>Enviar Valoración</button>
+    <button class="btn btn-primary valorar-btn" id="enviar-valoracion">Enviar Valoración</button>
+  </div>
+</div>
+
+<!-- Modal de Cambiar Contraseña -->
+<div class="modal-backdrop hidden" id="modal-cambiar-pass">
+  <div class="modal-box" style="max-width:400px;text-align:left">
+    <button class="modal-close" onclick="document.getElementById('modal-cambiar-pass').classList.add('hidden')">✕</button>
+    <h2 class="modal-title mb-2">🔑 Cambiar Contraseña</h2>
+    
+    <div class="form-group">
+      <label class="form-label">Nueva contraseña</label>
+      <input type="password" id="cp-nueva" class="form-input" placeholder="Tu nueva contraseña segura">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmar contraseña</label>
+      <input type="password" id="cp-conf" class="form-input" placeholder="Repite la contraseña">
+    </div>
+    <div id="cp-error" style="color:var(--red);font-size:0.85rem;margin-bottom:1rem;display:none;"></div>
+    <button class="btn btn-primary w-full" id="btn-guardar-cp">Guardar Contraseña</button>
   </div>
 </div>
 
 <script type="module">
-  import {
-    db, collection, query, where, orderBy, onSnapshot,
-    COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud
+  import { 
+    db, getDocs, collection, query, where, doc, updateDoc, 
+    serverTimestamp, addDoc, COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud
   } from './firebase.js';
   import * as Auth from './auth.js';
   import { onAuthChange, isAdmin } from './auth.js';
@@ -273,6 +294,7 @@
   document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
   // El avatar ahora es manejado por auth.js (openProfileDropdown)
 
+  const btnCambiarPassGlobal = document.getElementById('btn-cambiar-pass');
   onAuthChange(user => {
     const navAdmin = document.getElementById('nav-admin');
     const badge    = document.getElementById('admin-badge');
@@ -282,6 +304,7 @@
     if (user) {
       btnLogin?.classList.add('hidden');
       avatar?.classList.remove('hidden');
+      if (btnCambiarPassGlobal) btnCambiarPassGlobal.classList.remove('hidden');
       const nombre = Auth.userNombre || user.displayName || user.email || 'U';
       avatar.textContent = nombre.charAt(0).toUpperCase();
       if (Auth.isAdmin) {
@@ -354,6 +377,61 @@
 
   function normalizeWA(num) {
     return num.replace(/\s|-|\(|\)/g, '');
+  }
+
+  // Modal Cambiar Contraseña
+  const btnCambiarPass = document.getElementById('btn-cambiar-pass');
+  const modalCp = document.getElementById('modal-cambiar-pass');
+  const btnGuardarCp = document.getElementById('btn-guardar-cp');
+  const errCp = document.getElementById('cp-error');
+  
+  if (btnCambiarPass) {
+    btnCambiarPass.addEventListener('click', () => {
+      document.getElementById('cp-nueva').value = '';
+      document.getElementById('cp-conf').value = '';
+      errCp.style.display = 'none';
+      modalCp.classList.remove('hidden');
+    });
+  }
+
+  if (btnGuardarCp) {
+    btnGuardarCp.addEventListener('click', async () => {
+      const p1 = document.getElementById('cp-nueva').value;
+      const p2 = document.getElementById('cp-conf').value;
+      
+      const hasLetters = (p1.match(/[a-zA-Z]/g) || []).length >= 4;
+      const hasUpper = (p1.match(/[A-Z]/g) || []).length >= 1;
+      const hasNumbers = (p1.match(/[0-9]/g) || []).length >= 4;
+
+      if (!hasLetters || !hasUpper || !hasNumbers) {
+        errCp.textContent = 'La contraseña debe tener mínimo 4 letras, 1 mayúscula y 4 números.';
+        errCp.style.display = 'block';
+        return;
+      }
+      if (p1 !== p2) {
+        errCp.textContent = 'Las contraseñas no coinciden.';
+        errCp.style.display = 'block';
+        return;
+      }
+      
+      try {
+        btnGuardarCp.disabled = true;
+        btnGuardarCp.textContent = 'Guardando...';
+        await Auth.changeUserPassword(p1);
+        modalCp.classList.add('hidden');
+        mostrarToast('✅ Contraseña cambiada con éxito', 'success');
+      } catch (err) {
+        let msg = err.message;
+        if (msg.includes('requires-recent-login')) {
+          msg = 'Por seguridad, debes cerrar sesión e ingresar nuevamente antes de cambiar la contraseña.';
+        }
+        errCp.textContent = msg;
+        errCp.style.display = 'block';
+      } finally {
+        btnGuardarCp.disabled = false;
+        btnGuardarCp.textContent = 'Guardar Contraseña';
+      }
+    });
   }
 
   async function buscarSolicitudes() {
