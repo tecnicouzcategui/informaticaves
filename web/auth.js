@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut, onAuthStateChanged,
-  guardarCliente, getCliente,
+  guardarCliente, getCliente, getClienteByWA,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
 
@@ -177,21 +177,26 @@ export function openAuthModal() {
           showToast('✅ Cuenta creada exitosamente', 'success');
           modal.classList.remove('open');
         } else {
-          try {
-            await signInWithEmailAndPassword(auth, fakeEmail, pass);
-            showToast('✅ Sesión iniciada', 'success');
-            modal.classList.remove('open');
-          } catch (e) {
-            // Si el usuario no existe, mostrar campos de registro
-            if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-              // Asumimos que no existe si las credenciales fallan, mostramos registro
-              document.getElementById('auth-register-fields').style.display = 'block';
-              submitBtn.textContent = 'Crear Cuenta Nueva';
+          // PASO 1: Verificar en Firestore si el número ya existe (evita mensajes contradictorios)
+          const clienteExistente = await getClienteByWA(wa);
+
+          if (clienteExistente) {
+            // El número SÍ está registrado → intentar login. Si falla = contraseña incorrecta.
+            try {
+              await signInWithEmailAndPassword(auth, fakeEmail, pass);
+              showToast('✅ Sesión iniciada', 'success');
+              modal.classList.remove('open');
+            } catch (e) {
+              showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
               submitBtn.disabled = false;
-              showToast('Número no registrado. Crea tu cuenta.', 'info');
-            } else {
-              throw e;
+              submitBtn.textContent = 'Ingresar';
             }
+          } else {
+            // El número NO está registrado → mostrar formulario de registro
+            document.getElementById('auth-register-fields').style.display = 'block';
+            submitBtn.textContent = 'Crear Cuenta Nueva';
+            submitBtn.disabled = false;
+            showToast('Número nuevo. Por favor completa tu registro.', 'info');
           }
         }
       } catch (err) {

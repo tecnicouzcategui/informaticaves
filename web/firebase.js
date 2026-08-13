@@ -29,6 +29,7 @@ import {
   getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updatePassword,
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -127,6 +128,13 @@ export async function guardarCliente(uid, datos) {
 export async function getCliente(uid) {
   const snap = await getDoc(doc(db, COLS.clientes, uid));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+/** Busca si un número de WhatsApp ya tiene cuenta registrada */
+export async function getClienteByWA(wa) {
+  const q = query(collection(db, COLS.clientes), where('whatsapp', '==', wa));
+  const snap = await getDocs(q);
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
 
 /** Obtiene FAQs publicadas */
