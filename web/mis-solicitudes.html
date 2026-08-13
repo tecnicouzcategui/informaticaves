@@ -281,7 +281,8 @@
 <script type="module">
   import { 
     db, getDocs, collection, query, where, doc, updateDoc, 
-    serverTimestamp, addDoc, COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud
+    serverTimestamp, addDoc, COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud,
+    onSnapshot
   } from './firebase.js';
   import * as Auth from './auth.js';
   import { onAuthChange, isAdmin } from './auth.js';
