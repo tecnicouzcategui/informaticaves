@@ -194,10 +194,36 @@
   document.getElementById('wa-modal-skip')?.addEventListener('click', Auth.closeWhatsAppModal);
   document.getElementById('wa-modal-skip-btn')?.addEventListener('click', Auth.closeWhatsAppModal);
 
-  // Ocultar sugerencia de login si ya está logueado
+  // Pre-llenar nombre y WhatsApp si el usuario está logueado, y bloquearlos
   Auth.onAuthChange((user) => {
     const suggestion = document.getElementById('login-suggestion');
     if (suggestion) suggestion.style.display = user ? 'none' : 'flex';
+
+    const inputNombre = document.getElementById('input-nombre');
+    const inputWa     = document.getElementById('input-whatsapp');
+
+    if (user && !Auth.isAdmin) {
+      // Pre-llenar con los datos del cliente
+      const nombre = Auth.userNombre || '';
+      const wa     = Auth.userWhatsApp || localStorage.getItem('ives_wa_number') || '';
+
+      if (inputNombre && nombre) {
+        inputNombre.value    = nombre;
+        inputNombre.readOnly = true;
+        inputNombre.style.opacity = '0.7';
+        inputNombre.style.cursor  = 'not-allowed';
+      }
+      if (inputWa && wa) {
+        inputWa.value    = wa;
+        inputWa.readOnly = true;
+        inputWa.style.opacity = '0.7';
+        inputWa.style.cursor  = 'not-allowed';
+      }
+    } else {
+      // No logueado: limpiar bloqueo
+      if (inputNombre) { inputNombre.readOnly = false; inputNombre.style.opacity = ''; inputNombre.style.cursor = ''; }
+      if (inputWa)     { inputWa.readOnly = false;     inputWa.style.opacity = '';     inputWa.style.cursor = ''; }
+    }
   });
 
   // Cargar FAQs desde Firebase (administradas desde el panel)

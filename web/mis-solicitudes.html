@@ -316,7 +316,7 @@
         if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'inline-block';
       }
       // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
-      const wa = Auth.getWhatsApp();
+      const wa = Auth.getWhatsApp ? Auth.getWhatsApp() : (Auth.userWhatsApp || localStorage.getItem('ives_wa_number'));
       if (wa) {
         if (searchSection) searchSection.style.display = 'none';
         const inputWa = document.getElementById('input-buscar-wa');
@@ -417,9 +417,10 @@
         btnGuardarCp.disabled = true;
         btnGuardarCp.textContent = 'Guardando...';
 
-        // Obtener el WA del usuario actual (puede estar en localStorage o en el perfil Auth)
-        const wa = Auth.getWhatsAppLocal() ||
+        // Obtener el WA del usuario actual
+        const wa = (Auth.getWhatsApp ? Auth.getWhatsApp() : null) ||
                    localStorage.getItem('ives_rescued_wa') ||
+                   localStorage.getItem('ives_wa_number') ||
                    (Auth.currentUser ? Auth.currentUser.email?.split('@')[0] : null);
 
         if (!wa) throw new Error('No se pudo identificar tu número. Cierra sesión e ingresa nuevamente.');

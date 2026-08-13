@@ -318,11 +318,6 @@ export function forceAdmin() {
     currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
     isAdmin = true;
     // IMPORTANTE: NO iniciar notificaciones aquí porque Firebase Auth aún no ha cargado el token,
-    // lo que causará que Firestore rechace la consulta por permisos y mate el listener permanentemente.
-    // Se iniciará en onAuthStateChanged.
-  }
-})();
-
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
@@ -340,11 +335,23 @@ onAuthStateChanged(auth, async user => {
 
   if (user) {
     try {
+      // Intento 1: buscar por UID (login normal con Firebase Auth)
       const perfil = await getCliente(user.uid);
       if (perfil) {
         userWhatsApp = perfil.whatsapp;
         userNombre   = perfil.nombre;
         localStorage.setItem(WA_KEY, perfil.whatsapp);
+      } else {
+        // Intento 2: si es sesión anónima (después de reset de clave), buscar por WA en localStorage
+        const savedWa = localStorage.getItem('ives_rescued_wa') || localStorage.getItem(WA_KEY);
+        if (savedWa) {
+          const perfilPorWa = await getClienteByWA(savedWa);
+          if (perfilPorWa) {
+            userWhatsApp = perfilPorWa.whatsapp;
+            userNombre   = perfilPorWa.nombre;
+            localStorage.setItem(WA_KEY, perfilPorWa.whatsapp);
+          }
+        }
       }
     } catch (_) {}
   }
@@ -352,6 +359,11 @@ onAuthStateChanged(auth, async user => {
   updateNavUI();
   notifyListeners();
 });
+
+// ── getWhatsApp (exportada para uso en páginas) ────────────────────
+export function getWhatsApp() {
+  return userWhatsApp || localStorage.getItem(WA_KEY) || null;
+}
 
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
