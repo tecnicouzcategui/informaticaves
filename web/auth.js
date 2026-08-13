@@ -504,9 +504,6 @@ export function showToast(msg, type = 'info') {
 window._showToast = showToast;
 
 // ── Helpers de estado ─────────────────────────────────────────
-export function getWhatsApp() {
-  return userWhatsApp || localStorage.getItem(WA_KEY) || '';
-}
 
 export function getUserDisplayName() {
   return userNombre || currentUser?.displayName || 'Cliente';
