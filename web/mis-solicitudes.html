@@ -260,9 +260,9 @@
 </div>
 
 <!-- Modal de Cambiar Contraseña -->
-<div class="modal-backdrop hidden" id="modal-cambiar-pass">
+<div class="modal-backdrop" id="modal-cambiar-pass">
   <div class="modal-box" style="max-width:400px;text-align:left">
-    <button class="modal-close" onclick="document.getElementById('modal-cambiar-pass').classList.add('hidden')">✕</button>
+    <button class="modal-close" onclick="document.getElementById('modal-cambiar-pass').classList.remove('open')">✕</button>
     <h2 class="modal-title mb-2">🔑 Cambiar Contraseña</h2>
     
     <div class="form-group">
@@ -390,7 +390,7 @@
       document.getElementById('cp-nueva').value = '';
       document.getElementById('cp-conf').value = '';
       errCp.style.display = 'none';
-      modalCp.classList.remove('hidden');
+      modalCp.classList.add('open');   // ← correcto: agregar 'open' no quitar 'hidden'
     });
   }
 
@@ -417,13 +417,29 @@
       try {
         btnGuardarCp.disabled = true;
         btnGuardarCp.textContent = 'Guardando...';
-        await Auth.changeUserPassword(p1);
-        modalCp.classList.add('hidden');
+
+        // Obtener el WA del usuario actual (puede estar en localStorage o en el perfil Auth)
+        const wa = Auth.getWhatsAppLocal() ||
+                   localStorage.getItem('ives_rescued_wa') ||
+                   (Auth.currentUser ? Auth.currentUser.email?.split('@')[0] : null);
+
+        if (!wa) throw new Error('No se pudo identificar tu número. Cierra sesión e ingresa nuevamente.');
+
+        // Guardar el nuevo hash en Firestore (funciona con y sin Firebase Auth)
+        const { sha256, setClientePasswordHash } = await import('./firebase.js');
+        const hash = await sha256(p1);
+        const ok = await setClientePasswordHash(wa, hash);
+        if (!ok) throw new Error('No se encontró tu cuenta en la base de datos.');
+
+        // Intentar actualizar Firebase Auth también (si el usuario está logueado de forma normal)
+        try { await Auth.changeUserPassword(p1); } catch(e) { /* Si falla (sesión anónima), lo ignoramos — el hash de Firestore ya fue guardado */ }
+
+        modalCp.classList.remove('open');
         mostrarToast('✅ Contraseña cambiada con éxito', 'success');
       } catch (err) {
         let msg = err.message;
         if (msg.includes('requires-recent-login')) {
-          msg = 'Por seguridad, debes cerrar sesión e ingresar nuevamente antes de cambiar la contraseña.';
+          msg = 'Por seguridad, cierra sesión e ingresa nuevamente antes de cambiar la contraseña.';
         }
         errCp.textContent = msg;
         errCp.style.display = 'block';
