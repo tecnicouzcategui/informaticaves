@@ -311,6 +311,9 @@
       if (Auth.isAdmin) {
         navAdmin?.classList.remove('hidden');
         badge?.classList.remove('hidden');
+        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'none'; // Admin no usa este botón
+      } else {
+        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'block';
       }
       // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
       const wa = Auth.getWhatsApp();
