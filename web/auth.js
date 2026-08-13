@@ -382,6 +382,8 @@ function updateNavUI() {
   const userAvatar = document.getElementById('user-avatar');
   const adminBadge = document.getElementById('admin-badge');
   const adminLink  = document.getElementById('nav-admin');
+  const navSolicitar = document.getElementById('nav-solicitar');
+  const navMisSolicitudes = document.getElementById('nav-mis-solicitudes');
 
   if (!btnLogin) return; 
 
@@ -406,12 +408,27 @@ function updateNavUI() {
     if (isAdmin) {
       adminBadge?.classList.remove('hidden');
       adminLink?.classList.remove('hidden');
+      navSolicitar?.classList.add('hidden');
+      navMisSolicitudes?.classList.add('hidden');
+
+      // Si el administrador intenta entrar manualmente a páginas del cliente
+      const path = window.location.pathname;
+      if (path.includes('solicitud.html') || path.includes('mis-solicitudes.html')) {
+        window.location.replace('admin.html');
+      }
+    } else {
+      adminBadge?.classList.add('hidden');
+      adminLink?.classList.add('hidden');
+      navSolicitar?.classList.remove('hidden');
+      navMisSolicitudes?.classList.remove('hidden');
     }
   } else {
     btnLogin?.classList.remove('hidden');
     userAvatar?.classList.add('hidden');
     adminBadge?.classList.add('hidden');
     adminLink?.classList.add('hidden');
+    navSolicitar?.classList.remove('hidden');
+    navMisSolicitudes?.classList.remove('hidden');
   }
 }
 
