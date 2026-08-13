@@ -10,7 +10,8 @@ import {
   signOut, onAuthStateChanged,
   guardarCliente, getCliente, getClienteByWA,
   sha256, loginClienteByHash, setClientePasswordHash,
-  doc, setDoc, serverTimestamp
+  doc, setDoc, serverTimestamp,
+  onSnapshot, collection, query, orderBy, COLS
 } from './firebase.js';
 
 // ── Constantes ───────────────────────────────────────────────
@@ -297,6 +298,7 @@ export async function logout() {
     await signOut(auth);
   } catch (_) {}
   
+  stopAdminNotifications();
   notifyListeners();
   updateNavUI();
   
@@ -310,6 +312,7 @@ export function forceAdmin() {
   currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
   isAdmin = true;
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+  startAdminNotifications();
   notifyListeners();
 }
 
@@ -356,6 +359,12 @@ onAuthStateChanged(auth, async user => {
         }
       }
     } catch (_) {}
+  }
+
+  if (isAdmin) {
+    startAdminNotifications();
+  } else {
+    stopAdminNotifications();
   }
 
   updateNavUI();
@@ -502,6 +511,109 @@ export function showToast(msg, type = 'info') {
 }
 // Exponer globalmente para que admin-notifications.js lo use sin dependencia circular
 window._showToast = showToast;
+
+// ── Notificaciones de fondo del Admin en todas las páginas ──
+let adminNotifListener = null;
+let adminNotifSeenIds = new Set();
+let adminAudioCtx = null;
+
+function tocarAlarmaGlobal() {
+  try {
+    if (!adminAudioCtx) adminAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    [[800,0.0],[800,0.15],[1000,0.35],[1000,0.50],[800,0.70]].forEach(([f,t]) => {
+      const o = adminAudioCtx.createOscillator();
+      const g = adminAudioCtx.createGain();
+      o.connect(g); g.connect(adminAudioCtx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.4, adminAudioCtx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, adminAudioCtx.currentTime + t + 0.12);
+      o.start(adminAudioCtx.currentTime + t);
+      o.stop(adminAudioCtx.currentTime + t + 0.13);
+    });
+  } catch(e) { console.warn('Audio error:', e); }
+}
+
+function mostrarModalAlertaGlobal(datos) {
+  let modal = document.getElementById('modal-nueva-solicitud-alerta');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-nueva-solicitud-alerta';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
+    modal.innerHTML = `
+      <div style="background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:2rem;max-width:380px;width:90%;text-align:center;box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);">
+        <div style="font-size:3rem;margin-bottom:1rem;">🔔</div>
+        <h2 style="color:#fff;font-size:1.3rem;font-weight:800;margin-bottom:1rem;margin-top:0;">¡Nueva Solicitud Recibida!</h2>
+        <div id="alerta-contenido-global" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:1rem;text-align:left;margin-bottom:1.5rem;font-size:0.9rem;color:#e2e8f0;line-height:1.5;"></div>
+        <div style="display:flex;gap:1rem;justify-content:center;">
+          <button id="alerta-ver-global" style="background:#3b82f6;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem;">📋 Ver Solicitud</button>
+          <button id="alerta-cerrar-global" style="background:transparent;color:#94a3b8;border:1px solid #475569;padding:0.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;">Cerrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  const urgLabel = datos.urgencia === 'alta' ? '🔴 URGENTE' : datos.urgencia === 'media' ? '🟡 MEDIO' : '🟢 BAJA';
+  document.getElementById('alerta-contenido-global').innerHTML =
+    `<p style="margin:0.4rem 0;">👤 <strong>Cliente:</strong> ${datos.nombre || '—'}</p>
+     <p style="margin:0.4rem 0;">📱 <strong>WhatsApp:</strong> <span style="color:#4ade80">${datos.whatsapp || '—'}</span></p>
+     <p style="margin:0.4rem 0;">⚡ <strong>Urgencia:</strong> ${urgLabel}</p>
+     <p style="margin:0.4rem 0;">🔧 <strong>Servicio:</strong> ${datos.servicio || '—'}</p>`;
+  modal.style.display = 'flex';
+  
+  document.getElementById('alerta-ver-global').onclick = () => { 
+    modal.style.display = 'none'; 
+    window.location.href = `admin.html?abrir=${datos.id}`;
+  };
+  document.getElementById('alerta-cerrar-global').onclick = () => { 
+    modal.style.display = 'none'; 
+  };
+}
+
+function alertarNuevaSolicitudGlobal(datos) {
+  tocarAlarmaGlobal();
+  mostrarModalAlertaGlobal(datos);
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('⚡ Nueva Solicitud', { body: `${datos.nombre} — ${datos.servicio}`, icon: './logo_oficial.png' });
+  }
+}
+
+export function startAdminNotifications() {
+  if (adminNotifListener) return;
+  if (window.location.pathname.includes('admin.html')) return; // No duplicar si está en la página de administración propiamente dicha
+
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  const q = query(collection(db, COLS.solicitudes), orderBy('timestamp', 'desc'));
+  let initialLoad = true;
+  const ahora = Date.now();
+
+  adminNotifListener = onSnapshot(q, snap => {
+    snap.docChanges().forEach(change => {
+      const id = change.doc.id;
+      const data = change.doc.data();
+      if ((change.type === 'added' || change.type === 'modified') && !data.leida && !adminNotifSeenIds.has(id)) {
+        adminNotifSeenIds.add(id);
+        if (!initialLoad) {
+          alertarNuevaSolicitudGlobal({ id, ...data });
+        } else if (data.timestamp) {
+          const docMs = data.timestamp.toDate ? data.timestamp.toDate().getTime() : 0;
+          if (ahora - docMs < 60000) {
+            alertarNuevaSolicitudGlobal({ id, ...data });
+          }
+        }
+      }
+    });
+    initialLoad = false;
+  });
+}
+
+export function stopAdminNotifications() {
+  if (adminNotifListener) {
+    adminNotifListener();
+    adminNotifListener = null;
+  }
+}
 
 // ── Helpers de estado ─────────────────────────────────────────
 
