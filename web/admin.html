@@ -166,6 +166,16 @@
       <div id="tab-clientes" class="tab-pane hidden">
         <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1.5rem">👥 Historial de Clientes y Valoraciones</h2>
 
+        <!-- Acción Rápida: Resetear Clave -->
+        <div style="background:rgba(99,179,237,0.05);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:2rem">
+          <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;color:var(--text)">⚡ Restablecimiento Rápido de Contraseña</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">Si el cliente no aparece en el historial, ingresa su número aquí para generarle una nueva clave temporal.</p>
+          <div class="flex" style="gap:0.5rem;align-items:center">
+            <input type="tel" id="quick-reset-wa" placeholder="Ej. 04167474753" class="form-control" style="max-width:200px;margin:0">
+            <button class="btn btn-sm" style="background:var(--blue);color:white;padding:0.7rem 1rem" onclick="window.gestionarClave(document.getElementById('quick-reset-wa').value.trim())">🔑 Generar y Enviar Clave</button>
+          </div>
+        </div>
+
         <!-- Valoraciones -->
         <div style="margin-bottom:2rem">
           <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem">

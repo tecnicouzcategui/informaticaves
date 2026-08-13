@@ -705,6 +705,8 @@ window.gestionarClave = async function(wa) {
         passwordHash: hash,
         updatedAt: serverTimestamp()
       });
+    } else {
+      throw new Error(`El cliente con WhatsApp ${wa} no está registrado en el sistema. Debe registrarse primero.`);
     }
 
     // Número limpio para WhatsApp (58 + últimos 10 dígitos)
