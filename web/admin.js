@@ -671,8 +671,6 @@ window.adminGuardarFAQ = async function() {
 };
 
 window.gestionarClave = async function(wa) {
-  const tempPass = 'IVES-' + Math.floor(1000 + Math.random() * 9000);
-  
   let modal = document.getElementById('modal-gestionar-clave');
   if (!modal) {
     modal = document.createElement('div');
@@ -681,71 +679,111 @@ window.gestionarClave = async function(wa) {
     document.body.appendChild(modal);
   }
 
-  // Mostrar estado de carga
+  // 1. Mostrar input para que el admin escriba la clave
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:420px;text-align:center;padding:2rem">
-      <span class="spinner"></span>
-      <p style="margin-top:1rem;color:var(--text-muted)">Generando nueva clave…</p>
+    <div class="modal-box" style="max-width:400px;text-align:left">
+      <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem">🔑 Resetear Clave de Cliente</h2>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">Escribe la nueva contraseña que deseas asignarle al cliente <b>${wa}</b>.</p>
+      
+      <div class="form-group" style="position:relative; margin-bottom:0.5rem;">
+        <label class="form-label">Nueva Contraseña</label>
+        <input type="text" id="admin-new-pass" class="form-input" placeholder="Ej. Pedro1234">
+      </div>
+      
+      <div style="display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.5rem; font-size:0.75rem; color:var(--text-dim);">
+        <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-al" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div> Mínimo 4 letras</div>
+        <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-au" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div> Al menos 1 mayúscula</div>
+        <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-an" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div> Mínimo 4 números</div>
+      </div>
+
+      <button id="btn-save-admin-pass" class="btn btn-primary w-full" disabled style="opacity:0.5;background:var(--blue);color:white">Guardar y Enviar por WhatsApp</button>
     </div>
   `;
   modal.classList.add('open');
 
-  try {
-    // Calcular hash SHA-256 del password temporal
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tempPass));
-    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  const inputPass = document.getElementById('admin-new-pass');
+  const btnSave = document.getElementById('btn-save-admin-pass');
+  const dotAl = document.getElementById('dot-al');
+  const dotAu = document.getElementById('dot-au');
+  const dotAn = document.getElementById('dot-an');
 
-    // Guardar hash en Firestore directamente (NO requiere Firebase Console)
-    const { db, collection, query, where, getDocs, doc, updateDoc, serverTimestamp } = await import('./firebase.js');
-    const CLIENTES = 'clientes';
-    const q = query(collection(db, CLIENTES), where('whatsapp', '==', wa));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      await updateDoc(doc(db, CLIENTES, snap.docs[0].id), {
-        passwordHash: hash,
-        updatedAt: serverTimestamp()
-      });
+  inputPass.addEventListener('input', () => {
+    const val = inputPass.value;
+    const hasLetters = (val.match(/[a-zA-Z]/g) || []).length >= 4;
+    const hasUpper = (val.match(/[A-Z]/g) || []).length >= 1;
+    const hasNumbers = (val.match(/[0-9]/g) || []).length >= 4;
+
+    dotAl.style.background = hasLetters ? 'var(--green)' : 'var(--red)';
+    dotAu.style.background = hasUpper ? 'var(--green)' : 'var(--red)';
+    dotAn.style.background = hasNumbers ? 'var(--green)' : 'var(--red)';
+
+    if (hasLetters && hasUpper && hasNumbers) {
+      btnSave.disabled = false;
+      btnSave.style.opacity = 1;
     } else {
-      throw new Error(`El cliente con WhatsApp ${wa} no está registrado en el sistema. Debe registrarse primero.`);
+      btnSave.disabled = true;
+      btnSave.style.opacity = 0.5;
     }
+  });
 
-    // Número limpio para WhatsApp (58 + últimos 10 dígitos)
-    const waNum = '58' + wa.replace(/\D/g,'').slice(-10);
-    const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(
-      `¡Hola! Hemos restablecido tu acceso a *InformaticaVES*.\n\n🔑 Tu nueva contraseña temporal es:\n\n*${tempPass}*\n\nPuedes cambiarla luego desde la sección Mis Solicitudes. ¡Saludos!`
-    )}`;
-
+  btnSave.addEventListener('click', async () => {
+    const tempPass = inputPass.value;
     modal.innerHTML = `
-      <div class="modal-box" style="max-width:420px;text-align:center">
-        <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
-        
-        <div style="font-size:2.5rem;margin-bottom:0.5rem">✅</div>
-        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.5rem">Clave restablecida automáticamente</h2>
-        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">
-          El sistema ya actualizó la clave del cliente en la base de datos.<br>Solo envíale el mensaje por WhatsApp.
-        </p>
+      <div class="modal-box" style="max-width:420px;text-align:center;padding:2rem">
+        <span class="spinner"></span>
+        <p style="margin-top:1rem;color:var(--text-muted)">Guardando nueva clave…</p>
+      </div>
+    `;
 
-        <div style="background:rgba(99,179,237,0.1);border:1px solid var(--blue);border-radius:8px;padding:1rem;margin-bottom:1.5rem">
-          <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.25rem">Nueva clave temporal</p>
-          <p style="font-size:1.6rem;font-weight:800;letter-spacing:0.15em;color:var(--green)">${tempPass}</p>
+    try {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tempPass));
+      const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+
+      const { db, collection, query, where, getDocs, doc, updateDoc, serverTimestamp } = await import('./firebase.js');
+      const CLIENTES = 'clientes';
+      const q = query(collection(db, CLIENTES), where('whatsapp', '==', wa));
+      const snap = await getDocs(q);
+      
+      if (!snap.empty) {
+        await updateDoc(doc(db, CLIENTES, snap.docs[0].id), {
+          passwordHash: hash,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        throw new Error(`El cliente con WhatsApp ${wa} no está registrado.`);
+      }
+
+      const waNum = '58' + wa.replace(/\D/g,'').slice(-10);
+      const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(
+        `¡Hola! Hemos restablecido tu acceso a *InformaticaVES*.\n\n🔑 Tu nueva contraseña es:\n\n*${tempPass}*\n\nPuedes cambiarla luego desde la sección Mis Solicitudes. ¡Saludos!`
+      )}`;
+
+      modal.innerHTML = `
+        <div class="modal-box" style="max-width:420px;text-align:center">
+          <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
+          <div style="font-size:2.5rem;margin-bottom:0.5rem">✅</div>
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.5rem">Clave guardada con éxito</h2>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">
+            El sistema ya actualizó la clave a <b>${tempPass}</b>.
+          </p>
+          <a href="${waLink}" target="_blank" 
+             class="btn btn-primary w-full" 
+             style="background:#25D366;border:none;display:block;text-align:center;text-decoration:none;font-size:1rem;padding:0.85rem"
+             onclick="setTimeout(()=>document.getElementById('modal-gestionar-clave').classList.remove('open'),500)">
+            💬 Enviar por WhatsApp
+          </a>
         </div>
-
-        <a href="${waLink}" target="_blank" 
-           class="btn btn-primary w-full" 
-           style="background:#25D366;border:none;display:block;text-align:center;text-decoration:none;font-size:1rem;padding:0.85rem"
-           onclick="setTimeout(()=>document.getElementById('modal-gestionar-clave').classList.remove('open'),500)">
-          💬 Enviar por WhatsApp
-        </a>
-      </div>
-    `;
-  } catch(err) {
-    modal.innerHTML = `
-      <div class="modal-box" style="max-width:420px;text-align:center">
-        <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
-        <p style="color:var(--red)">❌ Error al restablecer: ${err.message}</p>
-      </div>
-    `;
-  }
+      `;
+    } catch(err) {
+      modal.innerHTML = `
+        <div class="modal-box" style="max-width:420px;text-align:center">
+          <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
+          <p style="color:var(--red)">❌ Error al guardar: ${err.message}</p>
+        </div>
+      `;
+    }
+  });
 };
 
 // ════════════════════════════════════════════════════════════
