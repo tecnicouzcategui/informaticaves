@@ -18,6 +18,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
   setDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
@@ -71,7 +72,7 @@ export {
   db, auth,
   collection, doc,
   getDocs, getDoc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, where, orderBy, serverTimestamp, setDoc,
+  onSnapshot, query, where, orderBy, limit, serverTimestamp, setDoc,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
