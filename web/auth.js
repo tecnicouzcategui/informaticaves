@@ -394,6 +394,8 @@ function updateNavUI() {
   const userAvatar = document.getElementById('user-avatar');
   const adminBadge = document.getElementById('admin-badge');
   const adminLink  = document.getElementById('nav-admin');
+  const navSolicitar = document.getElementById('nav-solicitar');
+  const navMisSolicitudes = document.getElementById('nav-mis-solicitudes');
 
   if (!btnLogin) return; 
 
@@ -418,12 +420,21 @@ function updateNavUI() {
     if (isAdmin) {
       adminBadge?.classList.remove('hidden');
       adminLink?.classList.remove('hidden');
+      navSolicitar?.closest('li')?.classList.add('hidden');
+      navMisSolicitudes?.closest('li')?.classList.add('hidden');
+    } else {
+      adminBadge?.classList.add('hidden');
+      adminLink?.classList.add('hidden');
+      navSolicitar?.closest('li')?.classList.remove('hidden');
+      navMisSolicitudes?.closest('li')?.classList.remove('hidden');
     }
   } else {
     btnLogin?.classList.remove('hidden');
     userAvatar?.classList.add('hidden');
     adminBadge?.classList.add('hidden');
     adminLink?.classList.add('hidden');
+    navSolicitar?.closest('li')?.classList.remove('hidden');
+    navMisSolicitudes?.closest('li')?.classList.remove('hidden');
   }
 }
 

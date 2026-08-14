@@ -79,6 +79,8 @@ function initTabs() {
       setActiveTab(tab);
     });
   });
+  // Inicializar visibilidad en el tab activo
+  setActiveTab(activeTab);
 }
 
 function setActiveTab(tab) {

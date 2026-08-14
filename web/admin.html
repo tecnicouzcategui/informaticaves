@@ -11,6 +11,20 @@
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
+  <script>
+    window.addEventListener('error', function(e) {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#f56565;color:white;padding:15px;border-radius:8px;z-index:99999;max-width:300px;font-family:sans-serif;font-size:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+      d.innerHTML = '<strong>Error detectado:</strong><br>' + e.message + '<br><small>en ' + e.filename + ':' + e.lineno + '</small>';
+      document.body.appendChild(d);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#f6e05e;color:black;padding:15px;border-radius:8px;z-index:99999;max-width:300px;font-family:sans-serif;font-size:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+      d.innerHTML = '<strong>Promesa rechazada:</strong><br>' + (e.reason ? e.reason.message || e.reason : 'Desconocido');
+      document.body.appendChild(d);
+    });
+  </script>
 </head>
 <body>
 
@@ -23,9 +37,9 @@
     <ul class="nav-links">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="servicios.html">Servicios</a></li>
-      <li><a href="solicitud.html">Solicitar</a></li>
-      <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
-      <li><a href="admin.html" class="active">Administrador</a></li>
+      <li><a href="solicitud.html" id="nav-solicitar">Solicitar</a></li>
+      <li><a href="mis-solicitudes.html" id="nav-mis-solicitudes">Mis Solicitudes</a></li>
+      <li><a href="admin.html" id="nav-admin" class="active">Administrador</a></li>
     </ul>
     <div class="nav-actions">
       <span class="admin-badge" id="admin-badge">Administrador</span>
@@ -162,6 +176,7 @@
           <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem" id="admin-welcome"></p>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" style="background:#4a5568;color:white;border:none;" onclick="caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c)))).then(()=>navigator.serviceWorker.getRegistrations()).then(r=>Promise.all(r.map(s=>s.unregister()))).then(()=>location.reload(true))">🔄 Limpiar Caché</button>
           <a href="index.html" class="btn btn-secondary btn-sm">🌐 Ver sitio</a>
           <button class="btn btn-ghost btn-sm" id="btn-logout-admin">Cerrar sesión</button>
         </div>
