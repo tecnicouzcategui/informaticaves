@@ -38,7 +38,95 @@
 <div class="page-wrapper">
   <div class="container-wide" style="padding-top:1rem;padding-bottom:4rem">
 
+<!-- ── Login standalone (sin dependencias de módulos) ──────── -->
+<script>
+(function() {
+  'use strict';
+  const LOCAL_KEY = 'ives_local_admin';
+  const PASS_KEY  = 'ives_admin_hash';
+
+  async function sha256(txt) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function mostrarPanel() {
+    var d = document.getElementById('admin-access-denied');
+    var p = document.getElementById('admin-panel');
+    if (d) d.style.display = 'none';
+    if (p) p.classList.remove('hidden');
+    if (window._initAdminPanel) window._initAdminPanel();
+  }
+
+  // Auto-login si ya hay sesión guardada
+  if (localStorage.getItem(LOCAL_KEY) === '1') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', mostrarPanel);
+    } else {
+      mostrarPanel();
+    }
+  }
+
+  function attachLoginHandler() {
+    var btn     = document.getElementById('btn-login-admin');
+    var emailEl = document.getElementById('login-email');
+    var passEl  = document.getElementById('login-password');
+    var errorEl = document.getElementById('login-error');
+    if (!btn) return;
+
+    async function doLogin() {
+      var email = emailEl.value.trim();
+      var pass  = passEl.value;
+      if (errorEl) errorEl.textContent = '';
+      if (!email || !pass) { if (errorEl) errorEl.textContent = 'Ingresa correo y contraseña.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
+
+      try {
+        if (email !== 'tecnicouzcategui@gmail.com') {
+          if (errorEl) errorEl.textContent = 'Solo el administrador puede acceder aquí.';
+          return;
+        }
+        var hash        = await sha256(pass);
+        var stored      = localStorage.getItem(PASS_KEY);
+        var defaultHash = await sha256('@Amy.2023');
+        var valid       = stored ? (hash === stored) : (hash === defaultHash);
+
+        if (!valid && window._tryFirebaseLogin) {
+          valid = await window._tryFirebaseLogin(email, pass).catch(() => false);
+          if (valid) localStorage.setItem(PASS_KEY, hash);
+        }
+
+        if (valid) {
+          localStorage.setItem(LOCAL_KEY, '1');
+          if (!stored) localStorage.setItem(PASS_KEY, hash);
+          mostrarPanel();
+        } else {
+          if (errorEl) errorEl.textContent = '❌ Contraseña incorrecta.';
+        }
+      } catch(e) {
+        if (errorEl) errorEl.textContent = 'Error: ' + (e.message || e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '→ Entrar al panel';
+      }
+    }
+
+    btn.addEventListener('click', doLogin);
+    passEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachLoginHandler);
+  } else {
+    attachLoginHandler();
+  }
+})();
+</script>
+
     <!-- ── Acceso denegado ──────────────────────────────────── -->
+
     <div id="admin-access-denied" style="display:flex;justify-content:center;align-items:center;min-height:70vh">
       <div class="card" style="max-width:380px;width:100%;padding:2.5rem 2rem;text-align:center">
         <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
@@ -537,8 +625,15 @@
     } catch (err) { console.warn('Stats error:', err); }
   }
 
+  // Exponer para el script standalone de login
+  window._tryFirebaseLogin = async (email, pass) => {
+    try { await loginEmail(email, pass); return true; } catch(e) { return false; }
+  };
+  window._initAdminPanel = () => { initAdmin(); };
+
   // Inicializar panel admin
   initAdmin();
+
 </script>
 
 </body>

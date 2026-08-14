@@ -15,40 +15,47 @@ import {
 import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 
 const ADMIN_EMAIL = 'tecnicouzcategui@gmail.com';
+let _panelInited = false;
 
 // ── Verificación de acceso ────────────────────────────────────
 export function initAdmin() {
-  onAuthChange((user, admin) => {
+  function handleAuth(user, admin) {
     if (!user) {
-      showAccesoDenegado('Debes iniciar sesión para acceder al panel.');
-      return;
+      // Fallback: chequear localStorage directamente por si el módulo aún no resolvió
+      const localAdmin = localStorage.getItem('ives_local_admin') === '1';
+      if (!localAdmin) {
+        showAccesoDenegado('Debes iniciar sesión para acceder al panel.');
+        return;
+      }
+      // localStorage dice que es admin — mostrar panel igual
+      admin = true;
+      user = { displayName: 'Admin', email: ADMIN_EMAIL };
     }
     if (!admin) {
       showAccesoDenegado('Acceso restringido al administrador.');
       return;
     }
-    // Acceso concedido — cargar panel
+    // Acceso concedido — cargar panel (solo una vez)
     document.getElementById('admin-access-denied')?.classList.add('hidden');
     document.getElementById('admin-panel')?.classList.remove('hidden');
-    
-    // Actualizar navbar
-    const btnLoginNav = document.getElementById('btn-login');
-    if (btnLoginNav) btnLoginNav.classList.add('hidden');
-    const avatar = document.getElementById('user-avatar');
-    if (avatar) {
-      avatar.classList.remove('hidden');
-      avatar.textContent = 'A';
-      avatar.title = user.email;
-    }
-    const welcome = document.getElementById('admin-welcome');
-    if (welcome) welcome.textContent = `Bienvenido, ${user.email}`;
 
+    const welcome = document.getElementById('admin-welcome');
+    if (welcome) welcome.textContent = `Bienvenido, ${user.displayName || user.email}`;
+
+    if (_panelInited) return;
+    _panelInited = true;
     initTabs();
     cargarServicios();
     cargarSolicitudes();
     cargarFAQ();
     cargarClientes();
-  });
+  }
+
+  // ── Verificar estado INMEDIATAMENTE (sin esperar callbacks futuros)
+  handleAuth(currentUser, isAdmin);
+
+  // ── Suscribirse a cambios futuros
+  onAuthChange(handleAuth);
 }
 
 function showAccesoDenegado(msg) {
