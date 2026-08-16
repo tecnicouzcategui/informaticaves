@@ -341,12 +341,22 @@ async function cargarSolicitudes() {
       return `<span class="estado-chip ${s.cls}">${s.lbl}</span>`;
     };
 
+    // Cargar valoraciones en paralelo para mostrar en tabla
+    const { getValoraciones } = await import('./firebase.js').catch(() => ({ getValoraciones: async () => [] }));
+    const todasValoraciones = await getValoraciones().catch(() => []);
+    const valoracionMap = {};
+    todasValoraciones.forEach(v => { valoracionMap[v.solicitudId] = v; });
+
     tbody.innerHTML = solicitudesList.map(s => {
       const fecha = s.timestamp?.toDate?.()?.toLocaleString('es-VE', {
         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
       }) || '—';
       const urgEmoji = s.urgencia === 'alta' ? '🔴' : s.urgencia === 'media' ? '🟡' : '🟢';
       const estadoActual = s.estadoCaso || 'pendiente';
+      const val = valoracionMap[s.id];
+      const ratingCell = val
+        ? `<span style="color:#f6e05e;font-size:0.9rem;" title="${val.comentario || ''}">${'⭐'.repeat(val.estrellas)}${val.estrellas}/5</span>`
+        : `<span style="color:var(--text-dim);font-size:0.8rem;">—</span>`;
       return `
         <tr style="${!s.leida ? 'background:rgba(99,179,237,0.04)' : ''}">
           <td>${urgEmoji}</td>
@@ -355,6 +365,7 @@ async function cargarSolicitudes() {
           <td style="color:var(--text-muted)">${s.servicio}</td>
           <td>${estadoChip(estadoActual)}</td>
           <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
+          <td>${ratingCell}</td>
           <td>
             <button class="btn btn-sm btn-secondary" onclick="verDetalles('${s.id}')">👁 Ver</button>
             ${!s.leida ? `<button class="btn btn-sm btn-ghost" onclick="marcarLeida('${s.id}')" style="margin-left:0.25rem;">👁️ Marcar leída</button>` : ''}
@@ -384,11 +395,32 @@ window.marcarLeida = async function(id) {
 window.borrarTodasSolicitudes = async function() {
   if (!solicitudesList.length) return showToast('No hay solicitudes para borrar', 'info');
   const btn = document.querySelector('button[onclick*="borrarTodasSolicitudes"]');
-  if (btn) btn.innerHTML = '<span class="spinner" style="width:14px;height:14px"></span> Borrando...';
+  if (btn) btn.innerHTML = '<span class="spinner" style="width:14px;height:14px"></span> Verificando...';
+
   try {
-    const promesas = solicitudesList.map(s => deleteDoc(doc(db, COLS.solicitudes, s.id)));
+    const { getValoracionBySolicitud } = await import('./firebase.js');
+
+    // Verificar cuáles tienen valoración (PROTEGIDAS) vs cuáles se pueden borrar
+    const checks = await Promise.all(
+      solicitudesList.map(async s => ({ s, valorada: !!(await getValoracionBySolicitud(s.id)) }))
+    );
+
+    const protegidas = checks.filter(c => c.valorada);
+    const borrables  = checks.filter(c => !c.valorada);
+
+    if (!borrables.length) {
+      showToast(`🔒 Todas las solicitudes están protegidas (ya fueron valoradas). No se borró nada.`, 'info');
+      if (btn) btn.innerHTML = '🧹 Borrar Todas';
+      return;
+    }
+
+    if (protegidas.length > 0) {
+      showToast(`⚠️ ${protegidas.length} solicitud(es) protegida(s) no se borrarán (ya valoradas).`, 'info');
+    }
+
+    const promesas = borrables.map(c => deleteDoc(doc(db, COLS.solicitudes, c.s.id)));
     await Promise.all(promesas);
-    showToast(`✅ ${promesas.length} solicitudes borradas con éxito.`, 'success');
+    showToast(`✅ ${promesas.length} solicitudes borradas. ${protegidas.length} protegidas.`, 'success');
   } catch (err) {
     showToast(`❌ Error al borrar: ${err.message}`, 'error');
   }
