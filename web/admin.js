@@ -456,15 +456,23 @@ window.verDetalles = function(id) {
     if (valoracion) {
       // Caso valorado → BLOQUEAR: ocultar botones de estado
       if (estadoSection) estadoSection.style.display = 'none';
-      // Mostrar sello de caso cerrado
+      // Mostrar sello de caso cerrado CON la valoración del cliente
       let sello = document.getElementById('caso-cerrado-badge');
       if (!sello) {
         sello = document.createElement('div');
         sello.id = 'caso-cerrado-badge';
-        sello.style.cssText = 'background:rgba(104,211,145,0.1);border:1px solid #68d391;border-radius:8px;padding:0.75rem 1rem;text-align:center;color:#68d391;font-weight:700;font-size:0.9rem;margin-top:1rem;';
-        sello.innerHTML = '🔒 CASO CERRADO — El cliente ya valoró este servicio. No se permiten más cambios.';
+        sello.style.cssText = 'background:rgba(104,211,145,0.08);border:1px solid #68d391;border-radius:10px;padding:1rem;margin-top:1rem;';
         estadoBtns?.parentElement?.after(sello);
       }
+      // Generar estrellas visuales
+      const totalEstrellas = valoracion.estrellas || 0;
+      const estrellasHTML = '⭐'.repeat(totalEstrellas) + '☆'.repeat(5 - totalEstrellas);
+      sello.innerHTML = `
+        <div style="text-align:center;margin-bottom:0.5rem;color:#68d391;font-weight:700;font-size:0.85rem;">🔒 CASO CERRADO — Valorado por el cliente</div>
+        <div style="text-align:center;font-size:1.4rem;margin:0.4rem 0;">${estrellasHTML}</div>
+        <div style="text-align:center;color:var(--text);font-weight:600;font-size:0.9rem;">${totalEstrellas}/5 estrellas</div>
+        ${valoracion.comentario ? `<div style="margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.85rem;color:var(--text-dim);">"${valoracion.comentario}"</div>` : ''}
+      `;
       sello.style.display = 'block';
       btnFactura.classList.remove('hidden');
       btnFactura.href = `factura.html?id=${id}`;
