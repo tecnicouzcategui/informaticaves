@@ -45,9 +45,9 @@ function _mostrarModalAlerta(datos) {
   
   let estadoText = '';
   let icono = '📢';
-  if (datos.estado === 'tomado') { estadoText = 'Tomado (En proceso)'; icono = '🛠️'; }
-  else if (datos.estado === 'completado') { estadoText = '¡Completado!'; icono = '✅'; }
-  else if (datos.estado === 'cancelado') { estadoText = 'Cancelado'; icono = '❌'; }
+  if (datos.estadoCaso === 'tomado') { estadoText = 'Tomado (En proceso)'; icono = '🛠️'; }
+  else if (datos.estadoCaso === 'finalizado') { estadoText = '¡Finalizado!'; icono = '✅'; }
+  else if (datos.estadoCaso === 'cancelado') { estadoText = 'Cancelado'; icono = '❌'; }
   
   document.getElementById('alerta-cliente-icono').textContent = icono;
   document.getElementById('alerta-cliente-contenido').innerHTML =
@@ -83,7 +83,7 @@ export function initGlobalClientNotifications(whatsapp) {
     snap.docChanges().forEach(change => {
       const id = change.doc.id;
       const data = change.doc.data();
-      const nuevoEstado = data.estado || 'pendiente';
+      const nuevoEstado = data.estadoCaso || 'pendiente';
       
       if (change.type === 'added') {
         _knownStatus.set(id, nuevoEstado);
@@ -95,7 +95,7 @@ export function initGlobalClientNotifications(whatsapp) {
             _tocarAlarma();
             _mostrarModalAlerta({ id, ...data });
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Actualización de solicitud', { body: \`Tu solicitud "\${data.servicio}" ahora está: \${nuevoEstado}\`, icon: './img/logo.png' });
+              new Notification('Actualización de solicitud', { body: `Tu solicitud "${data.servicio}" ahora está: ${nuevoEstado}`, icon: './img/logo.png' });
             }
           }
         }
