@@ -319,7 +319,7 @@ async function cargarSolicitudes() {
 
   const q = query(collection(db, COLS.solicitudes), orderBy('timestamp', 'desc'));
 
-  onSnapshot(q, snap => {
+  onSnapshot(q, async snap => {
     // ── La detección de nuevas solicitudes (audio y notificaciones) fue movida a admin-notifications.js ──
     solicitudesInitialLoad = false;
 
