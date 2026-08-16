@@ -308,8 +308,6 @@ window.closeServicioModal = function() {
 // ════════════════════════════════════════════════════════════
 let solicitudesList = [];
 let solicitudesInitialLoad = true;
-let solicitudesList = [];
-let solicitudesInitialLoad = true;
 
 async function cargarSolicitudes() {
   const tbody = document.getElementById('solicitudes-tbody');
