@@ -483,67 +483,6 @@
           .map(d => ({ id: d.id, ...d.data() }))
           .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-        // Detectar cambios de estado para notificar
-        if (solicitudesCargadas.length > 0) {
-          lista.forEach(nueva => {
-            const anterior = solicitudesCargadas.find(v => v.id === nueva.id);
-            if (anterior && anterior.estadoCaso !== nueva.estadoCaso) {
-              mostrarToast(`🔔 Tu caso "${nueva.servicio}" cambió a: ${nueva.estadoCaso?.replace('_',' ').toUpperCase()}`, 'success');
-              
-              // Sonido para el cliente
-              try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                if (ctx.state === 'suspended') ctx.resume();
-                [[600,0.0],[800,0.15],[1000,0.3]].forEach(([f,t]) => {
-                  const o = ctx.createOscillator();
-                  const g = ctx.createGain();
-                  o.connect(g); g.connect(ctx.destination);
-                  o.frequency.value = f; o.type = 'sine';
-                  g.gain.setValueAtTime(0.3, ctx.currentTime + t);
-                  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.12);
-                  o.start(ctx.currentTime + t);
-                  o.stop(ctx.currentTime + t + 0.13);
-                });
-              } catch(e) {}
-
-              // Modal visual
-              let cModal = document.getElementById('modal-alerta-cliente');
-              if (!cModal) {
-                cModal = document.createElement('div');
-                cModal.id = 'modal-alerta-cliente';
-                cModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;';
-                cModal.innerHTML = `
-                  <div style="background:var(--bg-card,#1a1a2e);border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:16px;padding:2rem;max-width:380px;width:90%;text-align:center;">
-                    <div style="font-size:3rem;margin-bottom:1rem;">🔔</div>
-                    <h2 style="color:var(--text,#fff);font-size:1.3rem;margin-bottom:1rem;">¡Actualización de tu Caso!</h2>
-                    <div id="alerta-cliente-contenido" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:1rem;text-align:left;margin-bottom:1.5rem;font-size:0.9rem;"></div>
-                    <button id="alerta-cliente-cerrar" style="background:#4a9eff;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;width:100%;">Entendido</button>
-                  </div>`;
-                document.body.appendChild(cModal);
-              }
-              document.getElementById('alerta-cliente-contenido').innerHTML =
-                \`<p>Tu solicitud de <strong>\${nueva.servicio}</strong> ha cambiado su estado a:</p>
-                 <p style="text-align:center;font-size:1.2rem;margin-top:1rem;color:#68d391;font-weight:bold;">\${nueva.estadoCaso?.replace('_',' ').toUpperCase()}</p>\`;
-              cModal.style.display = 'flex';
-              document.getElementById('alerta-cliente-cerrar').onclick = () => { cModal.style.display = 'none'; };
-
-              // Notificación nativa en APK con canal de alta prioridad
-              if (window.Capacitor?.Plugins?.LocalNotifications) {
-                window.Capacitor.Plugins.LocalNotifications.schedule({
-                  notifications: [{
-                    title: '📋 Actualización de tu caso',
-                    body: `${nueva.servicio} → ${nueva.estadoCaso?.replace('_', ' ').toUpperCase()}`,
-                    id: Math.floor(Math.random() * 2000000000),
-                    channelId: 'ives_solicitudes_high',
-                    sound: 'default',
-                    actionTypeId: '',
-                    extra: null
-                  }]
-                }).catch(console.warn);
-              }
-            }
-          });
-        }
         solicitudesCargadas = lista;
 
         if (!lista.length) {

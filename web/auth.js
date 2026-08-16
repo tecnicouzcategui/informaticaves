@@ -380,6 +380,11 @@ onAuthStateChanged(auth, async user => {
 
   if (isAdmin) {
     import('./admin-notifications.js').then(m => m.initGlobalAdminNotifications()).catch(console.error);
+  } else {
+    const wa = userWhatsApp || localStorage.getItem(WA_KEY);
+    if (wa) {
+      import('./client-notifications.js').then(m => m.initGlobalClientNotifications(wa)).catch(console.error);
+    }
   }
 });
 
