@@ -446,6 +446,36 @@ window.verDetalles = function(id) {
     btnFactura.classList.add('hidden');
   }
 
+  // Verificar si ya fue valorado → bloquear todo
+  const estadoBtns = document.getElementById('estado-btns');
+  const estadoSection = estadoBtns?.parentElement;
+
+  // Chequeo rápido: importar y verificar valoración
+  import('./firebase.js').then(async ({ getValoracionBySolicitud }) => {
+    const valoracion = await getValoracionBySolicitud(id);
+    if (valoracion) {
+      // Caso valorado → BLOQUEAR: ocultar botones de estado
+      if (estadoSection) estadoSection.style.display = 'none';
+      // Mostrar sello de caso cerrado
+      let sello = document.getElementById('caso-cerrado-badge');
+      if (!sello) {
+        sello = document.createElement('div');
+        sello.id = 'caso-cerrado-badge';
+        sello.style.cssText = 'background:rgba(104,211,145,0.1);border:1px solid #68d391;border-radius:8px;padding:0.75rem 1rem;text-align:center;color:#68d391;font-weight:700;font-size:0.9rem;margin-top:1rem;';
+        sello.innerHTML = '🔒 CASO CERRADO — El cliente ya valoró este servicio. No se permiten más cambios.';
+        estadoBtns?.parentElement?.after(sello);
+      }
+      sello.style.display = 'block';
+      btnFactura.classList.remove('hidden');
+      btnFactura.href = `factura.html?id=${id}`;
+    } else {
+      // No valorado → permitir cambios
+      if (estadoSection) estadoSection.style.display = '';
+      const sello = document.getElementById('caso-cerrado-badge');
+      if (sello) sello.style.display = 'none';
+    }
+  }).catch(console.error);
+
   modal.classList.add('open');
 };
 

@@ -536,13 +536,22 @@
 
               ${estado === 'finalizado' ? `
                 ${yaValorado
-                  ? `<div style="text-align:center;color:var(--green);font-size:0.82rem;">⭐ Ya valoraste este servicio — ¡Gracias!</div>`
-                  : `<button class="btn btn-primary valorar-btn" data-id="${s.id}" data-servicio="${s.servicio}">⭐ Valorar este servicio</button>`
+                  ? `<div style="text-align:center;background:rgba(104,211,145,0.08);border:1px solid #68d391;border-radius:8px;padding:0.75rem;margin-top:0.5rem;">
+                       <div style="font-size:1.5rem;margin-bottom:0.3rem;">🔒</div>
+                       <div style="color:#68d391;font-weight:700;font-size:0.9rem;">CASO CERRADO</div>
+                       <div style="color:var(--text-dim);font-size:0.8rem;margin-top:0.2rem;">Ya valoraste este servicio. ¡Gracias por tu confianza!</div>
+                     </div>
+                     <a href="factura.html?id=${s.id}" class="btn btn-secondary w-full" target="_blank" style="margin-top:0.5rem;background:#2d3748;color:#68d391;border-color:#68d391;">
+                       📄 Ver mi Factura
+                     </a>`
+                  : `<button class="btn btn-primary valorar-btn" data-id="${s.id}" data-servicio="${s.servicio}">⭐ Valorar este servicio</button>
+                     <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, mi solicitud de ${s.servicio} ya fue finalizada. ¡Gracias!`)}"
+                        class="btn btn-secondary w-full" target="_blank" style="margin-top:0.5rem;">
+                       💬 Contactar por WhatsApp
+                     </a>`
                 }
-                <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, mi solicitud de ${s.servicio} ya fue finalizada. ¡Gracias!`)}"
-                   class="btn btn-secondary w-full" target="_blank" style="margin-top:0.5rem;">
-                  💬 Contactar por WhatsApp
-                </a>
+              ` : estado === 'cancelado' ? `
+                <div style="text-align:center;color:var(--red);font-size:0.85rem;padding:0.5rem;">❌ Esta solicitud fue cancelada.</div>
               ` : `
                 <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, quiero consultar el estado de mi solicitud de ${s.servicio}.`)}"
                    class="btn btn-secondary w-full" target="_blank">
