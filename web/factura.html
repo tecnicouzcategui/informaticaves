@@ -266,8 +266,8 @@
   </div>
 
   <script type="module">
-    import { db } from './db.js';
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, COLS } from './firebase.js';
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
     async function loadInvoice() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -279,7 +279,7 @@
       }
 
       try {
-        const snap = await getDoc(doc(db, "solicitudes", id));
+        const snap = await getDoc(doc(db, COLS.solicitudes, id));
         if (!snap.exists()) {
           document.getElementById('loader').textContent = 'Error: No se encontró la solicitud.';
           return;
