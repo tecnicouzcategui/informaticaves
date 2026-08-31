@@ -358,13 +358,13 @@ async function handleSubmit(e) {
     // 1. Guardar en Firestore
     await guardarSolicitud(solicitudData);
 
-    // 2. Notificar a nuestro Asistente AI (Webhook en servidor local)
+    // 2. Notificar a nuestro Asistente AI (Webhook en servidor local a través de LocalTunnel)
     try {
-      fetch('https://csque-38-43-254-144.free.pinggy.net/api/webhooks', {
+      fetch('https://informaticavesves.loca.lt/api/webhooks', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-Pinggy-No-Screen': '1'
+          'Bypass-Tunnel-Reminder': 'true'
         },
         body: JSON.stringify({
           source: 'Web InformaticaVES',
