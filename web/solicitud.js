@@ -358,6 +358,24 @@ async function handleSubmit(e) {
     // 1. Guardar en Firestore
     await guardarSolicitud(solicitudData);
 
+    // 2. Notificar a nuestro Asistente AI (Webhook en servidor local)
+    try {
+      fetch('https://kqumt-38-43-254-144.free.pinggy.net/api/webhooks', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-Pinggy-No-Screen': '1'
+        },
+        body: JSON.stringify({
+          source: 'Web InformaticaVES',
+          email: solicitudData.email || 'tecnicouzcategui@gmail.com',
+          content: `Solicitud Web: ${solicitudData.servicio} (${solicitudData.urgenciaLabel})\nCliente: ${solicitudData.nombre} (WhatsApp: ${solicitudData.whatsapp})\nDirección: ${solicitudData.direccion}\nDetalle: ${solicitudData.descripcion}`
+        })
+      });
+    } catch (e) {
+      console.warn('[Solicitud] Error enviando a Webhook AI:', e);
+    }
+
     // Éxito
     showToast('✅ Solicitud enviada correctamente', 'success');
     mostrarConfirmacion(solicitudData, urgConfig);
