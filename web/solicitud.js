@@ -358,13 +358,12 @@ async function handleSubmit(e) {
     // 1. Guardar en Firestore
     await guardarSolicitud(solicitudData);
 
-    // 2. Notificar a nuestro Asistente AI (Webhook en servidor local a través de LocalTunnel)
+    // 2. Notificar a nuestro Asistente AI (Webhook)
     try {
-      fetch('https://informaticavesves.loca.lt/api/webhooks', {
+      fetch('https://e2a47509277fa8.lhr.life/api/webhooks', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Bypass-Tunnel-Reminder': 'true'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           source: 'Web InformaticaVES',
