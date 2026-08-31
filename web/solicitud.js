@@ -360,7 +360,7 @@ async function handleSubmit(e) {
 
     // 2. Notificar a nuestro Asistente AI (Webhook en servidor local)
     try {
-      fetch('https://kqumt-38-43-254-144.free.pinggy.net/api/webhooks', {
+      fetch('https://csque-38-43-254-144.free.pinggy.net/api/webhooks', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
