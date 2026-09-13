@@ -82,8 +82,8 @@
 
     </header>
 
-    <!-- ── Portal Help Desk: Opciones de Registro / Entrada ───── -->
-    <section class="section" style="padding-top:0.5rem; padding-bottom:1.5rem;">
+    <!-- ── Portal Help Desk: Opciones de Registro / Entrada (Visitantes) ───── -->
+    <section id="portal-guest-section" class="section" style="padding-top:0.5rem; padding-bottom:1.5rem;">
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem; max-width:800px; margin:0 auto;">
         
         <!-- Tarjeta Solicitante -->
@@ -124,6 +124,115 @@
           </div>
         </div>
 
+      </div>
+    </section>
+
+    <!-- ── Dashboard del Solicitante (Autenticado) ─────────────── -->
+    <section id="portal-solicitante-dashboard" class="section" style="display:none; padding-top:0.5rem; padding-bottom:1.5rem;">
+      <div style="max-width:960px; margin:0 auto;">
+        
+        <!-- Tarjeta de Bienvenida del Solicitante -->
+        <div class="card" style="background:linear-gradient(135deg, rgba(99,179,237,0.12), rgba(127,156,245,0.06)); border:1px solid rgba(99,179,237,0.3); border-radius:1rem; padding:1.5rem; margin-bottom:1.5rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.25rem;">
+            <div style="display:flex; align-items:center; gap:1rem;">
+              <div id="sol-dash-avatar" style="width:62px; height:62px; border-radius:50%; overflow:hidden; background:#3182ce; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:800; color:#fff; border:2px solid var(--accent); flex-shrink:0;">
+                👤
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <h2 id="sol-dash-name" style="font-size:1.35rem; font-weight:800; color:var(--text); margin:0;">Cargando perfil...</h2>
+                  <span class="badge" style="background:rgba(99,179,237,0.2); color:#63b3ed; font-size:0.75rem; border:1px solid rgba(99,179,237,0.4);">👤 Solicitante Activo</span>
+                </div>
+                <div style="font-size:0.84rem; color:var(--text-muted); margin-top:0.25rem; display:flex; gap:0.75rem; flex-wrap:wrap;" id="sol-dash-meta">
+                  <span id="sol-dash-cedula">🆔 Cédula: —</span>
+                  <span>•</span>
+                  <span id="sol-dash-empresa">🏢 Empresa: —</span>
+                  <span>•</span>
+                  <span id="sol-dash-wa">📱 WhatsApp: —</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <a href="solicitud.html" class="btn btn-primary" style="font-weight:700; padding:0.65rem 1.25rem; font-size:0.9rem; display:inline-flex; align-items:center; gap:0.4rem;">
+                <span>➕</span> Solicitar Asistencia Técnica
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Cards Principales del Dashboard del Solicitante -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem; margin-bottom:1.5rem;">
+          
+          <!-- Card 1: Servicios Disponibles -->
+          <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;">🛠️</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">Servicios IT Disponibles</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;">
+                Explora el catálogo completo con <strong>24 especialidades</strong>: soporte PC, formateo, redes WiFi, CCTV, servidores, software y hardware.
+              </p>
+            </div>
+            <a href="servicios.html" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem; text-align:center; text-decoration:none;">
+              Ver Catálogo de Servicios →
+            </a>
+          </div>
+
+          <!-- Card 2: Solicitar / Abrir Ticket -->
+          <div class="card" style="background:linear-gradient(135deg, rgba(99,179,237,0.1), rgba(127,156,245,0.04)); border:1px solid rgba(99,179,237,0.3); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;">📝</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">Abrir Ticket Help Desk</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;">
+                Reporta una falla en tus equipos o solicita soporte presencial/remoto. Un técnico profesional será asignado de inmediato a tu orden.
+              </p>
+            </div>
+            <a href="solicitud.html" class="btn btn-primary w-full" style="font-weight:700; padding:0.65rem; font-size:0.88rem; text-align:center; text-decoration:none;">
+              Crear Nueva Solicitud →
+            </a>
+          </div>
+
+          <!-- Card 3: Mis Solicitudes -->
+          <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;">📋</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">Mis Solicitudes & Estado</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;">
+                Consulta el estado en vivo de tus requerimientos, conversa con el técnico asignado, confirma servicios y descarga tus facturas.
+              </p>
+            </div>
+            <a href="mis-solicitudes.html" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem; text-align:center; text-decoration:none;">
+              Ver Mis Solicitudes Activas →
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Dashboard del Técnico (Autenticado) ─────────────────── -->
+    <section id="portal-tecnico-dashboard" class="section" style="display:none; padding-top:0.5rem; padding-bottom:1.5rem;">
+      <div style="max-width:800px; margin:0 auto;">
+        <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.12), rgba(237,137,54,0.05)); border:1px solid rgba(246,173,85,0.35); border-radius:1rem; padding:1.75rem; text-align:center;">
+          <div id="tec-dash-avatar" style="width:68px; height:68px; border-radius:50%; overflow:hidden; background:#f6ad55; display:inline-flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#1a202c; border:2px solid #f6ad55; margin-bottom:0.75rem;">
+            👨‍🔧
+          </div>
+          <h2 id="tec-dash-name" style="font-size:1.4rem; font-weight:800; color:var(--text); margin-bottom:0.25rem;">Panel Técnico IT</h2>
+          <div style="display:inline-flex; align-items:center; gap:0.4rem; background:rgba(246,173,85,0.2); color:#f6ad55; padding:0.2rem 0.75rem; border-radius:999px; font-size:0.78rem; font-weight:700; margin-bottom:0.75rem;">
+            ⚡ Técnico Profesional Activo
+          </div>
+          <p id="tec-dash-meta" style="color:var(--text-muted); font-size:0.86rem; margin-bottom:1.5rem;">
+            Bienvenido a tu estación de trabajo. Administra tus órdenes asignadas, actualiza estados y comunícate con clientes.
+          </p>
+          <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
+            <a href="tecnico.html" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.75rem 1.5rem; font-size:0.92rem; text-decoration:none;">
+              📋 Ir a Mi Panel de Órdenes de Trabajo
+            </a>
+            <a href="servicios.html" class="btn btn-secondary" style="border-color:rgba(246,173,85,0.4); color:#f6ad55; font-weight:600; padding:0.75rem 1.25rem; font-size:0.92rem; text-decoration:none;">
+              🛠️ Catálogo de Servicios
+            </a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -182,7 +291,73 @@
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  // Solicitante Buttons
+  // Actualizar portal según el estado de autenticación
+  function updatePortalView() {
+    const guestSec = document.getElementById('portal-guest-section');
+    const solDash  = document.getElementById('portal-solicitante-dashboard');
+    const tecDash  = document.getElementById('portal-tecnico-dashboard');
+
+    if (Auth.currentUser) {
+      if (guestSec) guestSec.style.display = 'none';
+
+      if (Auth.isTecnico) {
+        if (solDash) solDash.style.display = 'none';
+        if (tecDash) {
+          tecDash.style.display = 'block';
+          const nameEl   = document.getElementById('tec-dash-name');
+          const avatarEl = document.getElementById('tec-dash-avatar');
+          const metaEl   = document.getElementById('tec-dash-meta');
+          
+          if (nameEl) nameEl.textContent = `¡Hola, ${Auth.userNombre || 'Técnico IT'}!`;
+          if (avatarEl) {
+            if (Auth.userFoto) {
+              avatarEl.innerHTML = `<img src="${Auth.userFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+              avatarEl.textContent = (Auth.userNombre || 'T').charAt(0).toUpperCase();
+            }
+          }
+          if (metaEl) {
+            metaEl.textContent = `Cédula: ${Auth.userCedula || '—'} • WhatsApp: ${Auth.userWhatsApp || '—'}`;
+          }
+        }
+      } else {
+        // Solicitante / Cliente
+        if (tecDash) tecDash.style.display = 'none';
+        if (solDash) {
+          solDash.style.display = 'block';
+          const nameEl   = document.getElementById('sol-dash-name');
+          const avatarEl = document.getElementById('sol-dash-avatar');
+          const cedulaEl = document.getElementById('sol-dash-cedula');
+          const empresaEl= document.getElementById('sol-dash-empresa');
+          const waEl     = document.getElementById('sol-dash-wa');
+          
+          const cli = Auth.clienteData;
+          if (nameEl) nameEl.textContent = `¡Bienvenido, ${Auth.userNombre || 'Solicitante'}!`;
+          if (avatarEl) {
+            if (Auth.userFoto) {
+              avatarEl.innerHTML = `<img src="${Auth.userFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+              avatarEl.textContent = (Auth.userNombre || 'S').charAt(0).toUpperCase();
+            }
+          }
+          if (cedulaEl)  cedulaEl.textContent  = `🆔 Cédula: ${Auth.userCedula || '—'}`;
+          if (empresaEl) empresaEl.textContent = `🏢 Empresa: ${cli?.compania || cli?.profesion || 'Particular'}`;
+          if (waEl)      waEl.textContent      = `📱 WhatsApp: ${Auth.userWhatsApp || '—'}`;
+        }
+      }
+    } else {
+      // Visitante no autenticado
+      if (guestSec) guestSec.style.display = 'block';
+      if (solDash)  solDash.style.display  = 'none';
+      if (tecDash)  tecDash.style.display  = 'none';
+    }
+  }
+
+  // Suscribirse a cambios de sesión
+  Auth.onAuthChange(updatePortalView);
+  updatePortalView();
+
+  // Solicitante Buttons (Guest)
   document.getElementById('btn-solicitante-registro')?.addEventListener('click', () => {
     if (Auth.currentUser) {
       window.location.href = 'solicitud.html';
@@ -199,7 +374,7 @@
     }
   });
 
-  // Técnico Buttons
+  // Técnico Buttons (Guest)
   document.getElementById('btn-tecnico-registro')?.addEventListener('click', () => {
     if (Auth.isTecnico) {
       window.location.href = 'tecnico.html';
