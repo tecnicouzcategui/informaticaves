@@ -1,7 +1,7 @@
 // ============================================================
 // sw.js — Service Worker PWA (Network-first, JS always fresh)
 // ============================================================
-const CACHE_NAME = 'informaticosvenezuela-cache-v30';
+const CACHE_NAME = 'informaticosvenezuela-cache-v31';
 // Solo cachear assets estáticos (imágenes, íconos, CSS)
 // Los archivos .js y .html siempre se buscan en la red primero
 const STATIC_ASSETS = [
