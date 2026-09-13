@@ -4,7 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signOut, onAuthStateChanged,
   guardarCliente, getCliente, getClienteByWA, getClienteByCedula,
-  guardarTecnico, getTecnico, getTecnicoByWA,
+  guardarTecnico, getTecnico, getTecnicoByWA, getTecnicoByCedula,
   sha256, loginClienteByHash, setClientePasswordHash,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
@@ -101,7 +101,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     modal.id = 'modal-auth-custom';
     modal.className = 'modal-backdrop';
     modal.innerHTML = `
-      <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 2rem 1.75rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
+      <div class="modal-box" style="max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 2rem 1.75rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
         <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
         
         <!-- Selector de Rol (visible solo si lockRole es falso) -->
@@ -132,46 +132,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           </p>
           
           <div class="form-group" style="margin-bottom:0.65rem;">
-            <label class="form-label">1. Nombre y Apellido *</label>
-            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: María González" required>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.65rem;">
-            <label class="form-label">2. Compañía / Empresa *</label>
-            <input type="text" id="auth-compania" class="form-input" placeholder="Ej: Corporación Andina C.A. / Particular" required>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.65rem;">
-            <label class="form-label">3. Dirección de la Compañía o Local *</label>
-            <textarea id="auth-dir-compania" class="form-input" rows="2" placeholder="Ej: Av. Principal, Torre Norte, Piso 4, Ofic. 4B" required style="resize:vertical; min-height:50px;"></textarea>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.65rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
-            <div>
-              <label class="form-label">4. Cédula (Tu Usuario) *</label>
-              <input type="text" id="auth-cedula" class="form-input" placeholder="V-12345678" required>
-            </div>
-            <div>
-              <label class="form-label">5. WhatsApp / Teléfono *</label>
-              <input type="tel" id="auth-wa-solicitante" class="form-input" placeholder="04121234567" maxlength="15" required>
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.65rem;">
-            <label class="form-label">6. Correo Electrónico *</label>
-            <input type="email" id="auth-email-solicitante" class="form-input" placeholder="correo@ejemplo.com" required>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.65rem;">
-            <label class="form-label">7. Dirección de donde se hará el trabajo *</label>
-            <textarea id="auth-dir-trabajo" class="form-input" rows="2" placeholder="Dirección del servicio (o indicar 'Misma sede de la compañía')" required style="resize:vertical; min-height:50px;"></textarea>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.35rem;">
-            <label class="form-label">8. Foto de su persona (JPG o PNG) *</label>
+            <label class="form-label">1. Foto de su persona (JPG o PNG) *</label>
             <div style="display:flex; align-items:center; gap:0.75rem; background:rgba(0,0,0,0.25); padding:0.6rem; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
               <div id="auth-foto-preview-box" style="width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; overflow:hidden; border:2px solid var(--blue); flex-shrink:0;">
-                <img id="auth-foto-preview" src="" alt="Foto" style="display:none; width:100%; height:100%; object-fit:cover;">
+                <img id="auth-foto-preview" src="" alt="Foto Solicitante" style="display:none; width:100%; height:100%; object-fit:cover;">
                 <span id="auth-foto-placeholder" style="font-size:1.5rem;">📷</span>
               </div>
               <div style="flex:1;">
@@ -181,46 +145,131 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               </div>
             </div>
           </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">2. Nombre y Apellido *</label>
+            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: María González" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">3. Compañía / Empresa *</label>
+            <input type="text" id="auth-compania" class="form-input" placeholder="Ej: Corporación Andina C.A. / Particular" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">4. Dirección de la Compañía o Local *</label>
+            <textarea id="auth-dir-compania" class="form-input" rows="2" placeholder="Ej: Av. Principal, Torre Norte, Piso 4, Ofic. 4B" required style="resize:vertical; min-height:50px;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <div>
+              <label class="form-label">5. Cédula (Tu Usuario) *</label>
+              <input type="text" id="auth-cedula" class="form-input" placeholder="V-12345678" required>
+            </div>
+            <div>
+              <label class="form-label">6. WhatsApp / Teléfono *</label>
+              <input type="tel" id="auth-wa-solicitante" class="form-input" placeholder="04121234567" maxlength="15" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">7. Correo Electrónico *</label>
+            <input type="email" id="auth-email-solicitante" class="form-input" placeholder="correo@ejemplo.com" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">8. Descripción de su Profesión / Cargo *</label>
+            <input type="text" id="auth-profesion-solicitante" class="form-input" placeholder="Ej: Gerente de Operaciones / Encargado de Local" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.35rem;">
+            <label class="form-label">9. Dirección de donde se hará el trabajo *</label>
+            <textarea id="auth-dir-trabajo" class="form-input" rows="2" placeholder="Dirección del servicio (o indicar 'Misma sede de la compañía')" required style="resize:vertical; min-height:50px;"></textarea>
+          </div>
         </div>
 
-        <!-- ── Campos de Registro para Técnico ── -->
-        <div id="auth-tecnico-fields" style="display:none; margin-bottom:1.25rem; background:rgba(246,173,85,0.08); padding:1rem; border-radius:10px; border:1px dashed rgba(246,173,85,0.3);">
-          <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro Profesional — Red de Técnicos IT</p>
+        <!-- ── Campos de Registro para Técnico (TODOS OBLIGATORIOS) ── -->
+        <div id="auth-tecnico-fields" style="display:none; margin-bottom:1.25rem; background:rgba(246,173,85,0.08); padding:1.1rem; border-radius:10px; border:1px dashed rgba(246,173,85,0.3);">
+          <p style="color:#f6ad55; font-size:0.84rem; margin-bottom:0.85rem; text-align:center; font-weight:800;">
+            🛠️ Registro Profesional — Red de Técnicos IT <br><span style="font-size:0.75rem; font-weight:normal; color:var(--text-muted);">(Todos los requisitos son obligatorios)</span>
+          </p>
           
-          <div class="form-group" style="margin-bottom:0.6rem;">
-            <label class="form-label">Nombre Completo *</label>
-            <input type="text" id="tec-nombre" class="form-input" placeholder="Ej: Luis Rodríguez">
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.6rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
-            <div>
-              <label class="form-label">Cédula / Doc. *</label>
-              <input type="text" id="tec-cedula" class="form-input" placeholder="V-12345678">
-            </div>
-            <div>
-              <label class="form-label">WhatsApp *</label>
-              <input type="tel" id="tec-wa" class="form-input" placeholder="04121234567" maxlength="15">
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0.6rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
-            <div>
-              <label class="form-label">Años de Exp. *</label>
-              <input type="number" id="tec-exp" class="form-input" placeholder="Ej: 5" min="0">
-            </div>
-            <div>
-              <label class="form-label">Zona de Cobertura *</label>
-              <input type="text" id="tec-zona" class="form-input" placeholder="Ej: Caracas, Valencia">
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">1. Foto de su persona (JPG o PNG) *</label>
+            <div style="display:flex; align-items:center; gap:0.75rem; background:rgba(0,0,0,0.25); padding:0.6rem; border-radius:8px; border:1px solid rgba(246,173,85,0.2);">
+              <div id="tec-foto-preview-box" style="width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; overflow:hidden; border:2px solid #f6ad55; flex-shrink:0;">
+                <img id="tec-foto-preview" src="" alt="Foto Técnico" style="display:none; width:100%; height:100%; object-fit:cover;">
+                <span id="tec-foto-placeholder" style="font-size:1.5rem;">👨‍🔧</span>
+              </div>
+              <div style="flex:1;">
+                <input type="file" id="tec-foto-file" accept="image/jpeg,image/png,image/jpg" style="display:none;">
+                <button type="button" id="tec-btn-upload-foto" class="btn btn-sm" style="background:rgba(246,173,85,0.2); color:#f6ad55; border:1px solid rgba(246,173,85,0.4); font-size:0.78rem;">📁 Seleccionar Foto</button>
+                <span id="tec-foto-name" style="display:block; font-size:0.72rem; color:var(--text-muted); margin-top:3px; word-break:break-all;">Ningún archivo seleccionado</span>
+              </div>
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom:0.6rem;">
-            <label class="form-label">Correo Electrónico</label>
-            <input type="email" id="tec-email" class="form-input" placeholder="tecnico@ejemplo.com">
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">2. Nombre Completo *</label>
+            <input type="text" id="tec-nombre" class="form-input" placeholder="Ej: Luis Rodríguez" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <div>
+              <label class="form-label">3. Cédula / Doc. (Usuario) *</label>
+              <input type="text" id="tec-cedula" class="form-input" placeholder="V-12345678" required>
+            </div>
+            <div>
+              <label class="form-label">4. WhatsApp / Teléfono *</label>
+              <input type="tel" id="tec-wa" class="form-input" placeholder="04121234567" maxlength="15" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <div>
+              <label class="form-label">5. Años de Experiencia *</label>
+              <input type="number" id="tec-exp" class="form-input" placeholder="Ej: 5" min="0" required>
+            </div>
+            <div>
+              <label class="form-label">6. Zona de Cobertura *</label>
+              <input type="text" id="tec-zona" class="form-input" placeholder="Ej: Caracas Este, Chacao, Guarenas" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">7. Correo Electrónico *</label>
+            <input type="email" id="tec-email" class="form-input" placeholder="tecnico@ejemplo.com" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">8. Descripción de su Profesión / Perfil *</label>
+            <textarea id="tec-profesion" class="form-input" rows="2" placeholder="Ej: Técnico Superior en Sistemas con 8 años de experiencia en soporte a servidores, CCTV y redes" required style="resize:vertical; min-height:50px;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>9. Especialidades Técnicas & Cualidades (Renglón por renglón) *</span>
+              <button type="button" id="tec-btn-add-cualidad" class="btn btn-sm" style="background:rgba(246,173,85,0.25); color:#f6ad55; border:1px solid rgba(246,173,85,0.4); font-size:0.75rem; padding:2px 8px; border-radius:6px; cursor:pointer;">➕ Agregar Renglón</button>
+            </label>
+            <div id="tec-cualidades-list" style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.35rem;">
+              <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 1: Ej: Diagnóstico y reparación de PC / Laptops Windows y Linux" style="font-size:0.83rem; padding:0.5rem;" required>
+                <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
+              </div>
+              <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 2: Ej: Configuración de redes WiFi, routers y cableado estructurado" style="font-size:0.83rem; padding:0.5rem;">
+                <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
+              </div>
+              <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 3: Ej: Instalación de cámaras CCTV, DVR, NVR y control de acceso" style="font-size:0.83rem; padding:0.5rem;">
+                <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
+              </div>
+            </div>
+            <small style="color:var(--text-muted); font-size:0.72rem; display:block; margin-top:4px;">Indica renglón por renglón tus cualidades y fortalezas técnicas.</small>
           </div>
 
           <div class="form-group" style="margin-bottom:0.25rem;">
-            <label class="form-label" style="margin-bottom:0.4rem; display:block;">Especialidades Técnicas:</label>
+            <label class="form-label" style="margin-bottom:0.4rem; display:block;">Categorías Rápidas:</label>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; font-size:0.78rem; color:var(--text-muted);">
               <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Soporte PC / Laptops"> 💻 PC & Laptops</label>
               <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Redes & WiFi"> 📡 Redes & WiFi</label>
@@ -264,7 +313,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     let selectedRole = defaultTab || 'solicitante';
     let currentMode  = initialMode || 'login'; // 'login' | 'registro'
     let isRoleLocked = lockRole;
-    let uploadedFotoBase64 = null;
+    let uploadedSolicitanteFotoBase64 = null;
+    let uploadedTecnicoFotoBase64 = null;
 
     const roleTabsContainer = document.getElementById('auth-role-tabs-container');
     const tabSolicitante = document.getElementById('tab-rol-solicitante');
@@ -300,9 +350,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       try {
-        uploadedFotoBase64 = await processImageFile(file);
+        uploadedSolicitanteFotoBase64 = await processImageFile(file);
         if (fotoPreviewImg) {
-          fotoPreviewImg.src = uploadedFotoBase64;
+          fotoPreviewImg.src = uploadedSolicitanteFotoBase64;
           fotoPreviewImg.style.display = 'block';
         }
         if (fotoPlaceholder) fotoPlaceholder.style.display = 'none';
@@ -311,6 +361,63 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       } catch (err) {
         showToast(err.message || 'Error al procesar la foto', 'error');
         fotoFileInput.value = '';
+      }
+    });
+
+    // Manejo de carga de foto para técnico
+    const tecFotoFileInput   = document.getElementById('tec-foto-file');
+    const tecFotoUploadBtn   = document.getElementById('tec-btn-upload-foto');
+    const tecFotoPreviewImg  = document.getElementById('tec-foto-preview');
+    const tecFotoPlaceholder = document.getElementById('tec-foto-placeholder');
+    const tecFotoNameSpan    = document.getElementById('tec-foto-name');
+
+    tecFotoUploadBtn?.addEventListener('click', () => tecFotoFileInput?.click());
+
+    tecFotoFileInput?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        uploadedTecnicoFotoBase64 = await processImageFile(file);
+        if (tecFotoPreviewImg) {
+          tecFotoPreviewImg.src = uploadedTecnicoFotoBase64;
+          tecFotoPreviewImg.style.display = 'block';
+        }
+        if (tecFotoPlaceholder) tecFotoPlaceholder.style.display = 'none';
+        if (tecFotoNameSpan) tecFotoNameSpan.textContent = file.name;
+        revalidatePassword();
+      } catch (err) {
+        showToast(err.message || 'Error al procesar la foto', 'error');
+        tecFotoFileInput.value = '';
+      }
+    });
+
+    // Manejo dinámico de Renglones de Cualidades para Técnico
+    const btnAddCualidad = document.getElementById('tec-btn-add-cualidad');
+    const cualidadesList = document.getElementById('tec-cualidades-list');
+
+    btnAddCualidad?.addEventListener('click', () => {
+      if (!cualidadesList) return;
+      const rowCount = cualidadesList.querySelectorAll('.cualidad-row').length + 1;
+      const row = document.createElement('div');
+      row.className = 'cualidad-row';
+      row.style.cssText = 'display:flex; gap:0.4rem; align-items:center;';
+      row.innerHTML = `
+        <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón ${rowCount}: Escribe otra cualidad o especialidad..." style="font-size:0.83rem; padding:0.5rem;">
+        <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
+      `;
+      cualidadesList.appendChild(row);
+      row.querySelector('.tec-cualidad-input')?.focus();
+    });
+
+    cualidadesList?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('btn-remove-cualidad')) {
+        const allRows = cualidadesList.querySelectorAll('.cualidad-row');
+        if (allRows.length > 1) {
+          e.target.closest('.cualidad-row')?.remove();
+        } else {
+          const input = allRows[0].querySelector('.tec-cualidad-input');
+          if (input) input.value = '';
+        }
       }
     });
 
@@ -345,7 +452,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
         if (selectedRole === 'tecnico') {
           modalTitle.textContent = 'Registro de Técnico IT';
-          modalDesc.textContent = 'Crea tu cuenta profesional para recibir órdenes de trabajo asignadas.';
+          modalDesc.textContent = 'Completa todos los requisitos obligatorios para crear tu cuenta.';
           document.getElementById('auth-tecnico-fields').style.display = 'block';
           document.getElementById('auth-register-fields').style.display = 'none';
           submitBtn.textContent = '🛠️ Crear Cuenta de Técnico';
@@ -373,9 +480,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
         if (selectedRole === 'tecnico') {
           modalTitle.textContent = 'Acceso de Técnicos IT';
-          modalDesc.textContent = 'Ingresa con tu WhatsApp o Cédula y contraseña.';
-          if (waLabel) waLabel.textContent = 'WhatsApp o Cédula';
-          if (waInput) waInput.placeholder = 'Ej: 04121234567 o V-12345678';
+          modalDesc.textContent = 'Ingresa con tu Cédula o WhatsApp y contraseña.';
+          if (waLabel) waLabel.textContent = 'Cédula o WhatsApp';
+          if (waInput) waInput.placeholder = 'Ej: V-12345678 o 04121234567';
           submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
           submitBtn.style.background = '#f6ad55';
           submitBtn.style.color = '#1a202c';
@@ -479,43 +586,119 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
       try {
         if (isRegisteringTecnico) {
-          // ── REGISTRO DE TÉCNICO
-          const nombre = document.getElementById('tec-nombre').value.trim();
-          const cedula = document.getElementById('tec-cedula').value.trim();
-          const wa     = document.getElementById('tec-wa')?.value.trim().replace(/[^0-9]/g, '') || '';
-          const exp    = document.getElementById('tec-exp').value.trim();
-          const zona   = document.getElementById('tec-zona').value.trim();
-          const emailInput = document.getElementById('tec-email')?.value.trim() || '';
+          // ── REGISTRO DE TÉCNICO (TODOS LOS REQUISITOS OBLIGATORIOS)
+          const nombre       = document.getElementById('tec-nombre')?.value.trim();
+          const cedula       = document.getElementById('tec-cedula')?.value.trim();
+          const wa           = document.getElementById('tec-wa')?.value.trim().replace(/[^0-9]/g, '');
+          const exp          = document.getElementById('tec-exp')?.value.trim();
+          const zona         = document.getElementById('tec-zona')?.value.trim();
+          const emailInput   = document.getElementById('tec-email')?.value.trim();
+          const profesion    = document.getElementById('tec-profesion')?.value.trim();
+
+          const cualidadInputs = document.querySelectorAll('.tec-cualidad-input');
+          const cualidades = Array.from(cualidadInputs).map(i => i.value.trim()).filter(v => v.length > 0);
+
           const espNodes = document.querySelectorAll('input[name="tec_esp"]:checked');
-          const especialidades = Array.from(espNodes).map(n => n.value);
+          const especialidadesCategorias = Array.from(espNodes).map(n => n.value);
 
-          if (!nombre) { showToast('Ingresa tu nombre completo', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
-          if (!cedula) { showToast('Ingresa tu cédula', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
-          if (!wa || wa.length < 10) { showToast('Ingresa tu número de WhatsApp (mínimo 10 dígitos)', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
-          if (especialidades.length === 0) { showToast('Selecciona al menos una especialidad', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
+          // Validaciones estrictas
+          if (!uploadedTecnicoFotoBase64) {
+            showToast('Subir la Foto de su persona (JPG o PNG) es obligatorio.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!nombre) {
+            showToast('El Nombre Completo es obligatorio.', 'error');
+            document.getElementById('tec-nombre')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!cedula) {
+            showToast('La Cédula / Documento es obligatoria.', 'error');
+            document.getElementById('tec-cedula')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!wa || wa.length < 10) {
+            showToast('El número de WhatsApp es obligatorio (mínimo 10 dígitos).', 'error');
+            document.getElementById('tec-wa')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!exp) {
+            showToast('Los Años de Experiencia son obligatorios.', 'error');
+            document.getElementById('tec-exp')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!zona) {
+            showToast('La Zona de Cobertura es obligatoria.', 'error');
+            document.getElementById('tec-zona')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!emailInput || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput)) {
+            showToast('El Correo Electrónico es obligatorio y debe tener formato válido.', 'error');
+            document.getElementById('tec-email')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!profesion) {
+            showToast('La Descripción de su Profesión / Perfil es obligatoria.', 'error');
+            document.getElementById('tec-profesion')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (cualidades.length === 0) {
+            showToast('Debes ingresar al menos una cualidad / especialidad técnica en los renglones.', 'error');
+            cualidadInputs[0]?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
 
-          const fakeEmail = `${wa}@informaticosvenezuela.com`;
+          // Verificar si ya existe técnico con esa cédula o WhatsApp
+          const yaExisteTecCed = await getTecnicoByCedula(cedula);
+          if (yaExisteTecCed) {
+            showToast('Esta cédula ya se encuentra registrada como técnico.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          const yaExisteTecWA = await getTecnicoByWA(wa);
+          if (yaExisteTecWA) {
+            showToast('Este número de WhatsApp ya se encuentra registrado como técnico.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+
           const hash = await sha256(pass);
-          const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
-          
-          await guardarTecnico(res.user.uid, {
-            uid: res.user.uid,
-            email: fakeEmail,
-            emailPersonal: emailInput,
+          let userCred = null;
+          try {
+            userCred = await createUserWithEmailAndPassword(auth, emailInput, pass);
+          } catch (authErr) {
+            if (authErr.code === 'auth/email-already-in-use') {
+              const fakeEmailCedula = `${cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com`;
+              userCred = await createUserWithEmailAndPassword(auth, fakeEmailCedula, pass);
+            } else {
+              throw authErr;
+            }
+          }
+
+          const uid = userCred ? userCred.user.uid : `tec_${Date.now()}`;
+
+          await guardarTecnico(uid, {
+            uid: uid,
             nombre: nombre,
-            whatsapp: wa,
             cedula: cedula.toUpperCase(),
-            experiencia: exp || '0',
-            zona: zona || 'General',
-            especialidades: especialidades,
-            estado: 'activo',
-            disponible: true,
+            cedulaNum: cedula.replace(/[^0-9]/g, ''),
+            whatsapp: wa,
+            email: emailInput,
+            emailPersonal: emailInput,
+            experiencia: exp,
+            zona: zona,
+            profesion: profesion,
+            cualidades: cualidades,
+            especialidades: especialidadesCategorias.length > 0 ? especialidadesCategorias : cualidades,
+            fotoPerfil: uploadedTecnicoFotoBase64,
             passwordHash: hash,
-            rol: 'tecnico'
+            rol: 'tecnico',
+            estado: 'activo',
+            disponible: true
           });
 
           localStorage.setItem(ROLE_KEY, 'tecnico');
           localStorage.setItem(WA_KEY, wa);
+          localStorage.setItem('infovzla_user_cedula', cedula.toUpperCase());
+          try { localStorage.setItem('infovzla_user_foto', uploadedTecnicoFotoBase64); } catch(_) {}
+
           showToast('✅ ¡Cuenta de Técnico creada exitosamente!', 'success');
           modal.classList.remove('open');
           window.location.href = 'tecnico.html';
@@ -529,9 +712,14 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           const cedula       = document.getElementById('auth-cedula')?.value.trim();
           const wa           = document.getElementById('auth-wa-solicitante')?.value.trim().replace(/[^0-9]/g, '');
           const emailInput   = document.getElementById('auth-email-solicitante')?.value.trim();
+          const profesion    = document.getElementById('auth-profesion-solicitante')?.value.trim();
           const dirTrabajo   = document.getElementById('auth-dir-trabajo')?.value.trim();
 
           // Validaciones estrictas campo por campo
+          if (!uploadedSolicitanteFotoBase64) {
+            showToast('Subir la Foto de su persona (JPG o PNG) es obligatorio.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
           if (!nombre) {
             showToast('El Nombre y Apellido es obligatorio.', 'error');
             document.getElementById('auth-nombre')?.focus();
@@ -562,13 +750,14 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             document.getElementById('auth-email-solicitante')?.focus();
             submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
           }
+          if (!profesion) {
+            showToast('La Descripción de su Profesión / Cargo es obligatoria.', 'error');
+            document.getElementById('auth-profesion-solicitante')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
           if (!dirTrabajo) {
             showToast('La Dirección de donde se hará el trabajo es obligatoria.', 'error');
             document.getElementById('auth-dir-trabajo')?.focus();
-            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
-          }
-          if (!uploadedFotoBase64) {
-            showToast('Subir la Foto de su persona (JPG o PNG) es obligatorio.', 'error');
             submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
           }
 
@@ -610,8 +799,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             whatsapp: wa,
             email: emailInput,
             emailPersonal: emailInput,
+            profesion: profesion,
             direccionTrabajo: dirTrabajo,
-            fotoPerfil: uploadedFotoBase64,
+            fotoPerfil: uploadedSolicitanteFotoBase64,
             passwordHash: hash,
             rol: 'solicitante'
           });
@@ -619,7 +809,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           localStorage.setItem(ROLE_KEY, 'solicitante');
           localStorage.setItem(WA_KEY, wa);
           localStorage.setItem('infovzla_user_cedula', cedula.toUpperCase());
-          try { localStorage.setItem('infovzla_user_foto', uploadedFotoBase64); } catch(_) {}
+          try { localStorage.setItem('infovzla_user_foto', uploadedSolicitanteFotoBase64); } catch(_) {}
 
           showToast('✅ ¡Cuenta de Solicitante creada exitosamente!', 'success');
           modal.classList.remove('open');
@@ -641,7 +831,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
           let tecExistente = null;
           if (!cliExistente) {
-            tecExistente = await getTecnicoByWA(userInput.replace(/[^0-9]/g, ''));
+            tecExistente = await getTecnicoByCedula(userInput);
+            if (!tecExistente) {
+              tecExistente = await getTecnicoByWA(userInput.replace(/[^0-9]/g, ''));
+            }
           }
 
           if (!tecExistente && !cliExistente) {

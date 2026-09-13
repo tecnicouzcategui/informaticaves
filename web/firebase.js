@@ -372,6 +372,23 @@ export async function getTecnicoByWA(wa) {
   return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
 
+/** Busca si una cédula ya tiene cuenta de técnico */
+export async function getTecnicoByCedula(cedula) {
+  if (!cedula) return null;
+  const clean = cedula.trim().toUpperCase();
+  const q = query(collection(db, COLS.tecnicos), where('cedula', '==', clean));
+  const snap = await getDocs(q);
+  if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
+  
+  const numOnly = clean.replace(/[^0-9]/g, '');
+  if (numOnly && numOnly !== clean) {
+    const q2 = query(collection(db, COLS.tecnicos), where('cedulaNum', '==', numOnly));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) return { id: snap2.docs[0].id, ...snap2.docs[0].data() };
+  }
+  return null;
+}
+
 /** Obtiene todos los técnicos registrados (para el administrador) */
 export async function getTodosTecnicos() {
   const snap = await getDocs(collection(db, COLS.tecnicos));
