@@ -206,6 +206,20 @@
             </a>
           </div>
 
+          <!-- Card 4: Consultar con Soporte / Técnico -->
+          <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;" id="sol-support-icon">💬</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;" id="sol-support-title">Consultar con Soporte</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;" id="sol-support-desc">
+                Contacta directamente por WhatsApp al <strong>técnico que aceptó tu solicitud</strong> o con la línea de <strong>Soporte Central (0424-296-4339)</strong>.
+              </p>
+            </div>
+            <button type="button" id="btn-sol-contact-support" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem; text-align:center; cursor:pointer;">
+              💬 Chatear con Soporte →
+            </button>
+          </div>
+
         </div>
       </div>
     </section>
@@ -343,6 +357,32 @@
           if (cedulaEl)  cedulaEl.textContent  = `🆔 Cédula: ${Auth.userCedula || '—'}`;
           if (empresaEl) empresaEl.textContent = `🏢 Empresa: ${cli?.compania || cli?.profesion || 'Particular'}`;
           if (waEl)      waEl.textContent      = `📱 WhatsApp: ${Auth.userWhatsApp || '—'}`;
+
+          // Cargar información inteligente de soporte / técnico asignado
+          Auth.getSmartSupportUrl().then(supp => {
+            const btnSupp   = document.getElementById('btn-sol-contact-support');
+            const descSupp  = document.getElementById('sol-support-desc');
+            const titleSupp = document.getElementById('sol-support-title');
+            if (supp.isTecnico) {
+              if (titleSupp) titleSupp.textContent = `Chatear con ${supp.tecnicoNombre}`;
+              if (descSupp)  descSupp.innerHTML  = `Tienes una orden activa de <strong>${supp.servicio}</strong>. Comunícate directamente con tu técnico asignado.`;
+              if (btnSupp) {
+                btnSupp.innerHTML = `💬 Chat con ${supp.tecnicoNombre} →`;
+                btnSupp.style.background = '#25D366';
+                btnSupp.style.color = '#ffffff';
+                btnSupp.style.border = 'none';
+              }
+            } else {
+              if (titleSupp) titleSupp.textContent = 'Consultar con Soporte';
+              if (descSupp)  descSupp.innerHTML  = 'Comunícate vía WhatsApp con la línea de <strong>Soporte Central (0424-296-4339)</strong> para cualquier consulta.';
+              if (btnSupp) {
+                btnSupp.innerHTML = '💬 Consultar Soporte (0424-296-4339) →';
+                btnSupp.style.background = '';
+                btnSupp.style.color = '';
+                btnSupp.style.border = '';
+              }
+            }
+          }).catch(console.warn);
         }
       }
     } else {
@@ -356,6 +396,11 @@
   // Suscribirse a cambios de sesión
   Auth.onAuthChange(updatePortalView);
   updatePortalView();
+
+  // Contactar soporte inteligente
+  document.getElementById('btn-sol-contact-support')?.addEventListener('click', async () => {
+    await Auth.openSmartSupportChat();
+  });
 
   // Solicitante Buttons (Guest)
   document.getElementById('btn-solicitante-registro')?.addEventListener('click', () => {

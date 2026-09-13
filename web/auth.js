@@ -6,7 +6,7 @@ import {
   guardarCliente, getCliente, getClienteByWA, getClienteByCedula,
   guardarTecnico, getTecnico, getTecnicoByWA, getTecnicoByCedula,
   sha256, loginClienteByHash, setClientePasswordHash,
-  doc, setDoc, serverTimestamp
+  collection, doc, setDoc, getDocs, query, where, serverTimestamp
 } from './firebase.js';
 
 // ── Helper: Compresión de Imagen en Cliente (JPG/PNG a Base64 optimizado) ──
@@ -1547,6 +1547,89 @@ export function getUserDisplayName() {
 export function getUserEmail() {
   return currentUser?.email || '';
 }
+
+// ── Soporte Inteligente Dinámico ─────────────────────────────
+// Redirige al WhatsApp del técnico que tomó la solicitud activa,
+// o por defecto al soporte central 0424-296-4339 (584242964339).
+export async function getSmartSupportUrl() {
+  const centralNum = '584242964339';
+  const defaultUrl = `https://wa.me/${centralNum}?text=${encodeURIComponent('Hola Soporte Informáticos Venezuela, deseo consultar sobre sus servicios técnicos.')}`;
+
+  try {
+    const wa = userWhatsApp || localStorage.getItem(WA_KEY);
+    const uid = currentUser?.uid;
+
+    if (uid || wa) {
+      const coll = collection(db, 'solicitudes');
+      let snap = null;
+
+      if (uid) {
+        const qUid = query(coll, where('clienteUid', '==', uid));
+        snap = await getDocs(qUid);
+      }
+      if ((!snap || snap.empty) && wa) {
+        const cleanWa = wa.replace(/[^0-9]/g, '');
+        const qWa = query(coll, where('whatsapp', '==', cleanWa));
+        snap = await getDocs(qWa);
+      }
+
+      if (snap && !snap.empty) {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => {
+          const tA = a.creadoEn?.seconds || (a.fecha ? new Date(a.fecha).getTime() : 0);
+          const tB = b.creadoEn?.seconds || (b.fecha ? new Date(b.fecha).getTime() : 0);
+          return tB - tA;
+        });
+
+        // 1. Buscar una solicitud activa que tenga técnico asignado
+        const activeWithTech = docs.find(s => s.tecnicoWhatsApp && s.estado !== 'cancelado');
+        if (activeWithTech) {
+          const tecNum = activeWithTech.tecnicoWhatsApp.replace(/[^0-9]/g, '');
+          const tecName = activeWithTech.tecnicoNombre || 'Técnico';
+          const serv = activeWithTech.servicio || 'Servicio Técnico';
+          const msg = `Hola ${tecName}, te escribo referente a mi solicitud de ${serv} en Informáticos Venezuela.`;
+          return {
+            url: `https://wa.me/${tecNum}?text=${encodeURIComponent(msg)}`,
+            isTecnico: true,
+            tecnicoNombre: tecName,
+            tecnicoWhatsApp: tecNum,
+            servicio: serv,
+            solicitudId: activeWithTech.id
+          };
+        }
+
+        // 2. Si tiene solicitud pero aún sin técnico asignado
+        const latest = docs[0];
+        if (latest && latest.estado !== 'cancelado') {
+          const serv = latest.servicio || 'Servicio Técnico';
+          const msg = `Hola Soporte Informáticos Venezuela, deseo consultar el estado de mi solicitud de ${serv}.`;
+          return {
+            url: `https://wa.me/${centralNum}?text=${encodeURIComponent(msg)}`,
+            isTecnico: false,
+            servicio: serv,
+            solicitudId: latest.id
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[SmartSupport] Error buscando técnico asignado:', err);
+  }
+
+  return {
+    url: defaultUrl,
+    isTecnico: false,
+    tecnicoNombre: null,
+    tecnicoWhatsApp: centralNum
+  };
+}
+
+export async function openSmartSupportChat() {
+  const supportInfo = await getSmartSupportUrl();
+  window.open(supportInfo.url, '_blank');
+}
+window._openSmartSupportChat = openSmartSupportChat;
+window._getSmartSupportUrl = getSmartSupportUrl;
 
 // ── Soporte Capacitor APK ─────────────────────────────────────
 if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
