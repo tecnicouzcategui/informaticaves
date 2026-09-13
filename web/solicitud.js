@@ -352,6 +352,10 @@ async function handleSubmit(e) {
     direccion,
     ubicacionCoords: coordsStr ? JSON.parse(coordsStr) : null,
     descripcion:  descripcion || '—',
+    estadoCaso:   'pendiente',
+    tecnicoAsignadoId: null,
+    tecnicoNombre: null,
+    tecnicoWhatsApp: null
   };
 
   try {

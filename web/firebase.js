@@ -64,6 +64,7 @@ const COLS = {
   solicitudes:  'solicitudes',
   faq:          'faq',
   clientes:     'clientes',
+  tecnicos:     'tecnicos',
   valoraciones: 'valoraciones',
 };
 
@@ -317,3 +318,90 @@ export async function getValoracionBySolicitud(solicitudId) {
   const snap = await getDocs(q);
   return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
+
+// ── Helpers para Gestión de Técnicos ─────────────────────────
+
+/** Guarda o actualiza el perfil de un técnico */
+export async function guardarTecnico(uid, datos) {
+  return setDoc(doc(db, COLS.tecnicos, uid), {
+    ...datos,
+    rol: 'tecnico',
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+/** Obtiene el perfil de un técnico por su UID */
+export async function getTecnico(uid) {
+  const snap = await getDoc(doc(db, COLS.tecnicos, uid));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+/** Busca si un número de WhatsApp ya tiene cuenta de técnico */
+export async function getTecnicoByWA(wa) {
+  const q = query(collection(db, COLS.tecnicos), where('whatsapp', '==', wa));
+  const snap = await getDocs(q);
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+}
+
+/** Obtiene todos los técnicos registrados (para el administrador) */
+export async function getTodosTecnicos() {
+  const snap = await getDocs(collection(db, COLS.tecnicos));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/** Actualiza el estado de aprobación de un técnico ('activo', 'pendiente', 'suspendido') */
+export async function actualizarEstadoTecnico(tecnicoId, nuevoEstado) {
+  return updateDoc(doc(db, COLS.tecnicos, tecnicoId), {
+    estado: nuevoEstado,
+    estadoUpdatedAt: serverTimestamp()
+  });
+}
+
+/** Actualiza la disponibilidad de un técnico (true/false) */
+export async function actualizarDisponibilidadTecnico(tecnicoId, disponible) {
+  return updateDoc(doc(db, COLS.tecnicos, tecnicoId), {
+    disponible: disponible,
+    disponibilidadUpdatedAt: serverTimestamp()
+  });
+}
+
+/** Asigna un técnico a una solicitud de servicio (Admin) */
+export async function asignarTecnicoASolicitud(solicitudId, tecnicoData) {
+  return updateDoc(doc(db, COLS.solicitudes, solicitudId), {
+    tecnicoAsignadoId: tecnicoData ? tecnicoData.id : null,
+    tecnicoNombre:     tecnicoData ? (tecnicoData.nombre || 'Técnico Asignado') : null,
+    tecnicoWhatsApp:   tecnicoData ? (tecnicoData.whatsapp || '') : null,
+    tecnicoEspecialidad: tecnicoData ? (tecnicoData.especialidades?.join(', ') || '') : null,
+    asignadoEn:        tecnicoData ? serverTimestamp() : null,
+    estadoCaso:        tecnicoData ? 'tomado' : 'pendiente'
+  });
+}
+
+/** Obtiene todas las solicitudes asignadas a un técnico específico */
+export async function getSolicitudesPorTecnico(tecnicoId) {
+  const q = query(
+    collection(db, COLS.solicitudes),
+    where('tecnicoAsignadoId', '==', tecnicoId)
+  );
+  const snap = await getDocs(q);
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results.sort((a, b) => {
+    const ta = a.timestamp?.seconds || 0;
+    const tb = b.timestamp?.seconds || 0;
+    return tb - ta;
+  });
+  return results;
+}
+
+/** Actualiza el estado de avance de un trabajo por parte del técnico */
+export async function actualizarEstadoPorTecnico(solicitudId, nuevoEstado, notaTecnica = '') {
+  const updatePayload = {
+    estadoCaso: nuevoEstado,
+    estadoCasoUpdatedAt: serverTimestamp()
+  };
+  if (notaTecnica) {
+    updatePayload.notaTecnica = notaTecnica;
+  }
+  return updateDoc(doc(db, COLS.solicitudes, solicitudId), updatePayload);
+}
+

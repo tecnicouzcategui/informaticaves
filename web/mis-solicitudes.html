@@ -195,6 +195,7 @@
       <li><a href="servicios.html">Servicios</a></li>
       <li><a href="solicitud.html" id="nav-solicitar">Solicitar</a></li>
       <li><a href="mis-solicitudes.html" id="nav-mis-solicitudes" class="active">Mis Solicitudes</a></li>
+      <li><a href="tecnico.html" id="nav-tecnico" class="hidden">Panel Técnico</a></li>
       <li><a href="admin.html" id="nav-admin" class="hidden">Administrador</a></li>
     </ul>
     <div class="nav-actions">
@@ -534,6 +535,33 @@
                 ${s.descripcion && s.descripcion !== '—' ? `<span style="grid-column:1/-1"><strong>Descripción:</strong> ${s.descripcion}</span>` : ''}
               </div>
 
+              <!-- Información del Técnico Asignado -->
+              ${s.tecnicoNombre ? `
+                <div style="background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.3);border-radius:10px;padding:0.75rem 1rem;margin:0.75rem 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
+                  <div>
+                    <div style="font-size:0.72rem;color:#f6ad55;font-weight:700;text-transform:uppercase;">⚡ Técnico Especialista Asignado:</div>
+                    <div style="color:var(--text);font-weight:700;font-size:0.95rem;">${s.tecnicoNombre}</div>
+                    ${s.tecnicoEspecialidad ? `<div style="font-size:0.75rem;color:var(--text-muted);">${s.tecnicoEspecialidad}</div>` : ''}
+                  </div>
+                  ${s.tecnicoWhatsApp ? `
+                    <a href="https://wa.me/${s.tecnicoWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${s.tecnicoNombre}, te escribo referente a mi solicitud de ${s.servicio} en InformaticaVES.`)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;border:none;font-size:0.78rem;font-weight:600;text-decoration:none;">
+                      💬 Chat con Técnico
+                    </a>
+                  ` : ''}
+                </div>
+              ` : `
+                <div style="background:rgba(99,179,237,0.06);border:1px dashed rgba(99,179,237,0.25);border-radius:10px;padding:0.6rem 0.9rem;margin:0.75rem 0;font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:0.5rem;">
+                  <span>⏳</span>
+                  <span>Buscando el técnico especialista más adecuado para tu caso...</span>
+                </div>
+              `}
+
+              ${s.notaTecnica ? `
+                <div style="background:rgba(0,0,0,0.25);border-left:3px solid #f6ad55;border-radius:6px;padding:0.6rem 0.85rem;margin:0.75rem 0;font-size:0.8rem;color:#fbd38d;">
+                  <strong>🔧 Reporte Técnico:</strong> ${s.notaTecnica}
+                </div>
+              ` : ''}
+
               ${estado === 'finalizado' ? `
                 ${yaValorado
                   ? `<div style="text-align:center;background:rgba(104,211,145,0.08);border:1px solid #68d391;border-radius:8px;padding:0.75rem;margin-top:0.5rem;">
@@ -547,7 +575,7 @@
                   : `<button class="btn btn-primary valorar-btn" data-id="${s.id}" data-servicio="${s.servicio}">⭐ Valorar este servicio</button>
                      <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, mi solicitud de ${s.servicio} ya fue finalizada. ¡Gracias!`)}"
                         class="btn btn-secondary w-full" target="_blank" style="margin-top:0.5rem;">
-                       💬 Contactar por WhatsApp
+                       💬 Contactar Soporte
                      </a>`
                 }
               ` : estado === 'cancelado' ? `
@@ -555,7 +583,7 @@
               ` : `
                 <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, quiero consultar el estado de mi solicitud de ${s.servicio}.`)}"
                    class="btn btn-secondary w-full" target="_blank">
-                  💬 Consultar por WhatsApp
+                  💬 Consultar a Soporte
                 </a>
               `}
             </div>`;

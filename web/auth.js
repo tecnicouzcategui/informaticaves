@@ -1,5 +1,5 @@
 // ============================================================
-// auth.js — Autenticación Custom con WhatsApp y Modal
+// auth.js — Autenticación Custom Multi-Rol (Clientes, Técnicos, Admin)
 // InformaticaVES | El Técnico Luis
 // ============================================================
 
@@ -9,6 +9,7 @@ import {
   createUserWithEmailAndPassword,
   signOut, onAuthStateChanged,
   guardarCliente, getCliente, getClienteByWA,
+  guardarTecnico, getTecnico, getTecnicoByWA,
   sha256, loginClienteByHash, setClientePasswordHash,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
@@ -16,12 +17,16 @@ import {
 // ── Constantes ───────────────────────────────────────────────
 const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
 const WA_KEY         = 'ives_wa_number';
+const ROLE_KEY       = 'ives_user_role';
 
 // ── Estado global ────────────────────────────────────────────
 export let currentUser = null;
-export let isAdmin      = false;
+export let isAdmin     = false;
+export let isTecnico   = false;
+export let userRol     = null; // 'admin' | 'tecnico' | 'solicitante'
 export let userWhatsApp = null;
 export let userNombre   = null;
+export let tecnicoData  = null;
 
 // ── Callbacks registrados ────────────────────────────────────
 const authListeners = [];
@@ -29,29 +34,35 @@ let _authResolved = false;
 
 export function onAuthChange(fn) {
   authListeners.push(fn);
-  // Si el estado ya fue resuelto, disparar inmediatamente con el estado actual
   if (_authResolved) {
-    try { fn(currentUser, isAdmin); } catch(e) { console.error(e); }
+    try { fn(currentUser, isAdmin, isTecnico, userRol); } catch(e) { console.error(e); }
   }
 }
 
 function notifyListeners() {
   _authResolved = true;
-  authListeners.forEach(fn => { try { fn(currentUser, isAdmin); } catch(e) { console.error(e); } });
+  authListeners.forEach(fn => { try { fn(currentUser, isAdmin, isTecnico, userRol); } catch(e) { console.error(e); } });
 }
 
-// ── Auth Modal Custom ─────────────────────────────────────────
-export function openAuthModal() {
+// ── Auth Modal Custom Multi-Rol ──────────────────────────────
+export function openAuthModal(defaultTab = 'solicitante') {
   let modal = document.getElementById('modal-auth-custom');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'modal-auth-custom';
     modal.className = 'modal-backdrop';
     modal.innerHTML = `
-      <div class="modal-box" style="max-width: 400px; padding: 2rem; position: relative;">
+      <div class="modal-box" style="max-width: 460px; padding: 2rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
         <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
-        <h3 style="margin-bottom:0.5rem; text-align:center; font-size:1.3rem;">Acceso de Clientes</h3>
-        <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; margin-bottom:1.5rem;">Ingresa tu WhatsApp y una contraseña segura.</p>
+        
+        <!-- Selector de Rol -->
+        <div class="auth-role-tabs" style="display:flex; gap:0.5rem; background:rgba(0,0,0,0.3); padding:4px; border-radius:12px; margin-bottom:1.5rem;">
+          <button type="button" id="tab-rol-solicitante" class="btn btn-sm w-full" style="background:var(--blue); color:white; border-radius:8px; font-weight:600; font-size:0.82rem; transition:all 0.2s;">👤 Solicitante</button>
+          <button type="button" id="tab-rol-tecnico" class="btn btn-sm w-full" style="background:transparent; color:var(--text-muted); border-radius:8px; font-weight:600; font-size:0.82rem; transition:all 0.2s;">⚡ Soy Técnico</button>
+        </div>
+
+        <h3 id="auth-modal-title" style="margin-bottom:0.35rem; text-align:center; font-size:1.25rem;">Acceso de Solicitantes</h3>
+        <p id="auth-modal-desc" style="text-align:center; color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">Ingresa con tu WhatsApp para solicitar servicios técnicos.</p>
         
         <div class="form-group" style="margin-bottom:1rem;">
           <label class="form-label">WhatsApp (Solo números)</label>
@@ -64,44 +75,114 @@ export function openAuthModal() {
           <button id="auth-toggle-pass" style="position:absolute; right:10px; top:36px; background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">👁️</button>
         </div>
         
-        <div class="auth-dots" style="display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.5rem; font-size:0.75rem; color:var(--text-dim);">
+        <div class="auth-dots" style="display:flex; flex-direction:column; gap:0.35rem; margin-bottom:1.25rem; font-size:0.75rem; color:var(--text-dim);">
           <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-letters" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Mínimo 4 letras</div>
           <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-upper" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Al menos 1 mayúscula</div>
           <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-numbers" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Mínimo 4 números</div>
         </div>
 
-        <div id="auth-register-fields" style="display:none; margin-bottom:1.5rem;">
-          <p style="color:var(--accent); font-size:0.8rem; margin-bottom:0.5rem; text-align:center;">¡Parece que eres nuevo! Déjanos tu nombre:</p>
+        <!-- Campos de registro para Solicitante -->
+        <div id="auth-register-fields" style="display:none; margin-bottom:1.25rem; background:rgba(99,179,237,0.06); padding:1rem; border-radius:10px; border:1px dashed rgba(99,179,237,0.3);">
+          <p style="color:var(--accent); font-size:0.82rem; margin-bottom:0.5rem; text-align:center; font-weight:600;">✨ ¡Completa tu registro de Solicitante!</p>
           <div class="form-group">
-            <label class="form-label">Tu Nombre</label>
-            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: Luis Uzcátegui">
+            <label class="form-label">Tu Nombre y Apellido</label>
+            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: Carlos Pérez">
+          </div>
+        </div>
+
+        <!-- Campos de registro para Técnico -->
+        <div id="auth-tecnico-fields" style="display:none; margin-bottom:1.25rem; background:rgba(246,173,85,0.08); padding:1rem; border-radius:10px; border:1px dashed rgba(246,173,85,0.3);">
+          <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro de Técnico Profesional</p>
+          
+          <div class="form-group" style="margin-bottom:0.75rem;">
+            <label class="form-label">Nombre Completo</label>
+            <input type="text" id="tec-nombre" class="form-input" placeholder="Ej: Luis Rodríguez">
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.75rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <div>
+              <label class="form-label">Cédula / Documento</label>
+              <input type="text" id="tec-cedula" class="form-input" placeholder="V-12345678">
+            </div>
+            <div>
+              <label class="form-label">Años de Exp.</label>
+              <input type="number" id="tec-exp" class="form-input" placeholder="Ej: 5" min="0">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.75rem;">
+            <label class="form-label">Zona o Ciudad de Cobertura</label>
+            <input type="text" id="tec-zona" class="form-input" placeholder="Ej: Caracas Este, Chacao, Guarenas">
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.25rem;">
+            <label class="form-label" style="margin-bottom:0.4rem; display:block;">Especialidades Técnicas:</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; font-size:0.78rem; color:var(--text-muted);">
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Soporte PC / Laptops"> 💻 PC & Laptops</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Redes & WiFi"> 📡 Redes & WiFi</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="CCTV & Cámaras"> 📹 CCTV & Cámaras</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Linux & Servidores"> 🐧 Linux & Servers</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Celulares & Móvil"> 📱 Celulares / Móvil</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Hardware & Electrónica"> ⚡ Hardware & Placas</label>
+            </div>
           </div>
         </div>
         
-        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.5rem;">Ingresar</button>
-        <a id="auth-forgot-pass" style="color:var(--blue); font-size:0.85rem; cursor:pointer; display:block; text-align:center; margin-top:1rem; text-decoration:underline;">¿Olvidaste tu contraseña?</a>
+        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.5rem; font-weight:700;">Ingresar</button>
+        <a id="auth-forgot-pass" style="color:var(--blue); font-size:0.82rem; cursor:pointer; display:block; text-align:center; margin-top:0.75rem; text-decoration:underline;">¿Olvidaste tu contraseña?</a>
+        
         <div id="auth-forgot-panel" style="display:none; background:rgba(99,179,237,0.1); border:1px solid var(--blue); padding:1rem; border-radius:8px; margin-top:1rem; text-align:center;">
-          <p style="font-size:0.85rem; color:var(--text); margin-bottom:0.75rem;">Se abrirá tu WhatsApp para solicitar a Soporte el reinicio de tu clave.</p>
+          <p style="font-size:0.82rem; color:var(--text); margin-bottom:0.75rem;">Se abrirá WhatsApp para solicitar a Soporte el reinicio de tu clave.</p>
           <button id="auth-btn-recover" class="btn btn-sm" style="background:#25D366; color:white; border:none; width:100%;">💬 Recuperar por WhatsApp</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    // Lógica del modal
-    const passInput = document.getElementById('auth-pass');
-    const waInput = document.getElementById('auth-wa');
-    const toggleBtn = document.getElementById('auth-toggle-pass');
-    const submitBtn = document.getElementById('auth-btn-submit');
-    const closeBtn = document.getElementById('auth-close');
-    const dotLetters = document.getElementById('dot-letters');
-    const dotUpper = document.getElementById('dot-upper');
-    const dotNumbers = document.getElementById('dot-numbers');
-    
-    // Forgot Password Logic
+    // Variables internas
+    let selectedRole = defaultTab;
+
+    const tabSolicitante = document.getElementById('tab-rol-solicitante');
+    const tabTecnico     = document.getElementById('tab-rol-tecnico');
+    const modalTitle     = document.getElementById('auth-modal-title');
+    const modalDesc      = document.getElementById('auth-modal-desc');
+    const passInput      = document.getElementById('auth-pass');
+    const waInput        = document.getElementById('auth-wa');
+    const toggleBtn      = document.getElementById('auth-toggle-pass');
+    const submitBtn      = document.getElementById('auth-btn-submit');
+    const closeBtn       = document.getElementById('auth-close');
+    const dotLetters     = document.getElementById('dot-letters');
+    const dotUpper       = document.getElementById('dot-upper');
+    const dotNumbers     = document.getElementById('dot-numbers');
     const forgotPassLink = document.getElementById('auth-forgot-pass');
-    const forgotPanel = document.getElementById('auth-forgot-panel');
-    const recoverBtn = document.getElementById('auth-btn-recover');
+    const forgotPanel    = document.getElementById('auth-forgot-panel');
+    const recoverBtn     = document.getElementById('auth-btn-recover');
+
+    function switchRole(role) {
+      selectedRole = role;
+      if (role === 'tecnico') {
+        tabTecnico.style.background = '#f6ad55';
+        tabTecnico.style.color = '#1a202c';
+        tabSolicitante.style.background = 'transparent';
+        tabSolicitante.style.color = 'var(--text-muted)';
+        modalTitle.textContent = 'Acceso de Técnicos';
+        modalDesc.textContent = 'Ingresa con tu WhatsApp para gestionar tus trabajos asignados.';
+      } else {
+        tabSolicitante.style.background = 'var(--blue)';
+        tabSolicitante.style.color = 'white';
+        tabTecnico.style.background = 'transparent';
+        tabTecnico.style.color = 'var(--text-muted)';
+        modalTitle.textContent = 'Acceso de Solicitantes';
+        modalDesc.textContent = 'Ingresa con tu WhatsApp para solicitar y seguir tus servicios.';
+      }
+      document.getElementById('auth-register-fields').style.display = 'none';
+      document.getElementById('auth-tecnico-fields').style.display = 'none';
+      submitBtn.textContent = 'Ingresar';
+      revalidatePassword();
+    }
+
+    tabSolicitante.addEventListener('click', () => switchRole('solicitante'));
+    tabTecnico.addEventListener('click', () => switchRole('tecnico'));
 
     forgotPassLink.addEventListener('click', () => {
       forgotPanel.style.display = forgotPanel.style.display === 'none' ? 'block' : 'none';
@@ -110,16 +191,15 @@ export function openAuthModal() {
     recoverBtn.addEventListener('click', () => {
       const wa = waInput.value.trim().replace(/[^\d]/g, '');
       if (!wa || wa.length < 10) {
-        authMsg.innerHTML = '<span style="color:var(--red)">Por favor, ingresa tu número de WhatsApp válido arriba primero.</span>';
+        showToast('Ingresa tu número de WhatsApp arriba primero.', 'error');
         return;
       }
-      const adminWa = '584167474753'; // Admin's WhatsApp (we can hardcode or rely on the same config)
-      const text = `Hola Soporte IVES, soy el usuario ${wa} y he olvidado mi contraseña. Solicito un reinicio de clave.`;
+      const adminWa = '584242964339';
+      const text = `Hola Soporte InformaticaVES, soy ${selectedRole === 'tecnico' ? 'el técnico' : 'el usuario'} con WhatsApp ${wa} y solicito restablecer mi contraseña.`;
       window.open(`https://wa.me/${adminWa}?text=${encodeURIComponent(text)}`, '_blank');
-      authMsg.innerHTML = '<span style="color:var(--green)">Se abrió WhatsApp. Envía el mensaje para recibir tu nueva clave.</span>';
+      showToast('Se abrió WhatsApp para solicitar el reinicio.', 'info');
     });
 
-    // Toggle Password Visibility
     toggleBtn.addEventListener('click', () => {
       if (passInput.type === 'password') {
         passInput.type = 'text';
@@ -130,8 +210,7 @@ export function openAuthModal() {
       }
     });
 
-    // Validar contraseña
-    passInput.addEventListener('input', () => {
+    function revalidatePassword() {
       const val = passInput.value;
       const lettersCount = (val.match(/[a-zA-Z]/g) || []).length;
       const upperCount = (val.match(/[A-Z]/g) || []).length;
@@ -152,90 +231,137 @@ export function openAuthModal() {
         submitBtn.disabled = true;
         submitBtn.style.opacity = 0.5;
       }
-    });
+    }
 
+    passInput.addEventListener('input', revalidatePassword);
     waInput.addEventListener('input', () => {
-      // Forzar solo números
       waInput.value = waInput.value.replace(/[^0-9]/g, '');
-      passInput.dispatchEvent(new Event('input')); // Re-evaluar botón
+      revalidatePassword();
     });
 
-    closeBtn.addEventListener('click', () => {
-      modal.classList.remove('open');
-    });
+    closeBtn.addEventListener('click', () => modal.classList.remove('open'));
 
     submitBtn.addEventListener('click', async () => {
       const wa = waInput.value.trim();
       const pass = passInput.value;
-      const fakeEmail = wa + '@informaticaves.app';
+      const fakeEmail = `${wa}@informaticaves.app`;
       
-      const isRegistering = document.getElementById('auth-register-fields').style.display !== 'none';
+      const isRegisteringSolicitante = document.getElementById('auth-register-fields').style.display !== 'none';
+      const isRegisteringTecnico     = document.getElementById('auth-tecnico-fields').style.display !== 'none';
 
       submitBtn.textContent = 'Procesando...';
       submitBtn.disabled = true;
 
       try {
-        if (isRegistering) {
-          // ── REGISTRO: crear cuenta Firebase Auth + guardar hash en Firestore
-          const nombre = document.getElementById('auth-nombre').value.trim();
-          if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+        if (isRegisteringTecnico) {
+          // ── REGISTRO DE TÉCNICO
+          const nombre = document.getElementById('tec-nombre').value.trim();
+          const cedula = document.getElementById('tec-cedula').value.trim();
+          const exp    = document.getElementById('tec-exp').value.trim();
+          const zona   = document.getElementById('tec-zona').value.trim();
+          const espNodes = document.querySelectorAll('input[name="tec_esp"]:checked');
+          const especialidades = Array.from(espNodes).map(n => n.value);
+
+          if (!nombre) { showToast('Ingresa tu nombre completo', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
+          if (especialidades.length === 0) { showToast('Selecciona al menos una especialidad', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
+
           const hash = await sha256(pass);
           const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
+          
+          await guardarTecnico(res.user.uid, {
+            uid: res.user.uid,
+            email: fakeEmail,
+            nombre: nombre,
+            whatsapp: wa,
+            cedula: cedula,
+            experiencia: exp || '0',
+            zona: zona || 'General',
+            especialidades: especialidades,
+            estado: 'activo', // Activo por defecto o pendiente
+            disponible: true,
+            passwordHash: hash,
+            rol: 'tecnico'
+          });
+
+          localStorage.setItem(ROLE_KEY, 'tecnico');
+          localStorage.setItem(WA_KEY, wa);
+          showToast('✅ ¡Cuenta de Técnico creada exitosamente!', 'success');
+          modal.classList.remove('open');
+          window.location.href = 'tecnico.html';
+          return;
+
+        } else if (isRegisteringSolicitante) {
+          // ── REGISTRO DE SOLICITANTE
+          const nombre = document.getElementById('auth-nombre').value.trim();
+          if (!nombre) { showToast('Por favor ingresa tu nombre', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Solicitante'; return; }
+          
+          const hash = await sha256(pass);
+          const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
+          
           await guardarCliente(res.user.uid, {
             uid: res.user.uid,
             email: fakeEmail,
             nombre: nombre,
             whatsapp: wa,
-            passwordHash: hash   // ← guardamos el hash para futuros resets
+            passwordHash: hash,
+            rol: 'solicitante'
           });
-          showToast('✅ Cuenta creada exitosamente', 'success');
+
+          localStorage.setItem(ROLE_KEY, 'solicitante');
+          localStorage.setItem(WA_KEY, wa);
+          showToast('✅ Cuenta de Solicitante creada con éxito', 'success');
           modal.classList.remove('open');
+          return;
+
         } else {
-          // ── LOGIN: Verificar si el número existe en Firestore
-          const clienteExistente = await getClienteByWA(wa);
+          // ── LOGIN GENERAL: Detectar si es Técnico, Solicitante o Admin
+          const tecExistente = await getTecnicoByWA(wa);
+          const cliExistente = await getClienteByWA(wa);
 
-          if (!clienteExistente) {
-            // Número NUEVO → mostrar formulario de registro
-            document.getElementById('auth-register-fields').style.display = 'block';
-            submitBtn.textContent = 'Crear Cuenta Nueva';
-            submitBtn.disabled = false;
-            showToast('Número nuevo. Por favor completa tu registro.', 'info');
-            return;
-          }
-
-          // PASO 1: ¿El admin le reseteó la clave? → verificar por hash en Firestore
-          const hash = await sha256(pass);
-          const loginPorHash = await loginClienteByHash(wa, hash);
-
-          if (loginPorHash) {
-            // Hash de Firestore coincide → autenticado. Ahora sincronizar con Firebase Auth.
-            try {
-              await signInWithEmailAndPassword(auth, fakeEmail, pass);
-            } catch (e) {
-              // Si Firebase Auth tiene otra clave (cuenta antigua), recrearla con la nueva clave
-              // Usamos sign-in con email+link no disponible, así que usamos signInAnonymously
-              // como sesión temporal para mantener acceso a Firestore
-              const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js');
-              await signInAnonymously(auth);
-              // Guardamos identidad real en localStorage (el UID anónimo se usa para Firestore)
-              localStorage.setItem('ives_rescued_wa', wa);
+          if (!tecExistente && !cliExistente) {
+            // Usuario NUEVO -> Mostrar formulario según el tab actual
+            if (selectedRole === 'tecnico') {
+              document.getElementById('auth-tecnico-fields').style.display = 'block';
+              submitBtn.textContent = 'Crear Cuenta de Técnico';
+            } else {
+              document.getElementById('auth-register-fields').style.display = 'block';
+              submitBtn.textContent = 'Crear Cuenta de Solicitante';
             }
-            showToast('✅ Sesión iniciada', 'success');
-            modal.classList.remove('open');
+            submitBtn.disabled = false;
+            showToast('Número no registrado. Completa los datos para registrarte.', 'info');
             return;
           }
 
-          // PASO 2: Login normal con Firebase Auth (usuarios existentes o sin hash)
+          // Intentar Login con Firebase Auth
           try {
             await signInWithEmailAndPassword(auth, fakeEmail, pass);
-            // Éxito: guardar hash para futuras recuperaciones (migración progresiva)
-            await setClientePasswordHash(wa, hash);
             showToast('✅ Sesión iniciada', 'success');
             modal.classList.remove('open');
+            
+            if (tecExistente) {
+              localStorage.setItem(ROLE_KEY, 'tecnico');
+              if (window.location.pathname.endsWith('solicitud.html') || window.location.pathname.endsWith('index.html')) {
+                window.location.href = 'tecnico.html';
+              }
+            } else {
+              localStorage.setItem(ROLE_KEY, 'solicitante');
+            }
           } catch (e) {
-            showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Ingresar';
+            // Verificar si tiene passwordHash en Firestore (recuperación/hash directo)
+            const hash = await sha256(pass);
+            const loginPorHash = await loginClienteByHash(wa, hash);
+            if (loginPorHash || (tecExistente && tecExistente.passwordHash === hash)) {
+              showToast('✅ Sesión iniciada', 'success');
+              modal.classList.remove('open');
+              if (tecExistente) {
+                localStorage.setItem(ROLE_KEY, 'tecnico');
+                window.location.href = 'tecnico.html';
+              }
+            } else {
+              showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Ingresar';
+            }
           }
         }
       } catch (err) {
@@ -243,21 +369,22 @@ export function openAuthModal() {
         const msgs = {
           'auth/wrong-password': 'Contraseña incorrecta.',
           'auth/invalid-credential': 'Contraseña incorrecta.',
-          'auth/email-already-in-use': 'Este número ya tiene una cuenta. Revisa tu contraseña.',
+          'auth/email-already-in-use': 'Este número ya tiene una cuenta registrada.',
         };
         showToast(msgs[err.code] || 'Error: ' + err.message, 'error');
         submitBtn.disabled = false;
-        submitBtn.textContent = isRegistering ? 'Crear Cuenta Nueva' : 'Ingresar';
+        submitBtn.textContent = 'Ingresar';
       }
     });
   }
-  
-  // Limpiar campos y mostrar modal
+
+  // Configurar estado inicial al abrir
   document.getElementById('auth-wa').value = '';
   document.getElementById('auth-pass').value = '';
   document.getElementById('auth-pass').type = 'password';
   document.getElementById('auth-toggle-pass').textContent = '👁️';
   document.getElementById('auth-register-fields').style.display = 'none';
+  document.getElementById('auth-tecnico-fields').style.display = 'none';
   document.getElementById('auth-btn-submit').textContent = 'Ingresar';
   document.getElementById('auth-btn-submit').disabled = true;
   document.getElementById('auth-btn-submit').style.opacity = 0.5;
@@ -266,13 +393,18 @@ export function openAuthModal() {
   document.getElementById('dot-numbers').style.background = 'var(--red)';
   document.getElementById('auth-forgot-panel').style.display = 'none';
 
+  if (defaultTab === 'tecnico') {
+    document.getElementById('tab-rol-tecnico')?.click();
+  } else {
+    document.getElementById('tab-rol-solicitante')?.click();
+  }
+
   modal.classList.add('open');
 }
 
-// Mantener compatibilidad con HTML existente (renombramos la función internamente)
 export const loginGoogle = openAuthModal;
 
-// ── Login de Admin (Usado en panel admin) ─────────────────────
+// ── Login de Admin ───────────────────────────────────────────
 export async function loginEmail(email, password) {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
@@ -286,22 +418,19 @@ export async function loginEmail(email, password) {
   }
 }
 
-// ── Cambio de contraseña (Cliente) ───────────────────────────
-export async function changeUserPassword(newPass) {
-  if (!auth.currentUser) throw new Error('No hay usuario activo');
-  const { updatePassword } = await import('./firebase.js');
-  await updatePassword(auth.currentUser, newPass);
-}
-
 // ── Logout ───────────────────────────────────────────────────
 export async function logout() {
   localStorage.removeItem('ives_local_admin');
   localStorage.removeItem(WA_KEY);
+  localStorage.removeItem(ROLE_KEY);
   
   currentUser  = null;
   isAdmin      = false;
+  isTecnico    = false;
+  userRol      = null;
   userWhatsApp = null;
   userNombre   = null;
+  tecnicoData  = null;
   
   try {
     await signOut(auth);
@@ -313,29 +442,35 @@ export async function logout() {
   window.location.href = 'index.html';
 }
 
-// ── Modo Admin Local (persiste en localStorage) ─────────────
+// ── Modo Admin Local ─────────────────────────────────────────
 const LOCAL_ADMIN_KEY = 'ives_local_admin';
 
 export function forceAdmin() {
-  currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
+  currentUser = { displayName: 'Admin', email: ADMIN_EMAIL, uid: 'local-admin' };
   isAdmin = true;
+  isTecnico = false;
+  userRol = 'admin';
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+  localStorage.setItem(ROLE_KEY, 'admin');
   updateNavUI();
   notifyListeners();
 }
 
 (function restoreLocalAdmin() {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
-    currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
+    currentUser = { displayName: 'Admin', email: ADMIN_EMAIL, uid: 'local-admin' };
     isAdmin = true;
+    userRol = 'admin';
   }
 })();
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
-    currentUser = { displayName: 'Admin', email: 'tecnicouzcategui@gmail.com', uid: 'local-admin' };
+    currentUser = { displayName: 'Admin', email: ADMIN_EMAIL, uid: 'local-admin' };
     isAdmin = true;
+    isTecnico = false;
+    userRol = 'admin';
     notifyListeners();
     updateNavUI();
     import('./admin-notifications.js').then(m => m.initGlobalAdminNotifications()).catch(console.error);
@@ -344,35 +479,63 @@ onAuthStateChanged(auth, async user => {
 
   currentUser  = user;
   isAdmin      = user?.email === ADMIN_EMAIL;
+  isTecnico    = false;
+  userRol      = isAdmin ? 'admin' : (localStorage.getItem(ROLE_KEY) || 'solicitante');
   userWhatsApp = null;
   userNombre   = null;
+  tecnicoData  = null;
 
-  // Si Firebase Auth autenticó al admin, persistir la sesión local también
   if (isAdmin && user) {
     localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+    localStorage.setItem(ROLE_KEY, 'admin');
   }
 
   if (user) {
     try {
-      // Intento 1: buscar por UID (login normal con Firebase Auth)
-      const perfil = await getCliente(user.uid);
-      if (perfil) {
-        userWhatsApp = perfil.whatsapp;
-        userNombre   = perfil.nombre;
-        localStorage.setItem(WA_KEY, perfil.whatsapp);
+      // 1. Verificar si es Técnico
+      const perfilTec = await getTecnico(user.uid);
+      if (perfilTec) {
+        isTecnico = true;
+        userRol   = 'tecnico';
+        tecnicoData = perfilTec;
+        userWhatsApp = perfilTec.whatsapp;
+        userNombre   = perfilTec.nombre;
+        localStorage.setItem(WA_KEY, perfilTec.whatsapp);
+        localStorage.setItem(ROLE_KEY, 'tecnico');
       } else {
-        // Intento 2: si es sesión anónima (después de reset de clave), buscar por WA en localStorage
-        const savedWa = localStorage.getItem('ives_rescued_wa') || localStorage.getItem(WA_KEY);
-        if (savedWa) {
-          const perfilPorWa = await getClienteByWA(savedWa);
-          if (perfilPorWa) {
-            userWhatsApp = perfilPorWa.whatsapp;
-            userNombre   = perfilPorWa.nombre;
-            localStorage.setItem(WA_KEY, perfilPorWa.whatsapp);
+        // 2. Verificar si es Cliente / Solicitante
+        const perfilCli = await getCliente(user.uid);
+        if (perfilCli) {
+          userRol      = 'solicitante';
+          userWhatsApp = perfilCli.whatsapp;
+          userNombre   = perfilCli.nombre;
+          localStorage.setItem(WA_KEY, perfilCli.whatsapp);
+          localStorage.setItem(ROLE_KEY, 'solicitante');
+        } else {
+          // 3. Fallback por WhatsApp guardado
+          const savedWa = localStorage.getItem(WA_KEY);
+          if (savedWa) {
+            const tecPorWa = await getTecnicoByWA(savedWa);
+            if (tecPorWa) {
+              isTecnico = true;
+              userRol = 'tecnico';
+              tecnicoData = tecPorWa;
+              userWhatsApp = tecPorWa.whatsapp;
+              userNombre = tecPorWa.nombre;
+            } else {
+              const cliPorWa = await getClienteByWA(savedWa);
+              if (cliPorWa) {
+                userRol = 'solicitante';
+                userWhatsApp = cliPorWa.whatsapp;
+                userNombre = cliPorWa.nombre;
+              }
+            }
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      console.warn('[Auth] Error cargando perfil:', e);
+    }
   }
 
   updateNavUI();
@@ -380,27 +543,33 @@ onAuthStateChanged(auth, async user => {
 
   if (isAdmin) {
     import('./admin-notifications.js').then(m => m.initGlobalAdminNotifications()).catch(console.error);
-  } else {
-    const wa = userWhatsApp || localStorage.getItem(WA_KEY);
-    if (wa) {
-      import('./client-notifications.js').then(m => m.initGlobalClientNotifications(wa)).catch(console.error);
-    }
+  } else if (userWhatsApp) {
+    import('./client-notifications.js').then(m => m.initGlobalClientNotifications(userWhatsApp)).catch(console.error);
   }
 });
 
-// ── getWhatsApp (exportada para uso en páginas) ────────────────────
 export function getWhatsApp() {
   return userWhatsApp || localStorage.getItem(WA_KEY) || null;
 }
 
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
-  const btnLogin   = document.getElementById('btn-login');
-  const userAvatar = document.getElementById('user-avatar');
-  const adminBadge = document.getElementById('admin-badge');
-  const adminLink  = document.getElementById('nav-admin');
-  const navSolicitar = document.getElementById('nav-solicitar');
+  const btnLogin          = document.getElementById('btn-login');
+  const userAvatar        = document.getElementById('user-avatar');
+  const adminBadge        = document.getElementById('admin-badge');
+  const adminLink         = document.getElementById('nav-admin');
+  const navSolicitar      = document.getElementById('nav-solicitar');
   const navMisSolicitudes = document.getElementById('nav-mis-solicitudes');
+  let   navTecnico        = document.getElementById('nav-tecnico');
+
+  // Crear dinámicamente el enlace de técnico si no existe en la navbar
+  const navLinksList = document.querySelector('.nav-links');
+  if (navLinksList && !navTecnico) {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="tecnico.html" id="nav-tecnico" class="hidden">Panel Técnico</a>`;
+    navLinksList.appendChild(li);
+    navTecnico = document.getElementById('nav-tecnico');
+  }
 
   if (!btnLogin) return; 
 
@@ -408,11 +577,10 @@ function updateNavUI() {
     btnLogin.classList.add('hidden');
     userAvatar?.classList.remove('hidden');
     
-    const nameToUse = userNombre || currentUser.displayName || currentUser.email || 'U';
+    const nameToUse = userNombre || currentUser.displayName || (isAdmin ? 'Admin' : (isTecnico ? 'Técnico' : 'Usuario'));
     const initials = nameToUse.charAt(0).toUpperCase();
     userAvatar.innerHTML = initials;
 
-    // Adjuntar menú de perfil al avatar (solo una vez)
     if (!userAvatar.dataset.profileBound) {
       userAvatar.dataset.profileBound = '1';
       userAvatar.style.cursor = 'pointer';
@@ -424,12 +592,27 @@ function updateNavUI() {
     
     if (isAdmin) {
       adminBadge?.classList.remove('hidden');
+      if (adminBadge) adminBadge.textContent = 'Administrador';
       adminLink?.classList.remove('hidden');
+      navTecnico?.classList.remove('hidden');
+      navSolicitar?.closest('li')?.classList.add('hidden');
+      navMisSolicitudes?.closest('li')?.classList.add('hidden');
+    } else if (isTecnico) {
+      adminBadge?.classList.remove('hidden');
+      if (adminBadge) {
+        adminBadge.textContent = '⚡ Técnico';
+        adminBadge.style.background = 'rgba(246,173,85,0.2)';
+        adminBadge.style.color = '#f6ad55';
+        adminBadge.style.borderColor = 'rgba(246,173,85,0.4)';
+      }
+      adminLink?.classList.add('hidden');
+      navTecnico?.classList.remove('hidden');
       navSolicitar?.closest('li')?.classList.add('hidden');
       navMisSolicitudes?.closest('li')?.classList.add('hidden');
     } else {
       adminBadge?.classList.add('hidden');
       adminLink?.classList.add('hidden');
+      navTecnico?.classList.add('hidden');
       navSolicitar?.closest('li')?.classList.remove('hidden');
       navMisSolicitudes?.closest('li')?.classList.remove('hidden');
     }
@@ -438,27 +621,20 @@ function updateNavUI() {
     userAvatar?.classList.add('hidden');
     adminBadge?.classList.add('hidden');
     adminLink?.classList.add('hidden');
+    navTecnico?.classList.add('hidden');
     navSolicitar?.closest('li')?.classList.remove('hidden');
     navMisSolicitudes?.closest('li')?.classList.remove('hidden');
   }
 }
 
-// ── Funciones dummy de compatibilidad para evitar errores en HTML viejo ──
-export function openWhatsAppModal() {}
-export function closeWhatsAppModal() {}
-export function saveWhatsApp() {}
-
 // ── Menú desplegable de Perfil ─────────────────────────────────
 function openProfileDropdown(avatarEl) {
-  // Eliminar dropdown anterior si existe
   const existing = document.getElementById('profile-dropdown');
   if (existing) { existing.remove(); return; }
 
-  const nameToUse  = userNombre || currentUser?.displayName || 'Usuario';
+  const nameToUse  = userNombre || currentUser?.displayName || (isAdmin ? 'Administrador' : (isTecnico ? 'Técnico' : 'Solicitante'));
   const waToUse    = userWhatsApp || localStorage.getItem(WA_KEY) || '—';
-  const emailToUse = currentUser?.email || '';
-  // Ocultar el email tipo "04xx@informaticaves.app" que es interno
-  const emailDisplay = emailToUse.includes('@informaticaves.app') ? '' : emailToUse;
+  const roleLabel  = isAdmin ? '👑 Super Admin' : (isTecnico ? '⚡ Técnico Especialista' : '👤 Solicitante');
 
   const dropdown = document.createElement('div');
   dropdown.id = 'profile-dropdown';
@@ -467,11 +643,11 @@ function openProfileDropdown(avatarEl) {
     top: 64px;
     right: 1rem;
     background: var(--bg-card, #1e293b);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 1rem;
     padding: 1.25rem;
-    min-width: 240px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    min-width: 250px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
     z-index: 9999;
     animation: fadeInDown 0.2s ease;
   `;
@@ -481,13 +657,18 @@ function openProfileDropdown(avatarEl) {
       @keyframes fadeInDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
       #profile-dropdown .pd-avatar {
         width: 52px; height: 52px; border-radius: 50%;
-        background: linear-gradient(135deg, #6366f1, #06b6d4);
+        background: ${isTecnico ? 'linear-gradient(135deg, #f6ad55, #ed8936)' : 'linear-gradient(135deg, #6366f1, #06b6d4)'};
         display: flex; align-items: center; justify-content: center;
         font-size: 1.4rem; font-weight: 700; color: white;
         margin: 0 auto 0.75rem;
       }
       #profile-dropdown .pd-name { font-weight: 700; font-size: 1rem; color: var(--text, #fff); text-align: center; margin-bottom: 0.2rem; }
-      #profile-dropdown .pd-info { font-size: 0.8rem; color: var(--text-muted, #94a3b8); text-align: center; margin-bottom: 0.1rem; }
+      #profile-dropdown .pd-role { font-size: 0.78rem; font-weight: 700; color: ${isTecnico ? '#f6ad55' : 'var(--blue)'}; text-align: center; margin-bottom: 0.4rem; }
+      #profile-dropdown .pd-info { font-size: 0.8rem; color: var(--text-muted, #94a3b8); text-align: center; margin-bottom: 0.25rem; }
+      #profile-dropdown .pd-link-btn {
+        display: block; width: 100%; text-align: center; padding: 0.5rem; margin-top: 0.5rem; border-radius: 0.5rem;
+        background: rgba(99,179,237,0.15); color: var(--blue, #63b3ed); font-size: 0.82rem; font-weight: 600; text-decoration: none;
+      }
       #profile-dropdown .pd-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.75rem 0; }
       #profile-dropdown .pd-btn-logout {
         width: 100%; padding: 0.6rem; border-radius: 0.5rem;
@@ -499,8 +680,10 @@ function openProfileDropdown(avatarEl) {
     </style>
     <div class="pd-avatar">${nameToUse.charAt(0).toUpperCase()}</div>
     <div class="pd-name">${nameToUse}</div>
+    <div class="pd-role">${roleLabel}</div>
     ${waToUse !== '—' ? `<div class="pd-info">📱 ${waToUse}</div>` : ''}
-    ${emailDisplay ? `<div class="pd-info">✉️ ${emailDisplay}</div>` : ''}
+    ${isTecnico ? `<a href="tecnico.html" class="pd-link-btn">⚡ Ir a mi Panel de Técnico</a>` : ''}
+    ${isAdmin ? `<a href="admin.html" class="pd-link-btn">🛠️ Ir al Panel Administrador</a>` : ''}
     <hr class="pd-divider">
     <button class="pd-btn-logout" id="pd-logout-btn">🚪 Cerrar Sesión</button>
   `;
@@ -512,7 +695,6 @@ function openProfileDropdown(avatarEl) {
     await logout();
   });
 
-  // Cerrar al hacer clic fuera
   setTimeout(() => {
     document.addEventListener('click', function handler() {
       dropdown.remove();
@@ -521,7 +703,7 @@ function openProfileDropdown(avatarEl) {
   }, 50);
 }
 
-// ── Toast helper (importable) ─────────────────────────────────
+// ── Toast helper ──────────────────────────────────────────────
 export function showToast(msg, type = 'info') {
   const container = document.getElementById('toast-container')
     || (() => {
@@ -537,20 +719,17 @@ export function showToast(msg, type = 'info') {
   container.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
-// Exponer globalmente para que admin-notifications.js lo use sin dependencia circular
 window._showToast = showToast;
 
-// ── Helpers de estado ─────────────────────────────────────────
-
 export function getUserDisplayName() {
-  return userNombre || currentUser?.displayName || 'Cliente';
+  return userNombre || currentUser?.displayName || (isTecnico ? 'Técnico' : 'Cliente');
 }
 
 export function getUserEmail() {
   return currentUser?.email || '';
 }
 
-// ── Soporte Capacitor APK (Botón Atrás) ────────────────────────
+// ── Soporte Capacitor APK ─────────────────────────────────────
 if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
   window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
     if (document.querySelector('.modal-backdrop.open')) {

@@ -13,10 +13,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="InformaticaVES">
-  <meta property="og:description" content="30 años de experiencia en soporte técnico, Windows, Linux, CCTV y redes.">
+  <meta property="og:title" content="InformaticaVES — Red de Soporte Técnico Especializado">
+  <meta property="og:description" content="30 años de experiencia en soporte técnico, Windows, Linux, CCTV y redes. Red de técnicos certificados.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://eltecnicoluis.netlify.app">
+  <meta property="og:url" content="https://informaticosvenezuela.com">
 </head>
 <body>
 
@@ -47,6 +47,7 @@
       <li><a href="servicios.html">Servicios</a></li>
       <li><a href="solicitud.html" id="nav-solicitar">Solicitar</a></li>
       <li><a href="mis-solicitudes.html" id="nav-mis-solicitudes">Mis Solicitudes</a></li>
+      <li><a href="tecnico.html" id="nav-tecnico" class="hidden">Panel Técnico</a></li>
       <li><a href="admin.html" id="nav-admin" class="hidden">Administrador</a></li>
     </ul>
     <div class="nav-actions">
@@ -64,8 +65,8 @@
     <header class="hero">
       <div class="avatar-wrapper">
         <div class="avatar-pulse"></div>
-        <img src="https://eltecnicoluis.netlify.app/avatar.jpg"
-             onerror="this.style.display='none'"
+        <img src="logo.jpg"
+             onerror="this.src='logo_oficial.png'"
              alt="Luis Uzcátegui" class="avatar" id="hero-avatar">
         <div class="avatar-ring"></div>
         <div class="online-dot" title="Disponible"></div>
@@ -79,11 +80,11 @@
       </div>
 
       <h1 class="hero-name">Luis Uzcátegui</h1>
-      <p class="hero-subtitle">Especialista en Soporte Técnico</p>
+      <p class="hero-subtitle">Especialista en Soporte Técnico & Red Profesional</p>
       <p class="hero-bio">
-        "<strong>30 años de experiencia</strong> resolviendo problemas complejos en entornos
+        "<strong>30 años de experiencia</strong> liderando soporte técnico integral en entornos
         Windows, Ubuntu, CCTV bajo DVR y NVR, redes cableadas y WiFi,
-        Android para celulares, tabletas y PCs, diseños Web y aplicaciones Android"
+        Android para celulares, tabletas y PCs, desarrollos Web y sistemas a medida"
       </p>
 
       <div class="flex-center gap-2" style="flex-wrap:wrap">
@@ -93,11 +94,28 @@
         <a href="servicios.html" class="btn btn-secondary btn-lg">
           <span>📋</span> Ver Precios
         </a>
+        <button id="hero-btn-join-tec" class="btn btn-secondary btn-lg" style="border-color:rgba(246,173,85,0.4); color:#f6ad55;">
+          <span>⚡</span> Soy Técnico
+        </button>
       </div>
     </header>
 
+    <!-- ── Banner Únete como Técnico ─────────────────────────── -->
+    <section class="section" style="padding-top:0.5rem; padding-bottom:1.5rem;">
+      <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.1), rgba(237,137,54,0.04)); border:1px solid rgba(246,173,85,0.25); text-align:center; padding:1.75rem 1.25rem;">
+        <div style="font-size:2rem; margin-bottom:0.4rem;">💼</div>
+        <h2 style="font-size:1.25rem; font-weight:800; color:var(--text); margin-bottom:0.35rem;">¿Eres Técnico Especialista?</h2>
+        <p style="color:var(--text-muted); font-size:0.86rem; max-width:540px; margin:0 auto 1.25rem;">
+          Únete a la Red Profesional de <strong>InformaticaVES</strong>. Recibe órdenes de servicio técnico en tu zona, gestiona tus clientes y haz crecer tu negocio.
+        </p>
+        <button id="btn-banner-join-tec" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.65rem 1.5rem;">
+          ⚡ Registrarme como Técnico Profesional
+        </button>
+      </div>
+    </section>
+
     <!-- ── Mis Sistemas y Proyectos ──────────────────────────── -->
-    <section class="section" style="padding-top: 1rem; padding-bottom: 1rem;">
+    <section class="section" style="padding-top: 0.5rem; padding-bottom: 1rem;">
       <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.15rem;">Mis Sistemas y Proyectos</h2>
       <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.5rem;max-width:540px;margin:0 auto">
 
@@ -226,8 +244,9 @@
   }
 
   // Login / Logout
-  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
-  // El avatar ahora es manejado por auth.js (openProfileDropdown)
+  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal('solicitante'));
+  document.getElementById('hero-btn-join-tec')?.addEventListener('click', () => Auth.openAuthModal('tecnico'));
+  document.getElementById('btn-banner-join-tec')?.addEventListener('click', () => Auth.openAuthModal('tecnico'));
 
   // Modal WhatsApp
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {

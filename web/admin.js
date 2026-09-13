@@ -10,7 +10,8 @@ import {
   onSnapshot, query, orderBy, serverTimestamp, where,
   getTodosServicios, COLS,
   actualizarEstadoCaso, getValoraciones,
-  seedFAQsIfEmpty
+  seedFAQsIfEmpty, getTodosTecnicos,
+  actualizarEstadoTecnico, asignarTecnicoASolicitud
 } from './firebase.js';
 import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 
@@ -45,8 +46,9 @@ export function initAdmin() {
     if (_panelInited) return;
     _panelInited = true;
     initTabs();
-    cargarServicios();
     cargarSolicitudes();
+    cargarTecnicos();
+    cargarServicios();
     cargarFAQ();
     cargarClientes();
   }
@@ -357,12 +359,21 @@ async function cargarSolicitudes() {
       const ratingCell = val
         ? `<span style="color:#f6e05e;font-size:0.9rem;" title="${val.comentario || ''}">${'⭐'.repeat(val.estrellas)}${val.estrellas}/5</span>`
         : `<span style="color:var(--text-dim);font-size:0.8rem;">—</span>`;
+      
+      const tecCell = s.tecnicoNombre
+        ? `<div style="display:flex;flex-direction:column;gap:0.2rem;">
+             <span class="badge" style="background:rgba(246,173,85,0.15);color:#f6ad55;border:1px solid rgba(246,173,85,0.3);font-size:0.75rem;white-space:nowrap;">⚡ ${s.tecnicoNombre}</span>
+             <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:0.1rem 0.3rem;color:var(--blue);" onclick="window.abrirModalAsignar('${s.id}')">🔄 Reasignar</button>
+           </div>`
+        : `<button class="btn btn-sm" style="background:rgba(246,173,85,0.2);color:#f6ad55;border:1px solid rgba(246,173,85,0.4);font-size:0.75rem;padding:0.25rem 0.6rem;font-weight:700;" onclick="window.abrirModalAsignar('${s.id}')">⚡ Asignar</button>`;
+
       return `
         <tr style="${!s.leida ? 'background:rgba(99,179,237,0.04)' : ''}">
           <td>${urgEmoji}</td>
           <td style="color:var(--text);font-weight:${s.leida ? '400' : '700'}">${s.nombre}</td>
           <td><a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></td>
           <td style="color:var(--text-muted)">${s.servicio}</td>
+          <td>${tecCell}</td>
           <td>${estadoChip(estadoActual)}</td>
           <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
           <td>${ratingCell}</td>
@@ -877,3 +888,240 @@ async function cargarClientes() {
     console.error('[Clientes]', err);
   }
 }
+
+// ════════════════════════════════════════════════════════════
+// GESTIÓN DE RED DE TÉCNICOS & ASIGNACIONES
+// ════════════════════════════════════════════════════════════
+let tecnicosList = [];
+let filtroTecnicoActual = 'todos';
+
+async function cargarTecnicos() {
+  const tbody = document.getElementById('tecnicos-tbody');
+  if (!tbody) return;
+
+  onSnapshot(collection(db, COLS.tecnicos), snap => {
+    tecnicosList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTablaTecnicos();
+    actualizarStatTecnicos();
+  }, err => {
+    console.error('Error escuchando técnicos:', err);
+  });
+}
+
+function actualizarStatTecnicos() {
+  const statEl = document.getElementById('stat-tecnicos');
+  if (statEl) {
+    const activos = tecnicosList.filter(t => t.estado === 'activo').length;
+    statEl.textContent = activos;
+  }
+}
+
+window.filtrarTecnicos = function(valor) {
+  filtroTecnicoActual = valor;
+  renderTablaTecnicos();
+};
+
+function renderTablaTecnicos() {
+  const tbody = document.getElementById('tecnicos-tbody');
+  if (!tbody) return;
+
+  let filtrados = tecnicosList;
+  if (filtroTecnicoActual === 'activo') {
+    filtrados = tecnicosList.filter(t => t.estado === 'activo');
+  } else if (filtroTecnicoActual === 'disponible') {
+    filtrados = tecnicosList.filter(t => t.estado === 'activo' && t.disponible !== false);
+  } else if (filtroTecnicoActual === 'pendiente') {
+    filtrados = tecnicosList.filter(t => t.estado === 'pendiente' || t.estado === 'pendiente_aprobacion');
+  } else if (filtroTecnicoActual === 'suspendido') {
+    filtrados = tecnicosList.filter(t => t.estado === 'suspendido');
+  }
+
+  if (!filtrados.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--text-dim)">No hay técnicos registrados en este filtro.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtrados.map(t => {
+    const estado = t.estado || 'activo';
+    const disponible = t.disponible !== false;
+    const espList = Array.isArray(t.especialidades) ? t.especialidades.join(', ') : (t.especialidades || 'Soporte');
+    
+    let estadoBadge = `<span class="badge" style="background:rgba(104,211,145,0.15);color:#68d391;">Activo</span>`;
+    if (estado === 'pendiente' || estado === 'pendiente_aprobacion') {
+      estadoBadge = `<span class="badge" style="background:rgba(246,224,94,0.15);color:#f6e05e;">Pendiente</span>`;
+    } else if (estado === 'suspendido') {
+      estadoBadge = `<span class="badge" style="background:rgba(252,129,129,0.15);color:#fc8181;">Suspendido</span>`;
+    }
+
+    const dispBadge = disponible
+      ? `<span style="color:#48bb78;font-size:0.8rem;font-weight:700;">🟢 Disponible</span>`
+      : `<span style="color:#fc8181;font-size:0.8rem;">🔴 Ocupado</span>`;
+
+    const waNum = sanitizeNum(t.whatsapp || '');
+    const waUrl = `https://wa.me/${waNum}`;
+
+    return `
+      <tr>
+        <td style="color:var(--text);font-weight:700;">
+          <div style="display:flex;align-items:center;gap:0.4rem;">
+            <span>⚡</span>
+            <span>${t.nombre || 'Técnico'}</span>
+          </div>
+        </td>
+        <td><a href="${waUrl}" target="_blank" style="color:var(--green);text-decoration:none;">📱 ${t.whatsapp || '—'}</a></td>
+        <td style="color:var(--text-dim);font-size:0.82rem;">${t.cedula || '—'} / ${t.experiencia || '0'} años</td>
+        <td style="color:var(--blue);font-size:0.82rem;">📍 ${t.zona || 'General'}</td>
+        <td style="color:var(--text-muted);font-size:0.8rem;max-width:200px;">${espList}</td>
+        <td>${dispBadge}</td>
+        <td>${estadoBadge}</td>
+        <td>
+          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+            ${estado !== 'activo' ? `
+              <button class="btn btn-sm" style="background:rgba(104,211,145,0.2);color:#68d391;border:1px solid rgba(104,211,145,0.4);" onclick="window.cambiarEstadoTecnico('${t.id}', 'activo')">✅ Activar</button>
+            ` : `
+              <button class="btn btn-sm btn-ghost" style="color:#fc8181;font-size:0.75rem;" onclick="window.cambiarEstadoTecnico('${t.id}', 'suspendido')">⏸ Suspender</button>
+            `}
+            <a href="${waUrl}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;border:none;text-decoration:none;">💬 WA</a>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.cambiarEstadoTecnico = async function(tecnicoId, nuevoEstado) {
+  try {
+    await actualizarEstadoTecnico(tecnicoId, nuevoEstado);
+    showToast(`✅ Estado de técnico actualizado a ${nuevoEstado}`, 'success');
+  } catch (err) {
+    showToast(`❌ Error: ${err.message}`, 'error');
+  }
+};
+
+// ── Modal de Asignación de Técnico ────────────────────────────
+let solicitudAsignandoId = null;
+let tecnicoAsignadoActual = null;
+
+window.abrirModalAsignar = function(solicitudId) {
+  solicitudAsignandoId = solicitudId;
+  const s = solicitudesList.find(x => x.id === solicitudId);
+  if (!s) return;
+
+  document.getElementById('asig-info-servicio').textContent = `Servicio: ${s.servicio}`;
+  document.getElementById('asig-cliente-nombre').textContent  = s.nombre || '—';
+  document.getElementById('asig-cliente-wa').textContent      = s.whatsapp || '—';
+  document.getElementById('asig-cliente-zona').textContent    = s.direccion || s.zona || 'Caracas';
+  document.getElementById('asig-cliente-urgencia').textContent = (s.urgencia || 'Normal').toUpperCase();
+
+  // Poblar select de técnicos
+  const select = document.getElementById('select-tecnico-asignar');
+  if (select) {
+    const activos = tecnicosList.filter(t => t.estado === 'activo' || !t.estado);
+    select.innerHTML = '<option value="">-- Elige un técnico especialista --</option>' + activos.map(t => {
+      const dispText = t.disponible !== false ? '🟢 Disp.' : '🔴 Ocupado';
+      const espText  = Array.isArray(t.especialidades) ? t.especialidades.slice(0, 2).join(', ') : (t.especialidades || '');
+      const isSelected = s.tecnicoAsignadoId === t.id ? 'selected' : '';
+      return `<option value="${t.id}" ${isSelected}>⚡ ${t.nombre} [${espText}] - 📍 ${t.zona || 'General'} (${dispText})</option>`;
+    }).join('');
+  }
+
+  const btnNotif = document.getElementById('btn-notificar-tecnico-wa');
+  if (s.tecnicoAsignadoId && s.tecnicoWhatsApp) {
+    tecnicoAsignadoActual = { id: s.tecnicoAsignadoId, nombre: s.tecnicoNombre, whatsapp: s.tecnicoWhatsApp };
+    if (btnNotif) btnNotif.style.display = 'block';
+  } else {
+    tecnicoAsignadoActual = null;
+    if (btnNotif) btnNotif.style.display = 'none';
+  }
+
+  document.getElementById('modal-asignar-tecnico')?.classList.add('open');
+};
+
+window.closeModalAsignar = function() {
+  document.getElementById('modal-asignar-tecnico')?.classList.remove('open');
+  solicitudAsignandoId = null;
+};
+
+window.confirmarAsignacion = async function() {
+  if (!solicitudAsignandoId) return;
+  const select = document.getElementById('select-tecnico-asignar');
+  const tecnicoId = select.value;
+
+  if (!tecnicoId) {
+    showToast('Selecciona un técnico de la lista', 'error');
+    return;
+  }
+
+  const tec = tecnicosList.find(t => t.id === tecnicoId);
+  if (!tec) {
+    showToast('Técnico no encontrado', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-confirmar-asignacion');
+  btn.disabled = true;
+  btn.textContent = 'Asignando...';
+
+  try {
+    await asignarTecnicoASolicitud(solicitudAsignandoId, tec);
+    tecnicoAsignadoActual = tec;
+    
+    showToast(`✅ Orden asignada exitosamente a ${tec.nombre}`, 'success');
+    
+    // Mostrar botón de notificar por WA
+    const btnNotif = document.getElementById('btn-notificar-tecnico-wa');
+    if (btnNotif) btnNotif.style.display = 'block';
+
+    setTimeout(() => {
+      window.closeModalAsignar();
+    }, 1500);
+  } catch (err) {
+    console.error('Error asignando técnico:', err);
+    showToast('❌ Error al asignar: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Asignar y Actualizar Solicitud';
+  }
+};
+
+window.desasignarTecnico = async function() {
+  if (!solicitudAsignandoId) return;
+  if (!confirm('¿Deseas desasignar el técnico y dejar la solicitud en estado pendiente?')) return;
+
+  try {
+    await asignarTecnicoASolicitud(solicitudAsignandoId, null);
+    showToast('Solicitud desasignada y dejada como libre', 'info');
+    window.closeModalAsignar();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
+window.notificarTecnicoWhatsApp = function() {
+  if (!solicitudAsignandoId) return;
+  const s = solicitudesList.find(x => x.id === solicitudAsignandoId);
+  const tec = tecnicoAsignadoActual || tecnicosList.find(t => t.id === s?.tecnicoAsignadoId);
+
+  if (!s || !tec || !tec.whatsapp) {
+    showToast('No se encontró el WhatsApp del técnico', 'error');
+    return;
+  }
+
+  const tecWa = sanitizeNum(tec.whatsapp);
+  const mensaje = encodeURIComponent(
+    `⚡ *NUEVA ORDEN ASIGNADA — InformaticaVES*\n\n` +
+    `Hola *${tec.nombre}*, se te ha asignado una orden de trabajo:\n\n` +
+    `📋 *Servicio:* ${s.servicio}\n` +
+    `👤 *Cliente:* ${s.nombre}\n` +
+    `📱 *WhatsApp Cliente:* ${s.whatsapp}\n` +
+    `📍 *Ubicación:* ${s.direccion || s.zona || 'Caracas'}\n` +
+    `⚡ *Urgencia:* ${(s.urgencia || 'Normal').toUpperCase()}\n` +
+    (s.descripcion ? `📝 *Detalles:* ${s.descripcion}\n\n` : '\n') +
+    `👉 Entra a tu panel para ver y gestionar la orden:\n` +
+    `https://informaticosvenezuela.com/tecnico.html`
+  );
+
+  window.open(`https://wa.me/${tecWa}?text=${mensaje}`, '_blank');
+  showToast('WhatsApp abierto con la orden para el técnico', 'success');
+};
+

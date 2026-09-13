@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel del Técnico | InformaticaVES</title>
+  <meta name="description" content="Panel de control para técnicos de InformaticaVES. Gestiona tus trabajos asignados, estados y clientes.">
+  <meta name="theme-color" content="#f6ad55">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos específicos del Panel de Técnico */
+    .tec-header {
+      background: linear-gradient(135deg, rgba(246,173,85,0.12), rgba(237,137,54,0.05));
+      border: 1px solid rgba(246,173,85,0.25);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+    .tec-profile-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .tec-avatar-lg {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f6ad55, #ed8936);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1a202c;
+      box-shadow: 0 0 20px rgba(246,173,85,0.3);
+    }
+    .tec-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .tec-kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .tec-kpi-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text);
+      font-family: var(--font-mono, monospace);
+    }
+    .tec-kpi-lbl {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.25rem;
+    }
+    .job-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .job-card:hover {
+      border-color: rgba(246,173,85,0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    .job-card.urgente { border-left: 4px solid var(--red); }
+    .job-card.media   { border-left: 4px solid #f6e05e; }
+    .job-card.baja    { border-left: 4px solid var(--green); }
+    .job-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .job-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-pill-tomado      { background: rgba(99,179,237,0.15); color: #63b3ed; border: 1px solid rgba(99,179,237,0.3); }
+    .status-pill-en_camino   { background: rgba(246,173,85,0.15); color: #f6ad55; border: 1px solid rgba(246,173,85,0.3); }
+    .status-pill-en_progreso { background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
+    .status-pill-finalizado  { background: rgba(104,211,145,0.15); color: #68d391; border: 1px solid rgba(104,211,145,0.3); }
+    
+    .job-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      background: rgba(0,0,0,0.2);
+      padding: 1rem;
+      border-radius: 0.75rem;
+    }
+    .job-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 1rem;
+    }
+    .toggle-availability {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(0,0,0,0.3);
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none;">
+      <img src="logo_oficial.png" alt="InformaticaVES" style="height:110px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="servicios.html">Servicios</a></li>
+      <li><a href="tecnico.html" class="active" id="nav-tecnico">Panel Técnico</a></li>
+      <li><a href="solicitud.html" id="nav-solicitar" class="hidden">Solicitar</a></li>
+      <li><a href="mis-solicitudes.html" id="nav-mis-solicitudes" class="hidden">Mis Solicitudes</a></li>
+      <li><a href="admin.html" id="nav-admin" class="hidden">Administrador</a></li>
+    </ul>
+    <div class="nav-actions">
+      <span class="admin-badge" id="admin-badge" style="background:rgba(246,173,85,0.2); color:#f6ad55; border-color:rgba(246,173,85,0.4);">⚡ Técnico</span>
+      <div class="user-avatar" id="user-avatar" title="Mi cuenta">T</div>
+      <button class="btn-nav-auth hidden" id="btn-login">Iniciar Sesión</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container-wide" style="padding-top: 1.5rem; padding-bottom: 4rem;">
+
+    <!-- ── Acceso Denegado (No Técnico) ─────────────────────── -->
+    <div id="tec-access-denied" style="display:none; text-align:center; padding: 4rem 1rem;">
+      <div class="card" style="max-width: 440px; margin: 0 auto; padding: 2.5rem 1.5rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Área Exclusiva de Técnicos</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">
+          Debes iniciar sesión con una cuenta de Técnico Profesional para ver tus órdenes de trabajo asignadas.
+        </p>
+        <button class="btn btn-primary w-full" id="btn-login-as-tec" style="background:#f6ad55; color:#1a202c; font-weight:700;">
+          ⚡ Ingresar como Técnico
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Contenido del Panel de Técnico ───────────────────── -->
+    <div id="tec-panel-content" style="display:none;">
+
+      <!-- Header del Técnico -->
+      <div class="tec-header">
+        <div class="tec-profile-info">
+          <div class="tec-avatar-lg" id="tec-header-avatar">T</div>
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">
+              <h1 id="tec-header-name" style="font-size:1.4rem; font-weight:800; color:var(--text); margin:0;">Cargando...</h1>
+              <span id="tec-status-badge" class="badge" style="background:rgba(104,211,145,0.15); color:#68d391; font-size:0.7rem;">Activo</span>
+            </div>
+            <p id="tec-header-specs" style="color:var(--text-muted); font-size:0.84rem; margin:0; margin-bottom:0.35rem;">Especialidades</p>
+            <div style="display:flex; gap:0.75rem; font-size:0.78rem; color:var(--text-dim);">
+              <span id="tec-header-wa">📱 WhatsApp</span>
+              <span>•</span>
+              <span id="tec-header-zona">📍 Zona</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+          <div class="toggle-availability" id="btn-toggle-availability" title="Cambiar disponibilidad">
+            <span id="avail-dot" style="width:10px; height:10px; border-radius:50%; background:#48bb78;"></span>
+            <span id="avail-text" style="font-size:0.82rem; font-weight:700; color:#48bb78;">🟢 Disponible para recibir trabajos</span>
+          </div>
+          <span style="font-size:0.72rem; color:var(--text-dim);">El administrador te asignará trabajos según tu disponibilidad</span>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="tec-kpi-grid">
+        <div class="tec-kpi-card">
+          <div class="tec-kpi-val" id="kpi-total">0</div>
+          <div class="tec-kpi-lbl">Total Asignados</div>
+        </div>
+        <div class="tec-kpi-card" style="border-color:rgba(99,179,237,0.3);">
+          <div class="tec-kpi-val" id="kpi-nuevos" style="color:#63b3ed;">0</div>
+          <div class="tec-kpi-lbl">Nuevos / Pendientes</div>
+        </div>
+        <div class="tec-kpi-card" style="border-color:rgba(168,85,247,0.3);">
+          <div class="tec-kpi-val" id="kpi-progreso" style="color:#a855f7;">0</div>
+          <div class="tec-kpi-lbl">En Progreso</div>
+        </div>
+        <div class="tec-kpi-card" style="border-color:rgba(104,211,145,0.3);">
+          <div class="tec-kpi-val" id="kpi-completados" style="color:#68d391;">0</div>
+          <div class="tec-kpi-lbl">Completados</div>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+        <h2 style="font-size:1.15rem; font-weight:800; color:var(--text); margin:0;">📋 Mis Órdenes de Trabajo</h2>
+        
+        <div style="display:flex; gap:0.4rem; background:var(--surface); padding:4px; border-radius:10px; border:1px solid var(--border);">
+          <button class="btn btn-sm filter-btn active" data-filter="todos" id="filter-todos" style="font-size:0.75rem; padding:0.3rem 0.75rem;">Todos</button>
+          <button class="btn btn-sm filter-btn" data-filter="pendientes" id="filter-pendientes" style="font-size:0.75rem; padding:0.3rem 0.75rem;">Nuevos</button>
+          <button class="btn btn-sm filter-btn" data-filter="progreso" id="filter-progreso" style="font-size:0.75rem; padding:0.3rem 0.75rem;">En Curso</button>
+          <button class="btn btn-sm filter-btn" data-filter="finalizados" id="filter-finalizados" style="font-size:0.75rem; padding:0.3rem 0.75rem;">Completados</button>
+        </div>
+      </div>
+
+      <!-- Lista de Trabajos Asignados -->
+      <div id="jobs-container">
+        <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+          <p>Cargando órdenes de trabajo...</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Modal Actualizar Estado del Trabajo ──────────────────── -->
+<div class="modal-backdrop" id="modal-update-job">
+  <div class="modal-box" style="max-width: 440px; padding: 2rem;">
+    <button class="modal-close" id="modal-update-close">&times;</button>
+    <h3 style="margin-bottom:0.25rem; font-size:1.2rem;">Actualizar Avance del Trabajo</h3>
+    <p style="color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;" id="modal-update-solicitud-title">Orden #...</p>
+    
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label class="form-label">Estado de la Atención</label>
+      <select id="modal-select-estado" class="form-input">
+        <option value="tomado">📋 Asignado / Recibido</option>
+        <option value="en_camino">🚗 En camino al lugar</option>
+        <option value="en_progreso">🔧 En diagnóstico / Reparación</option>
+        <option value="finalizado">✅ Trabajo Completado con Éxito</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1.5rem;">
+      <label class="form-label">Nota Técnica / Reporte del Servicio</label>
+      <textarea id="modal-nota-tecnica" class="form-input" rows="3" placeholder="Ej: Se reemplazó cable UTP y se reconfiguró el router principal..."></textarea>
+    </div>
+
+    <div class="flex" style="gap:0.75rem;">
+      <button class="btn btn-secondary w-full" id="modal-update-cancel">Cancelar</button>
+      <button class="btn btn-primary w-full" id="modal-update-save" style="background:#f6ad55; color:#1a202c; font-weight:700;">💾 Guardar Cambio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ───────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script type="module" src="tecnico.js"></script>
+</body>
+</html>
