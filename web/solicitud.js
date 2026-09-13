@@ -151,16 +151,29 @@ function getCachedServicios() {
   } catch (_) { return []; }
 }
 
-// ── Pre-seleccionar servicio desde URL (?servicio=id) ─────────
+// ── Pre-seleccionar servicio desde URL (?servicio=id o ?cat=categoria) ─────────
 function preseleccionarDesdeURL() {
   const params = new URLSearchParams(window.location.search);
   const id     = params.get('servicio');
-  if (!id) return;
-
+  const cat    = params.get('cat');
   const select = document.getElementById('select-servicio');
-  if (select) select.value = id;
-  servicioSeleccionado = serviciosDisponibles.find(s => s.id === id) || null;
-  updateServiceDetail();
+  if (!select) return;
+
+  if (id) {
+    select.value = id;
+    servicioSeleccionado = serviciosDisponibles.find(s => s.id === id) || null;
+    updateServiceDetail();
+    return;
+  }
+
+  if (cat) {
+    const match = serviciosDisponibles.find(s => s.categoria === cat);
+    if (match) {
+      select.value = match.id;
+      servicioSeleccionado = match;
+      updateServiceDetail();
+    }
+  }
 }
 
 // ── Eventos del formulario ────────────────────────────────────
