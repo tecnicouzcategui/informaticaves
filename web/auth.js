@@ -865,9 +865,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           } catch (authErr) {
             if (authErr.code === 'auth/email-already-in-use') {
               const fakeEmailCedula = `${cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com`;
-              userCred = await createUserWithEmailAndPassword(auth, fakeEmailCedula, pass);
-            } else {
-              throw authErr;
+              try {
+                userCred = await createUserWithEmailAndPassword(auth, fakeEmailCedula, pass);
+              } catch (_) {}
             }
           }
 
@@ -890,7 +890,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             passwordHash: hash,
             rol: 'tecnico',
             estado: 'activo',
-            disponible: true
+            disponible: true,
+            creadoEn: serverTimestamp()
           });
 
           localStorage.setItem(ROLE_KEY, 'tecnico');
@@ -985,9 +986,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           } catch (authErr) {
             if (authErr.code === 'auth/email-already-in-use') {
               const fakeEmailCedula = `${cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com`;
-              userCred = await createUserWithEmailAndPassword(auth, fakeEmailCedula, pass);
-            } else {
-              throw authErr;
+              try {
+                userCred = await createUserWithEmailAndPassword(auth, fakeEmailCedula, pass);
+              } catch (_) {}
             }
           }
 
@@ -1007,7 +1008,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             direccionTrabajo: dirTrabajo,
             fotoPerfil: uploadedSolicitanteFotoBase64,
             passwordHash: hash,
-            rol: 'solicitante'
+            rol: 'solicitante',
+            creadoEn: serverTimestamp()
           });
 
           localStorage.setItem(ROLE_KEY, 'solicitante');

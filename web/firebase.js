@@ -168,6 +168,22 @@ export async function getClienteByCedula(cedula) {
   return null;
 }
 
+/** Obtiene todos los clientes registrados (para el administrador) */
+export async function getTodosClientes() {
+  const snap = await getDocs(collection(db, COLS.clientes));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/** Elimina un cliente de Firestore (Admin) */
+export async function eliminarCliente(clienteId) {
+  return deleteDoc(doc(db, COLS.clientes, clienteId));
+}
+
+/** Elimina un técnico de Firestore (Admin) */
+export async function eliminarTecnico(tecnicoId) {
+  return deleteDoc(doc(db, COLS.tecnicos, tecnicoId));
+}
+
 /** Convierte texto a hash SHA-256 (nativo del navegador, sin dependencias) */
 export async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));

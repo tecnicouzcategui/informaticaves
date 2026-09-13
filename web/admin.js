@@ -699,7 +699,7 @@ window.adminGuardarFAQ = async function() {
   }
 };
 
-window.gestionarClave = async function(wa) {
+window.gestionarClave = async function(identificador, nombreCliente = '') {
   let modal = document.getElementById('modal-gestionar-clave');
   if (!modal) {
     modal = document.createElement('div');
@@ -708,34 +708,43 @@ window.gestionarClave = async function(wa) {
     document.body.appendChild(modal);
   }
 
+  const cleanIdent = (identificador || '').trim();
+  const labelCliente = nombreCliente ? `${nombreCliente} (${cleanIdent})` : (cleanIdent || 'Usuario');
+
   // 1. Mostrar input para que el admin escriba la clave
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:400px;text-align:left">
+    <div class="modal-box" style="max-width:420px;text-align:left">
       <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
-      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem">🔑 Resetear Clave de Cliente</h2>
-      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">Escribe la nueva contraseña que deseas asignarle al cliente <b>${wa}</b>.</p>
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:0.5rem">🔑 Resetear Clave de Usuario</h2>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem">Escribe la nueva contraseña para <b>${escapeHtml(labelCliente)}</b>.</p>
       
+      <div class="form-group" style="margin-bottom:0.75rem;">
+        <label class="form-label">Identificador (Cédula o WhatsApp)</label>
+        <input type="text" id="admin-reset-ident" class="form-input" value="${escapeHtml(cleanIdent)}" placeholder="Ej: V-12345678 o 04121234567">
+      </div>
+
       <div class="form-group" style="position:relative; margin-bottom:0.5rem;">
         <label class="form-label">Nueva Contraseña</label>
-        <input type="text" id="admin-new-pass" class="form-input" placeholder="Ej. Pedro1234">
+        <input type="text" id="admin-new-pass" class="form-input" placeholder="Ej: Pedro2025" autocomplete="off">
       </div>
       
-      <div style="display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.5rem; font-size:0.75rem; color:var(--text-dim);">
+      <div style="display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.25rem; font-size:0.75rem; color:var(--text-dim);">
         <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-al" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div> Mínimo 4 letras</div>
         <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-au" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div> Al menos 1 mayúscula</div>
         <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-an" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div> Mínimo 4 números</div>
       </div>
 
-      <button id="btn-save-admin-pass" class="btn btn-primary w-full" disabled style="opacity:0.5;background:var(--blue);color:white">Guardar y Enviar por WhatsApp</button>
+      <button id="btn-save-admin-pass" class="btn btn-primary w-full" disabled style="opacity:0.5;background:var(--blue);color:white;padding:0.75rem;">Guardar y Enviar por WhatsApp</button>
     </div>
   `;
   modal.classList.add('open');
 
-  const inputPass = document.getElementById('admin-new-pass');
-  const btnSave = document.getElementById('btn-save-admin-pass');
-  const dotAl = document.getElementById('dot-al');
-  const dotAu = document.getElementById('dot-au');
-  const dotAn = document.getElementById('dot-an');
+  const inputIdent = document.getElementById('admin-reset-ident');
+  const inputPass  = document.getElementById('admin-new-pass');
+  const btnSave    = document.getElementById('btn-save-admin-pass');
+  const dotAl      = document.getElementById('dot-al');
+  const dotAu      = document.getElementById('dot-au');
+  const dotAn      = document.getElementById('dot-an');
 
   inputPass.addEventListener('input', () => {
     const val = inputPass.value;
@@ -757,11 +766,18 @@ window.gestionarClave = async function(wa) {
   });
 
   btnSave.addEventListener('click', async () => {
-    const tempPass = inputPass.value;
+    const targetIdent = inputIdent.value.trim();
+    const tempPass    = inputPass.value;
+
+    if (!targetIdent) {
+      showToast('Ingresa la Cédula o número de WhatsApp.', 'error');
+      return;
+    }
+
     modal.innerHTML = `
       <div class="modal-box" style="max-width:420px;text-align:center;padding:2rem">
         <span class="spinner"></span>
-        <p style="margin-top:1rem;color:var(--text-muted)">Guardando nueva clave…</p>
+        <p style="margin-top:1rem;color:var(--text-muted)">Actualizando contraseña en la base de datos…</p>
       </div>
     `;
 
@@ -770,37 +786,75 @@ window.gestionarClave = async function(wa) {
       const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 
       const { db, collection, query, where, getDocs, doc, updateDoc, serverTimestamp } = await import('./firebase.js');
-      const CLIENTES = 'clientes';
-      const q = query(collection(db, CLIENTES), where('whatsapp', '==', wa));
-      const snap = await getDocs(q);
       
+      // Buscar primero en clientes
+      let docToUpdate = null;
+      let targetCollection = 'clientes';
+      let cleanWa = targetIdent.replace(/[^0-9]/g, '');
+      let cleanCed = targetIdent.toUpperCase();
+
+      // 1. En clientes por whatsapp
+      let snap = await getDocs(query(collection(db, 'clientes'), where('whatsapp', '==', targetIdent)));
+      if (snap.empty && cleanWa) {
+        snap = await getDocs(query(collection(db, 'clientes'), where('whatsapp', '==', cleanWa)));
+      }
+      if (snap.empty) {
+        snap = await getDocs(query(collection(db, 'clientes'), where('cedula', '==', cleanCed)));
+      }
+      if (snap.empty && cleanWa) {
+        snap = await getDocs(query(collection(db, 'clientes'), where('cedulaNum', '==', cleanWa)));
+      }
+
       if (!snap.empty) {
-        await updateDoc(doc(db, CLIENTES, snap.docs[0].id), {
+        docToUpdate = snap.docs[0];
+        targetCollection = 'clientes';
+      } else {
+        // 2. Buscar en técnicos
+        let tecSnap = await getDocs(query(collection(db, 'tecnicos'), where('whatsapp', '==', targetIdent)));
+        if (tecSnap.empty && cleanWa) {
+          tecSnap = await getDocs(query(collection(db, 'tecnicos'), where('whatsapp', '==', cleanWa)));
+        }
+        if (tecSnap.empty) {
+          tecSnap = await getDocs(query(collection(db, 'tecnicos'), where('cedula', '==', cleanCed)));
+        }
+        if (tecSnap.empty && cleanWa) {
+          tecSnap = await getDocs(query(collection(db, 'tecnicos'), where('cedulaNum', '==', cleanWa)));
+        }
+        if (!tecSnap.empty) {
+          docToUpdate = tecSnap.docs[0];
+          targetCollection = 'tecnicos';
+        }
+      }
+
+      if (docToUpdate) {
+        await updateDoc(doc(db, targetCollection, docToUpdate.id), {
           passwordHash: hash,
           updatedAt: serverTimestamp()
         });
       } else {
-        throw new Error(`El cliente con WhatsApp ${wa} no está registrado.`);
+        throw new Error(`No se encontró ningún usuario o técnico con identificador "${targetIdent}".`);
       }
 
-      const waNum = '58' + wa.replace(/\D/g,'').slice(-10);
+      const userData = docToUpdate.data();
+      const userPhone = userData.whatsapp || targetIdent;
+      const waNum = '58' + userPhone.replace(/\D/g,'').slice(-10);
       const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(
-        `¡Hola! Hemos restablecido tu acceso a *Informáticos Venezuela*.\n\n🔑 Tu nueva contraseña es:\n\n*${tempPass}*\n\nPuedes cambiarla luego desde la sección Mis Solicitudes. ¡Saludos!`
+        `¡Hola *${userData.nombre || 'estimado usuario'}*! Hemos restablecido tu acceso a *Informáticos Venezuela*.\n\n🔑 Tu nueva contraseña es:\n\n*${tempPass}*\n\nYa puedes ingresar a la plataforma con tu cédula y esta contraseña. ¡Saludos!`
       )}`;
 
       modal.innerHTML = `
         <div class="modal-box" style="max-width:420px;text-align:center">
           <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
           <div style="font-size:2.5rem;margin-bottom:0.5rem">✅</div>
-          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.5rem">Clave guardada con éxito</h2>
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.5rem">Contraseña restablecida con éxito</h2>
           <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">
-            El sistema ya actualizó la clave a <b>${tempPass}</b>.
+            Se actualizó la clave de <b>${escapeHtml(userData.nombre || targetIdent)}</b> a <b>${escapeHtml(tempPass)}</b>.
           </p>
           <a href="${waLink}" target="_blank" 
              class="btn btn-primary w-full" 
              style="background:#25D366;border:none;display:block;text-align:center;text-decoration:none;font-size:1rem;padding:0.85rem"
              onclick="setTimeout(()=>document.getElementById('modal-gestionar-clave').classList.remove('open'),500)">
-            💬 Enviar por WhatsApp
+            💬 Enviar Clave por WhatsApp
           </a>
         </div>
       `;
@@ -808,7 +862,8 @@ window.gestionarClave = async function(wa) {
       modal.innerHTML = `
         <div class="modal-box" style="max-width:420px;text-align:center">
           <button class="modal-close" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">✕</button>
-          <p style="color:var(--red)">❌ Error al guardar: ${err.message}</p>
+          <p style="color:var(--red);margin-bottom:1rem;">❌ Error: ${escapeHtml(err.message)}</p>
+          <button class="btn btn-secondary w-full" onclick="document.getElementById('modal-gestionar-clave').classList.remove('open')">Cerrar</button>
         </div>
       `;
     }
@@ -816,18 +871,35 @@ window.gestionarClave = async function(wa) {
 };
 
 // ════════════════════════════════════════════════════════════
-// CLIENTES — Historial y Valoraciones
+// CLIENTES — Directorio, Gestión de Usuarios y Valoraciones
 // ════════════════════════════════════════════════════════════
-async function cargarClientes() {
-  // Cargar valoraciones
-  const valList    = document.getElementById('val-list');
-  const valBadge   = document.getElementById('val-promedio-badge');
-  const histTbody  = document.getElementById('historial-tbody');
+let clientesList = [];
+let filtroClienteQuery = '';
 
+async function cargarClientes() {
+  const tbody = document.getElementById('clientes-tbody');
+  const valList = document.getElementById('val-list');
+  const valBadge = document.getElementById('val-promedio-badge');
+  const histTbody = document.getElementById('historial-tbody');
+
+  // 1. Escuchar la colección de CLIENTES en tiempo real
+  onSnapshot(collection(db, COLS.clientes), snap => {
+    clientesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    clientesList.sort((a, b) => {
+      const tA = a.creadoEn?.seconds || a.updatedAt?.seconds || 0;
+      const tB = b.creadoEn?.seconds || b.updatedAt?.seconds || 0;
+      return tB - tA;
+    });
+    renderTablaClientes();
+    actualizarStatClientes();
+  }, err => {
+    console.error('Error escuchando clientes:', err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="color:var(--red);padding:2rem;">Error: ${err.message}</td></tr>`;
+  });
+
+  // 2. Cargar valoraciones
   try {
     const valoraciones = await getValoraciones();
-
-    // Calcular promedio
     if (valList) {
       if (!valoraciones.length) {
         valList.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-dim)">Aún no hay valoraciones recibidas.</div>';
@@ -859,46 +931,261 @@ async function cargarClientes() {
       }
     }
 
-    // Historial de todas las solicitudes
+    // 3. Historial de todas las solicitudes
     if (histTbody) {
-      const snap = await getDocs(collection(db, COLS.solicitudes));
-      const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      todas.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+      onSnapshot(query(collection(db, COLS.solicitudes), orderBy('timestamp', 'desc')), snap => {
+        const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      const estadoMap = {
-        pendiente:   { cls: 'estado-pendiente',  lbl: '🟡 Pendiente' },
-        tomado:      { cls: 'estado-tomado',      lbl: '📋 Tomado' },
-        en_progreso: { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
-        finalizado:  { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
-      };
+        const estadoMap = {
+          pendiente:   { cls: 'estado-pendiente',  lbl: '🟡 Pendiente' },
+          tomado:      { cls: 'estado-tomado',      lbl: '📋 Tomado' },
+          en_progreso: { cls: 'estado-progreso',    lbl: '▶️ En Progreso' },
+          finalizado:  { cls: 'estado-finalizado',  lbl: '✅ Finalizado' },
+          cancelado:   { cls: 'estado-cancelado',   lbl: '❌ Cancelado' }
+        };
 
-      if (!todas.length) {
-        histTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)">Sin solicitudes aún.</td></tr>';
-      } else {
-        histTbody.innerHTML = todas.map(s => {
-          const fecha = s.timestamp?.toDate?.()?.toLocaleDateString('es-VE') || '—';
-          const eKey  = s.estadoCaso || 'pendiente';
-          const eInfo = estadoMap[eKey] || estadoMap['pendiente'];
-          return `
-            <tr>
-              <td style="color:var(--text);font-weight:600">${escapeHtml(s.nombre || '—')}</td>
-              <td><a href="https://wa.me/${sanitizeNum(s.whatsapp || '')}" target="_blank" style="color:var(--green)">${escapeHtml(s.whatsapp || '—')}</a></td>
-              <td style="color:var(--text-muted)">${escapeHtml(s.servicio || '—')}</td>
-              <td><span class="estado-chip ${eInfo.cls}">${eInfo.lbl}</span></td>
-              <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
-              <td>
-                <button class="btn btn-sm" style="background:var(--blue);color:white" onclick="window.gestionarClave('${sanitizeNum(s.whatsapp || '')}')">🔑 Clave</button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
+        if (!todas.length) {
+          histTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)">Sin solicitudes aún.</td></tr>';
+        } else {
+          histTbody.innerHTML = todas.map(s => {
+            const fecha = s.timestamp?.toDate?.()?.toLocaleDateString('es-VE') || '—';
+            const eKey  = s.estadoCaso || 'pendiente';
+            const eInfo = estadoMap[eKey] || estadoMap['pendiente'];
+            return `
+              <tr>
+                <td style="color:var(--text);font-weight:600">${escapeHtml(s.nombre || '—')}</td>
+                <td><a href="https://wa.me/${sanitizeNum(s.whatsapp || '')}" target="_blank" style="color:var(--green)">${escapeHtml(s.whatsapp || '—')}</a></td>
+                <td style="color:var(--text-muted)"><code style="color:var(--blue);font-weight:700;font-size:0.75rem;margin-right:0.3rem;">${escapeHtml(s.correlativo || ('#' + s.id.substring(0,6)))}</code> ${escapeHtml(s.servicio || '—')}</td>
+                <td><span class="estado-chip ${eInfo.cls}">${eInfo.lbl}</span></td>
+                <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
+                <td>
+                  <button class="btn btn-sm" style="background:var(--blue);color:white" onclick="window.gestionarClave('${sanitizeNum(s.whatsapp || '')}', '${escapeHtml(s.nombre || '')}')">🔑 Clave</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      });
     }
   } catch (err) {
     if (valList) valList.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
     console.error('[Clientes]', err);
   }
 }
+
+function actualizarStatClientes() {
+  const statEl = document.getElementById('stat-clientes');
+  const badgeEl = document.getElementById('badge-total-clientes');
+  if (statEl) statEl.textContent = clientesList.length;
+  if (badgeEl) badgeEl.textContent = `${clientesList.length} registrados`;
+}
+
+window.filtrarClientes = function(query) {
+  filtroClienteQuery = (query || '').toLowerCase().trim();
+  renderTablaClientes();
+};
+
+function renderTablaClientes() {
+  const tbody = document.getElementById('clientes-tbody');
+  if (!tbody) return;
+
+  let filtrados = clientesList;
+  if (filtroClienteQuery) {
+    filtrados = clientesList.filter(c => {
+      const nombre = (c.nombre || '').toLowerCase();
+      const cedula = (c.cedula || '').toLowerCase();
+      const wa     = (c.whatsapp || '').toLowerCase();
+      const comp   = (c.compania || '').toLowerCase();
+      const email  = (c.email || '').toLowerCase();
+      return nombre.includes(filtroClienteQuery) || cedula.includes(filtroClienteQuery) || wa.includes(filtroClienteQuery) || comp.includes(filtroClienteQuery) || email.includes(filtroClienteQuery);
+    });
+  }
+
+  if (!filtrados.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-dim)">
+          ${filtroClienteQuery ? 'No se encontraron clientes que coincidan con la búsqueda.' : 'No hay clientes registrados en la base de datos.'}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtrados.map(c => {
+    const waNum = sanitizeNum(c.whatsapp || '');
+    const waUrl = `https://wa.me/${waNum}`;
+    const fecha = c.creadoEn?.toDate?.()?.toLocaleDateString('es-VE') || c.updatedAt?.toDate?.()?.toLocaleDateString('es-VE') || '—';
+    const fotoHTML = c.fotoPerfil 
+      ? `<img src="${c.fotoPerfil}" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--blue);">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:rgba(99,179,237,0.2);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800;font-size:0.9rem;">👤</div>`;
+
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:0.6rem;">
+            ${fotoHTML}
+            <div>
+              <div style="font-weight:700;color:var(--text);">${escapeHtml(c.nombre || 'Cliente')}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">${escapeHtml(c.email || '—')}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="badge" style="background:rgba(99,179,237,0.15);color:var(--blue);font-weight:700;font-size:0.8rem;">
+            ${escapeHtml(c.cedula || '—')}
+          </span>
+        </td>
+        <td>
+          <a href="${waUrl}" target="_blank" style="color:var(--green);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:0.25rem;">
+            <span>📱</span> <span>${escapeHtml(c.whatsapp || '—')}</span>
+          </a>
+        </td>
+        <td style="color:var(--text-muted);font-size:0.83rem;">
+          <div style="font-weight:600;color:var(--text);">${escapeHtml(c.compania || 'Particular')}</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.direccionCompania || '—')}</div>
+        </td>
+        <td style="color:var(--text-muted);font-size:0.82rem;">
+          <div>${escapeHtml(c.profesion || '—')}</div>
+          ${c.direccionTrabajo ? `<div style="font-size:0.72rem;color:var(--text-dim);">📍 ${escapeHtml(c.direccionTrabajo)}</div>` : ''}
+        </td>
+        <td style="color:var(--text-dim);font-size:0.8rem;">${fecha}</td>
+        <td>
+          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-secondary" style="font-size:0.75rem;padding:0.25rem 0.5rem;" onclick="window.verFichaCliente('${c.id}')" title="Ver ficha completa">👁️ Ficha</button>
+            <button class="btn btn-sm" style="background:var(--blue);color:white;font-size:0.75rem;padding:0.25rem 0.5rem;" onclick="window.gestionarClave('${sanitizeNum(c.whatsapp || c.cedula || '')}', '${escapeHtml(c.nombre || '')}')" title="Resetear contraseña">🔑 Clave</button>
+            <button class="btn btn-sm btn-danger" style="font-size:0.75rem;padding:0.25rem 0.5rem;" onclick="window.eliminarCliente('${c.id}')" title="Eliminar cliente">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.verFichaCliente = function(clienteId) {
+  const c = clientesList.find(x => x.id === clienteId);
+  if (!c) return;
+
+  const modal = document.getElementById('modal-ficha-cliente');
+  if (!modal) return;
+
+  document.getElementById('ficha-cli-nombre').textContent = c.nombre || 'Cliente';
+  document.getElementById('ficha-cli-cedula').textContent = c.cedula || 'V-—';
+  
+  const avatarBox = document.getElementById('ficha-cli-avatar');
+  if (avatarBox) {
+    if (c.fotoPerfil) {
+      avatarBox.innerHTML = `<img src="${c.fotoPerfil}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`;
+    } else {
+      avatarBox.innerHTML = '👤';
+    }
+  }
+
+  const fechaReg = c.creadoEn?.toDate?.()?.toLocaleString('es-VE') || c.updatedAt?.toDate?.()?.toLocaleString('es-VE') || '—';
+  const waNum = sanitizeNum(c.whatsapp || '');
+  const waUrl = `https://wa.me/${waNum}`;
+
+  document.getElementById('ficha-cli-detalles').innerHTML = `
+    <div><strong>👤 1. Nombre Completo:</strong> ${escapeHtml(c.nombre || '—')}</div>
+    <div><strong>🆔 2. Cédula (Usuario):</strong> <span style="color:var(--blue);font-weight:700;">${escapeHtml(c.cedula || '—')}</span></div>
+    <div><strong>📱 3. WhatsApp / Teléfono:</strong> <a href="${waUrl}" target="_blank" style="color:var(--green);text-decoration:underline;">${escapeHtml(c.whatsapp || '—')}</a></div>
+    <div><strong>📧 4. Correo Electrónico:</strong> ${escapeHtml(c.email || '—')}</div>
+    <div><strong>🏢 5. Compañía / Empresa:</strong> ${escapeHtml(c.compania || 'Particular')}</div>
+    <div><strong>📍 6. Dirección de la Compañía / Sede:</strong> ${escapeHtml(c.direccionCompania || '—')}</div>
+    <div><strong>💼 7. Profesión / Cargo:</strong> ${escapeHtml(c.profesion || '—')}</div>
+    <div><strong>🛠️ 8. Dirección donde se hará el trabajo:</strong> ${escapeHtml(c.direccionTrabajo || '—')}</div>
+    <div><strong>📅 9. Fecha de Registro:</strong> ${fechaReg}</div>
+  `;
+
+  const btnWa = document.getElementById('ficha-cli-btn-wa');
+  if (btnWa) btnWa.href = waUrl;
+
+  const btnPass = document.getElementById('ficha-cli-btn-pass');
+  if (btnPass) {
+    btnPass.onclick = () => {
+      window.closeFichaClienteModal();
+      window.gestionarClave(c.whatsapp || c.cedula, c.nombre);
+    };
+  }
+
+  modal.classList.add('open');
+};
+
+window.closeFichaClienteModal = function() {
+  document.getElementById('modal-ficha-cliente')?.classList.remove('open');
+};
+
+window.eliminarCliente = async function(clienteId) {
+  const c = clientesList.find(x => x.id === clienteId);
+  const nombre = c ? c.nombre : 'este cliente';
+  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${nombre}? Esta acción borrará su cuenta y perfil de la base de datos.`)) return;
+
+  try {
+    await deleteDoc(doc(db, COLS.clientes, clienteId));
+    showToast('🗑 Cliente eliminado exitosamente', 'info');
+  } catch (err) {
+    showToast(`❌ Error al eliminar cliente: ${err.message}`, 'error');
+  }
+};
+
+window.verFichaTecnico = function(tecnicoId) {
+  const t = tecnicosList.find(x => x.id === tecnicoId);
+  if (!t) return;
+
+  const modal = document.getElementById('modal-ficha-tecnico');
+  if (!modal) return;
+
+  document.getElementById('ficha-tec-nombre').textContent = t.nombre || 'Técnico';
+  document.getElementById('ficha-tec-cedula').textContent = t.cedula || 'V-—';
+  document.getElementById('ficha-tec-estado').textContent = (t.estado || 'activo').toUpperCase();
+
+  const avatarBox = document.getElementById('ficha-tec-avatar');
+  if (avatarBox) {
+    if (t.fotoPerfil) {
+      avatarBox.innerHTML = `<img src="${t.fotoPerfil}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`;
+    } else {
+      avatarBox.innerHTML = '👨‍🔧';
+    }
+  }
+
+  const waNum = sanitizeNum(t.whatsapp || '');
+  const waUrl = `https://wa.me/${waNum}`;
+  const espList = Array.isArray(t.especialidades) ? t.especialidades.join(', ') : (t.especialidades || 'Soporte General');
+
+  document.getElementById('ficha-tec-detalles').innerHTML = `
+    <div><strong>👨‍🔧 1. Nombre Completo:</strong> ${escapeHtml(t.nombre || '—')}</div>
+    <div><strong>🆔 2. Cédula:</strong> ${escapeHtml(t.cedula || '—')}</div>
+    <div><strong>📱 3. WhatsApp:</strong> <a href="${waUrl}" target="_blank" style="color:var(--green);text-decoration:underline;">${escapeHtml(t.whatsapp || '—')}</a></div>
+    <div><strong>📧 4. Correo Electrónico:</strong> ${escapeHtml(t.email || '—')}</div>
+    <div><strong>⏳ 5. Años de Experiencia:</strong> ${escapeHtml(String(t.experiencia || '0'))} años</div>
+    <div><strong>📍 6. Zona de Cobertura:</strong> ${escapeHtml(t.zona || 'General')}</div>
+    <div><strong>💼 7. Profesión / Perfil:</strong> ${escapeHtml(t.profesion || '—')}</div>
+    <div><strong>⚡ 8. Especialidades:</strong> <div style="margin-top:0.25rem;background:rgba(246,173,85,0.1);padding:0.4rem;border-radius:6px;font-size:0.8rem;color:#fbd38d;">${escapeHtml(espList)}</div></div>
+    <div><strong>🟢 9. Disponibilidad:</strong> ${t.disponible !== false ? '🟢 Disponible para nuevos trabajos' : '🔴 Ocupado'}</div>
+  `;
+
+  const btnWa = document.getElementById('ficha-tec-btn-wa');
+  if (btnWa) btnWa.href = waUrl;
+
+  modal.classList.add('open');
+};
+
+window.closeFichaTecnicoModal = function() {
+  document.getElementById('modal-ficha-tecnico')?.classList.remove('open');
+};
+
+window.eliminarTecnico = async function(tecnicoId) {
+  const t = tecnicosList.find(x => x.id === tecnicoId);
+  const nombre = t ? t.nombre : 'este técnico';
+  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente al técnico ${nombre}?`)) return;
+
+  try {
+    await deleteDoc(doc(db, COLS.tecnicos, tecnicoId));
+    showToast('🗑 Técnico eliminado exitosamente', 'info');
+  } catch (err) {
+    showToast(`❌ Error al eliminar técnico: ${err.message}`, 'error');
+  }
+};
 
 // ════════════════════════════════════════════════════════════
 // GESTIÓN DE RED DE TÉCNICOS & ASIGNACIONES
@@ -912,6 +1199,11 @@ async function cargarTecnicos() {
 
   onSnapshot(collection(db, COLS.tecnicos), snap => {
     tecnicosList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    tecnicosList.sort((a, b) => {
+      const tA = a.creadoEn?.seconds || a.updatedAt?.seconds || 0;
+      const tB = b.creadoEn?.seconds || b.updatedAt?.seconds || 0;
+      return tB - tA;
+    });
     renderTablaTecnicos();
     actualizarStatTecnicos();
   }, err => {
@@ -987,12 +1279,15 @@ function renderTablaTecnicos() {
         <td>${estadoBadge}</td>
         <td>
           <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-secondary" style="font-size:0.75rem;padding:0.25rem 0.45rem;" onclick="window.verFichaTecnico('${t.id}')" title="Ver ficha completa">👁️</button>
             ${estado !== 'activo' ? `
-              <button class="btn btn-sm" style="background:rgba(104,211,145,0.2);color:#68d391;border:1px solid rgba(104,211,145,0.4);" onclick="window.cambiarEstadoTecnico('${t.id}', 'activo')">✅ Activar</button>
+              <button class="btn btn-sm" style="background:rgba(104,211,145,0.2);color:#68d391;border:1px solid rgba(104,211,145,0.4);font-size:0.75rem;padding:0.25rem 0.45rem;" onclick="window.cambiarEstadoTecnico('${t.id}', 'activo')">✅ Activar</button>
             ` : `
-              <button class="btn btn-sm btn-ghost" style="color:#fc8181;font-size:0.75rem;" onclick="window.cambiarEstadoTecnico('${t.id}', 'suspendido')">⏸ Suspender</button>
+              <button class="btn btn-sm btn-ghost" style="color:#fc8181;font-size:0.75rem;padding:0.25rem 0.45rem;" onclick="window.cambiarEstadoTecnico('${t.id}', 'suspendido')">⏸ Pausar</button>
             `}
-            <a href="${waUrl}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;border:none;text-decoration:none;">💬 WA</a>
+            <button class="btn btn-sm" style="background:var(--blue);color:white;font-size:0.75rem;padding:0.25rem 0.45rem;" onclick="window.gestionarClave('${sanitizeNum(t.whatsapp || t.cedula || '')}', '${escapeHtml(t.nombre || '')}')" title="Resetear contraseña">🔑</button>
+            <a href="${waUrl}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;border:none;text-decoration:none;font-size:0.75rem;padding:0.25rem 0.45rem;">💬</a>
+            <button class="btn btn-sm btn-danger" style="font-size:0.75rem;padding:0.25rem 0.45rem;" onclick="window.eliminarTecnico('${t.id}')" title="Eliminar técnico">🗑</button>
           </div>
         </td>
       </tr>

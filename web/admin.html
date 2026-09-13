@@ -191,6 +191,10 @@
           <div style="font-size:1.8rem;font-weight:900;color:#f6ad55" id="stat-tecnicos">—</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Técnicos Activos</div>
         </div>
+        <div class="card" style="text-align:center;cursor:pointer;transition:transform 0.2s;" onclick="document.querySelector('[data-tab=\'clientes\']').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <div style="font-size:1.8rem;font-weight:900;color:var(--blue)" id="stat-clientes">—</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Clientes Registrados</div>
+        </div>
         <div class="card" style="text-align:center;cursor:pointer;transition:transform 0.2s;" onclick="document.querySelector('[data-tab=\'solicitudes\']').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <div style="font-size:1.8rem;font-weight:900;color:var(--green)" id="stat-solicitudes">—</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">Solicitudes totales</div>
@@ -206,7 +210,7 @@
         <button class="admin-tab active" data-tab="solicitudes">📥 Solicitudes</button>
         <button class="admin-tab" data-tab="tecnicos">⚡ Red de Técnicos</button>
         <button class="admin-tab" data-tab="servicios">🔧 Servicios</button>
-        <button class="admin-tab" data-tab="clientes">👥 Clientes</button>
+        <button class="admin-tab" data-tab="clientes">👥 Clientes Registrados</button>
         <button class="admin-tab" data-tab="faq">❓ FAQ</button>
         <button class="admin-tab" data-tab="config">⚙️ Configuración</button>
       </div>
@@ -306,24 +310,55 @@
         </div>
       </div>
 
-      <!-- TAB: Clientes ───────────────────────────────── -->
+      <!-- TAB: Clientes / Solicitantes Registrados ────────────────── -->
       <div id="tab-clientes" class="tab-pane hidden">
-        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1.5rem">👥 Historial de Clientes y Valoraciones</h2>
-
-        <!-- Acción Rápida: Resetear Clave -->
-        <div style="background:rgba(99,179,237,0.05);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:2rem">
-          <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;color:var(--text)">⚡ Restablecimiento Rápido de Contraseña</h3>
-          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">Si el cliente no aparece en el historial, ingresa su número aquí para generarle una nueva clave temporal.</p>
-          <div class="flex" style="gap:0.5rem;align-items:center">
-            <input type="tel" id="quick-reset-wa" placeholder="Ej. 04167474753" class="form-control" style="max-width:200px;margin:0">
-            <button class="btn btn-sm" style="background:var(--blue);color:white;padding:0.7rem 1rem" onclick="window.gestionarClave(document.getElementById('quick-reset-wa').value.trim())">🔑 Generar y Enviar Clave</button>
+        <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem">
+          <div>
+            <h2 style="font-size:1.2rem;font-weight:800;display:flex;align-items:center;gap:0.5rem;">
+              <span>👥 Directorio de Clientes Registrados</span>
+              <span id="badge-total-clientes" class="badge" style="background:rgba(99,179,237,0.2);color:var(--blue);font-size:0.8rem;padding:2px 8px;">0</span>
+            </h2>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Visualiza todos los usuarios solicitantes con sus perfiles completos, cédulas y credenciales.</p>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="filtro-clientes-search" class="form-input" placeholder="🔍 Buscar por nombre, cédula o WhatsApp..." style="padding:0.45rem 0.85rem;font-size:0.85rem;min-width:260px;margin:0;" oninput="window.filtrarClientes(this.value)">
           </div>
         </div>
 
-        <!-- Valoraciones -->
-        <div style="margin-bottom:2rem">
-          <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem">
-            <h3 style="font-size:0.95rem;font-weight:700">⭐ Valoraciones Recibidas</h3>
+        <!-- Tabla de Clientes Registrados -->
+        <div class="table-wrapper" style="overflow-x:auto;margin-bottom:2.5rem;">
+          <table id="clientes-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Cédula (Usuario)</th>
+                <th>WhatsApp</th>
+                <th>Empresa / Sede</th>
+                <th>Profesión / Cargo</th>
+                <th>Fecha Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Acción Rápida: Resetear Clave Directo -->
+        <div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.25);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:2.5rem">
+          <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.35rem;color:var(--text)">⚡ Restablecimiento Rápido de Contraseña por WhatsApp</h3>
+          <p style="font-size:0.84rem;color:var(--text-muted);margin-bottom:1rem">Ingresa el número de WhatsApp o Cédula de cualquier cliente para asignarle una nueva contraseña segura.</p>
+          <div class="flex" style="gap:0.6rem;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="quick-reset-wa" placeholder="Ej. 04121234567 o V-12345678" class="form-input" style="max-width:240px;margin:0">
+            <button class="btn btn-sm" style="background:var(--blue);color:white;padding:0.6rem 1.2rem;font-weight:700;" onclick="window.gestionarClave(document.getElementById('quick-reset-wa').value.trim())">🔑 Cambiar Clave y Enviar</button>
+          </div>
+        </div>
+
+        <!-- Valoraciones Recibidas -->
+        <div style="margin-bottom:2.5rem">
+          <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+            <h3 style="font-size:1.05rem;font-weight:700">⭐ Valoraciones y Reseñas Recibidas</h3>
             <span id="val-promedio-badge" style="font-size:0.85rem;color:var(--text-muted)"></span>
           </div>
           <div id="val-list">
@@ -332,23 +367,25 @@
         </div>
 
         <!-- Historial de solicitudes -->
-        <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem">📜 Historial de Todas las Solicitudes</h3>
-        <div class="table-wrapper" style="overflow-x:auto">
-          <table id="historial-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>WhatsApp</th>
-                <th>Servicio</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="historial-tbody">
-              <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
-            </tbody>
-          </table>
+        <div style="margin-bottom:1.5rem">
+          <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:1rem">📜 Historial Completo de Solicitudes</h3>
+          <div class="table-wrapper" style="overflow-x:auto">
+            <table id="historial-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>WhatsApp</th>
+                  <th>Servicio</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="historial-tbody">
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -577,6 +614,63 @@
   </div>
 </div>
 
+<!-- ── Modal: Ficha Completa de Cliente ──────────────────────── -->
+<div class="modal-backdrop" id="modal-ficha-cliente" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative;max-width:540px;text-align:left;">
+    <button class="modal-close" onclick="closeFichaClienteModal()">✕</button>
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;">
+      <div id="ficha-cli-avatar" style="width:68px;height:68px;border-radius:50%;overflow:hidden;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:white;border:2px solid var(--blue);flex-shrink:0;">
+        👤
+      </div>
+      <div>
+        <h2 id="ficha-cli-nombre" style="font-size:1.3rem;font-weight:800;margin:0 0 0.2rem 0;color:var(--text);">Nombre del Cliente</h2>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <span id="ficha-cli-cedula" class="badge" style="background:rgba(99,179,237,0.2);color:var(--blue);font-weight:700;">V-00000000</span>
+          <span id="ficha-cli-rol" class="badge" style="background:rgba(104,211,145,0.15);color:#68d391;">Solicitante</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="ficha-cli-detalles" style="background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:10px;padding:1.1rem;font-size:0.86rem;line-height:1.6;display:flex;flex-direction:column;gap:0.6rem;">
+      <!-- Rellenado dinámicamente con JS -->
+    </div>
+
+    <div style="display:flex;gap:0.6rem;margin-top:1.25rem;flex-wrap:wrap;">
+      <a id="ficha-cli-btn-wa" href="#" target="_blank" class="btn btn-primary" style="background:#25D366;color:white;border:none;flex:1;text-align:center;text-decoration:none;">💬 WhatsApp</a>
+      <button id="ficha-cli-btn-pass" class="btn btn-secondary" style="background:var(--blue);color:white;border:none;flex:1;">🔑 Cambiar Clave</button>
+      <button class="btn btn-secondary" onclick="closeFichaClienteModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Ficha Completa de Técnico ──────────────────────── -->
+<div class="modal-backdrop" id="modal-ficha-tecnico" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative;max-width:540px;text-align:left;">
+    <button class="modal-close" onclick="closeFichaTecnicoModal()">✕</button>
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;">
+      <div id="ficha-tec-avatar" style="width:68px;height:68px;border-radius:50%;overflow:hidden;background:#f6ad55;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#1a202c;border:2px solid #f6ad55;flex-shrink:0;">
+        👨‍🔧
+      </div>
+      <div>
+        <h2 id="ficha-tec-nombre" style="font-size:1.3rem;font-weight:800;margin:0 0 0.2rem 0;color:var(--text);">Nombre del Técnico</h2>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <span id="ficha-tec-cedula" class="badge" style="background:rgba(246,173,85,0.25);color:#f6ad55;font-weight:700;">V-00000000</span>
+          <span id="ficha-tec-estado" class="badge" style="background:rgba(104,211,145,0.15);color:#68d391;">Activo</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="ficha-tec-detalles" style="background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:10px;padding:1.1rem;font-size:0.86rem;line-height:1.6;display:flex;flex-direction:column;gap:0.6rem;">
+      <!-- Rellenado dinámicamente con JS -->
+    </div>
+
+    <div style="display:flex;gap:0.6rem;margin-top:1.25rem;flex-wrap:wrap;">
+      <a id="ficha-tec-btn-wa" href="#" target="_blank" class="btn btn-primary" style="background:#25D366;color:white;border:none;flex:1;text-align:center;text-decoration:none;">💬 WhatsApp</a>
+      <button class="btn btn-secondary" onclick="closeFichaTecnicoModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script type="module">
@@ -728,6 +822,15 @@
       const allSol = solSnap.docs.map(d => d.data());
       document.getElementById('stat-solicitudes').textContent = allSol.length;
       document.getElementById('stat-pendientes').textContent = allSol.filter(s => !s.leida).length;
+
+      const tecSnap = await gd(col(db, 'tecnicos'));
+      const allTec = tecSnap.docs.map(d => d.data());
+      const statTecEl = document.getElementById('stat-tecnicos');
+      if (statTecEl) statTecEl.textContent = allTec.filter(t => t.estado === 'activo').length;
+
+      const cliSnap = await gd(col(db, 'clientes'));
+      const statCliEl = document.getElementById('stat-clientes');
+      if (statCliEl) statCliEl.textContent = cliSnap.size;
     } catch (err) { console.warn('Stats error:', err); }
   }
 
