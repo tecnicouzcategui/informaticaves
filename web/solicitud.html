@@ -48,25 +48,32 @@
       </p>
     </div>
 
-    <!-- ── Acceso Requerido (No Autenticado) ─────────────────── -->
-    <div id="solicitud-auth-required" style="display:none; text-align:center; padding: 3rem 1.5rem; max-width: 480px; margin: 0 auto;" class="card">
-      <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
-      <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text);">Inicio de Sesión Obligatorio</h2>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.75rem; line-height: 1.5;">
-        Para solicitar servicio técnico y abrir un ticket en el Help Desk, debes iniciar sesión con tu cuenta de Solicitante o registrarte.
-      </p>
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button type="button" class="btn btn-primary w-full" id="btn-sol-login" style="font-weight:700; padding:0.85rem;">
-          🔑 Iniciar Sesión como Solicitante
-        </button>
-        <button type="button" class="btn btn-secondary w-full" id="btn-sol-register" style="font-weight:700; padding:0.85rem;">
-          📝 Registrarme como Solicitante
-        </button>
-      </div>
-    </div>
-
     <!-- ── Formulario ─────────────────────────────────────────── -->
-    <div class="card" id="form-solicitud-card" style="max-width:580px;margin:0 auto;display:none;">
+    <div class="card" id="form-solicitud-card" style="max-width:580px;margin:0 auto;display:block;">
+      
+      <!-- Banner Usuario Identificado -->
+      <div id="sol-user-session-banner" style="display:none; background:linear-gradient(135deg, rgba(99,179,237,0.12), rgba(127,156,245,0.06)); border:1px solid rgba(99,179,237,0.3); border-radius:0.75rem; padding:0.85rem 1rem; margin-bottom:1.25rem; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+        <div style="display:flex; align-items:center; gap:0.65rem;">
+          <span style="font-size:1.4rem;">👤</span>
+          <div>
+            <div style="font-weight:700; font-size:0.92rem; color:var(--text);" id="sol-banner-name">Solicitante Identificado</div>
+            <div style="font-size:0.78rem; color:var(--text-muted);" id="sol-banner-cedula">Cédula: — • WhatsApp: —</div>
+          </div>
+        </div>
+        <span class="badge" style="background:rgba(99,179,237,0.2); color:#63b3ed; font-size:0.72rem; border:1px solid rgba(99,179,237,0.4);">✓ Cuenta Activa</span>
+      </div>
+
+      <!-- Banner Invitado (No autenticado) -->
+      <div id="sol-guest-session-banner" style="background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:0.75rem; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
+        <div style="font-size:0.82rem; color:var(--text-muted);">
+          💡 ¿Ya tienes cuenta de Solicitante? Inicia sesión para autocompletar tus datos.
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-sol-banner-login" style="font-size:0.78rem; padding:0.4rem 0.75rem;">🔑 Iniciar Sesión</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-sol-banner-register" style="font-size:0.78rem; padding:0.4rem 0.75rem;">📝 Registrarme</button>
+        </div>
+      </div>
+
       <form id="form-solicitud" novalidate>
 
         <!-- Servicio -->
@@ -178,9 +185,9 @@
 <div id="toast-container"></div>
 
 <script type="module">
-  import { initSolicitud } from './solicitud.js?v=2.5';
-  import * as Auth from './auth.js?v=2.5';
-  import { getFAQsPublicadas } from './firebase.js?v=2.5';
+  import { initSolicitud } from './solicitud.js?v=2.6';
+  import * as Auth from './auth.js?v=2.6';
+  import { getFAQsPublicadas } from './firebase.js?v=2.6';
 
   // Registrar SW
   if ('serviceWorker' in navigator) {
@@ -190,11 +197,11 @@
   // Inicializar formulario de solicitud
   initSolicitud();
 
-  // Auth Buttons en la barrera de acceso
-  document.getElementById('btn-sol-login')?.addEventListener('click', () => {
+  // Auth Buttons en banner de invitado
+  document.getElementById('btn-sol-banner-login')?.addEventListener('click', () => {
     Auth.openAuthModal('solicitante', 'login', true);
   });
-  document.getElementById('btn-sol-register')?.addEventListener('click', () => {
+  document.getElementById('btn-sol-banner-register')?.addEventListener('click', () => {
     Auth.openAuthModal('solicitante', 'registro', true);
   });
 
@@ -206,34 +213,40 @@
   document.getElementById('wa-modal-skip')?.addEventListener('click', Auth.closeWhatsAppModal);
   document.getElementById('wa-modal-skip-btn')?.addEventListener('click', Auth.closeWhatsAppModal);
 
-  // Pre-llenar nombre y WhatsApp si el usuario está logueado, y bloquearlos
-  Auth.onAuthChange((user) => {
-    const authGate = document.getElementById('solicitud-auth-required');
-    const formCard = document.getElementById('form-solicitud-card');
+  // Pre-llenar nombre y WhatsApp si el usuario está logueado, y sincronizar banners
+  function updateSolicitudSessionUI(user) {
+    const userBanner  = document.getElementById('sol-user-session-banner');
+    const guestBanner = document.getElementById('sol-guest-session-banner');
+    const bannerName  = document.getElementById('sol-banner-name');
+    const bannerCed   = document.getElementById('sol-banner-cedula');
+
     const inputNombre    = document.getElementById('input-nombre');
     const inputWa        = document.getElementById('input-whatsapp');
     const inputEmail     = document.getElementById('input-email');
     const inputDireccion = document.getElementById('input-direccion');
 
-    if (user && !Auth.isAdmin) {
-      if (authGate) authGate.style.display = 'none';
-      if (formCard) formCard.style.display = 'block';
+    if (Auth.currentUser && !Auth.isAdmin) {
+      if (userBanner) userBanner.style.display = 'flex';
+      if (guestBanner) guestBanner.style.display = 'none';
 
-      // Pre-llenar con los datos del cliente
-      const nombre = Auth.userNombre || (Auth.clienteData && Auth.clienteData.nombre) || user.displayName || '';
-      const wa     = Auth.userWhatsApp || (Auth.clienteData && Auth.clienteData.whatsapp) || localStorage.getItem('infovzla_wa_number') || '';
-      const email  = (Auth.clienteData && Auth.clienteData.email) || user.email || '';
+      const nombre = Auth.userNombre || (Auth.clienteData && Auth.clienteData.nombre) || user?.displayName || localStorage.getItem('infovzla_user_nombre') || 'Solicitante';
+      const cedula = Auth.userCedula || (Auth.clienteData && Auth.clienteData.cedula) || localStorage.getItem('infovzla_user_cedula') || '—';
+      const wa     = Auth.userWhatsApp || (Auth.clienteData && Auth.clienteData.whatsapp) || localStorage.getItem('infovzla_wa_number') || '—';
+      const email  = (Auth.clienteData && Auth.clienteData.email) || user?.email || '';
       const dir    = (Auth.clienteData && (Auth.clienteData.direccionTrabajo || Auth.clienteData.direccionCompania)) || '';
+
+      if (bannerName) bannerName.textContent = `👤 ${nombre}`;
+      if (bannerCed)  bannerCed.textContent  = `🆔 Cédula: ${cedula} • 📱 WhatsApp: ${wa}`;
 
       if (inputNombre && nombre) {
         inputNombre.value    = nombre;
         inputNombre.readOnly = true;
-        inputNombre.style.opacity = '0.85';
+        inputNombre.style.opacity = '0.9';
       }
-      if (inputWa && wa) {
+      if (inputWa && wa && wa !== '—') {
         inputWa.value    = wa;
         inputWa.readOnly = true;
-        inputWa.style.opacity = '0.85';
+        inputWa.style.opacity = '0.9';
       }
       if (inputEmail && email && !inputEmail.value) {
         inputEmail.value = email;
@@ -241,15 +254,23 @@
       if (inputDireccion && dir && !inputDireccion.value) {
         inputDireccion.value = dir;
       }
-    } else if (user && Auth.isAdmin) {
-      if (authGate) authGate.style.display = 'none';
-      if (formCard) formCard.style.display = 'block';
+    } else if (Auth.currentUser && Auth.isAdmin) {
+      if (userBanner) userBanner.style.display = 'flex';
+      if (guestBanner) guestBanner.style.display = 'none';
+      if (bannerName) bannerName.textContent = '👑 Modo Administrador';
+      if (bannerCed) bannerCed.textContent = 'Vista previa del formulario de solicitudes Help Desk';
     } else {
-      // No logueado: BLOQUEAR ACCESO Y MOSTRAR GATE
-      if (authGate) authGate.style.display = 'block';
-      if (formCard) formCard.style.display = 'none';
+      // No logueado (Visitante)
+      if (userBanner) userBanner.style.display = 'none';
+      if (guestBanner) guestBanner.style.display = 'flex';
+
+      if (inputNombre) { inputNombre.readOnly = false; inputNombre.style.opacity = '1'; }
+      if (inputWa)     { inputWa.readOnly = false; inputWa.style.opacity = '1'; }
     }
-  });
+  }
+
+  Auth.onAuthChange(updateSolicitudSessionUI);
+  updateSolicitudSessionUI(Auth.currentUser);
 
   // Cargar FAQs desde Firebase (administradas desde el panel)
   async function cargarFAQs() {

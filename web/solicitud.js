@@ -3,7 +3,7 @@
 // Informáticos Venezuela | El Técnico Luis
 // ============================================================
 
-import { guardarSolicitud, getServiciosPublicados, COLS } from './firebase.js';
+import { guardarSolicitud, getServiciosPublicados, SERVICIOS_DEFAULT, COLS } from './firebase.js';
 import * as Auth from './auth.js';
 import { showToast } from './auth.js';
 // Nota: currentUser se lee dinámicamente via Auth.currentUser para evitar
@@ -73,39 +73,20 @@ function bloquearFormAdmin() {
 }
 
 function actualizarUI() {
-  // Actualizar texto del banner de login según si hay sesión activa
-  const suggestion = document.getElementById('login-suggestion');
-  if (suggestion) {
-    if (Auth.currentUser) {
-      suggestion.style.display = 'none';
-    } else {
-      suggestion.style.display = '';
-    }
-  }
   // Autocompletar con los datos frescos del usuario logueado
   autocompletarDatos();
 }
 
-// ── Carga de servicios ────────────────────────────────────────
-async function cargarServicios() {
-  const select = document.getElementById('select-servicio');
+function renderSelectOptions(select, list) {
   if (!select) return;
-
-  try {
-    serviciosDisponibles = await getServiciosPublicados();
-  } catch (err) {
-    // Si Firestore falla (offline), usar datos del localStorage/cache
-    console.warn('[Solicitud] Usando datos en caché:', err);
-    serviciosDisponibles = getCachedServicios();
-  }
-
-  // Limpiar y poblar select
-  select.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">-- Selecciona un servicio requerido --</option>';
 
   const grupos = {};
-  serviciosDisponibles.forEach(s => {
-    if (!grupos[s.categoria]) grupos[s.categoria] = [];
-    grupos[s.categoria].push(s);
+  list.forEach(s => {
+    const cat = s.categoria || 'soporte';
+    if (!grupos[cat]) grupos[cat] = [];
+    grupos[cat].push(s);
   });
 
   const catLabels = {
@@ -122,11 +103,46 @@ async function cargarServicios() {
     items.forEach(s => {
       const opt = document.createElement('option');
       opt.value = s.id;
-      opt.textContent = `${s.emoji} ${s.nombre} — $${s.precio} ${s.moneda}`;
+      opt.textContent = `${s.emoji || '📌'} ${s.nombre} — $${s.precio} ${s.moneda || 'USD'}`;
       group.appendChild(opt);
     });
     select.appendChild(group);
   });
+
+  if (currentVal) {
+    select.value = currentVal;
+  }
+}
+
+// ── Carga de servicios ────────────────────────────────────────
+async function cargarServicios() {
+  const select = document.getElementById('select-servicio');
+  if (!select) return;
+
+  // 1. Cargar inmediatamente de caché o defaults para evitar spinner/vacío
+  const cached = getCachedServicios();
+  if (cached && Array.isArray(cached) && cached.length > 0) {
+    serviciosDisponibles = cached;
+    renderSelectOptions(select, serviciosDisponibles);
+    preseleccionarDesdeURL();
+  } else {
+    serviciosDisponibles = SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
+    renderSelectOptions(select, serviciosDisponibles);
+    preseleccionarDesdeURL();
+  }
+
+  // 2. Traer datos frescos de Firestore en segundo plano
+  try {
+    const fresh = await getServiciosPublicados();
+    if (fresh && Array.isArray(fresh) && fresh.length > 0) {
+      serviciosDisponibles = fresh;
+      renderSelectOptions(select, serviciosDisponibles);
+      preseleccionarDesdeURL();
+      localStorage.setItem('infovzla_servicios', JSON.stringify(fresh));
+    }
+  } catch (err) {
+    console.warn('[Solicitud] Usando catálogo local:', err);
+  }
 }
 
 function getCachedServicios() {

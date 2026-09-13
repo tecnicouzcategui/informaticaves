@@ -87,20 +87,58 @@ export {
 
 // ── Helpers de DB ────────────────────────────────────────────
 
-/** Obtiene todos los servicios publicados */
+/** Obtiene todos los servicios publicados (del catálogo general y de técnicos activos) */
 export async function getServiciosPublicados() {
-  const q = query(
-    collection(db, COLS.servicios),
-    where('estado', '==', 'publicado')
-  );
-  const snap = await getDocs(q);
-  const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  results.sort((a, b) => {
-    if (a.categoria < b.categoria) return -1;
-    if (a.categoria > b.categoria) return 1;
-    return (a.nombre || '').localeCompare(b.nombre || '');
-  });
-  return results;
+  try {
+    const q = query(
+      collection(db, COLS.servicios),
+      where('estado', '==', 'publicado')
+    );
+    const snap = await getDocs(q);
+    let results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // También incorporar servicios agregados por técnicos activos si existen
+    try {
+      const qTec = query(collection(db, COLS.tecnicos), where('estado', '==', 'activo'));
+      const snapTec = await getDocs(qTec);
+      snapTec.docs.forEach(d => {
+        const tec = d.data();
+        if (tec.servicios && Array.isArray(tec.servicios)) {
+          tec.servicios.forEach((ts, idx) => {
+            if (ts && ts.estado !== 'borrador' && ts.estado !== 'inactivo') {
+              results.push({
+                id: ts.id || `tec_${d.id}_${idx}`,
+                nombre: ts.nombre || ts.titulo || 'Servicio Técnico Especializado',
+                categoria: ts.categoria || 'soporte',
+                emoji: ts.emoji || '⚡',
+                descripcion: ts.descripcion || `Especialidad ofrecida por ${tec.nombre || 'Técnico IT'} (${tec.zona || 'Venezuela'})`,
+                precio: Number(ts.precio) || 15,
+                moneda: ts.moneda || 'USD',
+                estado: 'publicado',
+                popular: !!ts.popular,
+                tecnicoId: d.id,
+                tecnicoNombre: tec.nombre
+              });
+            }
+          });
+        }
+      });
+    } catch (_) {}
+
+    if (!results.length) {
+      results = SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
+    }
+
+    results.sort((a, b) => {
+      if (a.categoria < b.categoria) return -1;
+      if (a.categoria > b.categoria) return 1;
+      return (a.nombre || '').localeCompare(b.nombre || '');
+    });
+    return results;
+  } catch (err) {
+    console.warn('[getServiciosPublicados] Error:', err);
+    return SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
+  }
 }
 
 /** Obtiene todos los servicios (admin) */
@@ -221,56 +259,75 @@ export async function getFAQsPublicadas() {
   return results;
 }
 
-// ── Datos iniciales (seed) ────────────────────────────────────
 // Servicios predeterminados — se cargan si Firestore está vacío
 export const SERVICIOS_DEFAULT = [
-  { nombre: 'Formateo y Reinstalación Windows', categoria: 'soporte', emoji: '💻',
+  { id: 'formateo-windows', nombre: 'Formateo y Reinstalación Windows', categoria: 'soporte', emoji: '💻',
     descripcion: 'Formateo completo con instalación de Windows 10/11, drivers y programas básicos.',
     precio: 15, moneda: 'USD', estado: 'publicado', popular: true },
 
-  { nombre: 'Limpieza y Mantenimiento PC', categoria: 'soporte', emoji: '🧹',
+  { id: 'limpieza-pc', nombre: 'Limpieza y Mantenimiento PC', categoria: 'soporte', emoji: '🧹',
     descripcion: 'Limpieza de polvo, cambio de pasta térmica, optimización de inicio y rendimiento.',
     precio: 10, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Instalación Ubuntu / Linux Mint', categoria: 'soporte', emoji: '🐧',
+  { id: 'linux-mint', nombre: 'Instalación Ubuntu / Linux Mint', categoria: 'soporte', emoji: '🐧',
     descripcion: 'Instalación y configuración de distros Linux con soporte post-instalación.',
     precio: 12, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Recuperación de Datos', categoria: 'soporte', emoji: '💾',
+  { id: 'recuperacion-datos', nombre: 'Recuperación de Datos', categoria: 'soporte', emoji: '💾',
     descripcion: 'Recuperación de archivos perdidos de discos duros, USB y tarjetas SD.',
     precio: 20, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Configuración Red WiFi', categoria: 'redes', emoji: '📡',
-    descripcion: 'Configuración de routers, extensores, VPN y diagnóstico de conectividad.',
-    precio: 12, moneda: 'USD', estado: 'publicado', popular: false },
-
-  { nombre: 'Cableado Estructurado', categoria: 'redes', emoji: '🔌',
-    descripcion: 'Instalación de red cableada con puntos de acceso, switch y patch panel.',
+  { id: 'soporte-apple', nombre: 'Mantenimiento Apple & macOS', categoria: 'soporte', emoji: '🍏',
+    descripcion: 'Diagnóstico, optimización y reinstalación de macOS en MacBook y iMac.',
     precio: 25, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Instalación CCTV / DVR / NVR', categoria: 'cctv', emoji: '📹',
-    descripcion: 'Instalación y configuración de cámaras de seguridad con acceso remoto.',
+  { id: 'servidor-windows-ad', nombre: 'Windows Server & Active Directory', categoria: 'soporte', emoji: '🖥️',
+    descripcion: 'Configuración de controladores de dominio, políticas GPO y carpetas compartidas.',
+    precio: 45, moneda: 'USD', estado: 'publicado', popular: false },
+
+  { id: 'red-wifi', nombre: 'Configuración Red WiFi', categoria: 'redes', emoji: '📡',
+    descripcion: 'Configuración de routers, repetidores, VLAN y diagnóstico de conectividad.',
+    precio: 12, moneda: 'USD', estado: 'publicado', popular: false },
+
+  { id: 'cableado-estructurado', nombre: 'Cableado Estructurado', categoria: 'redes', emoji: '🔌',
+    descripcion: 'Instalación de red cableada con puntos de red, switch y patch panel.',
+    precio: 25, moneda: 'USD', estado: 'publicado', popular: false },
+
+  { id: 'fibra-optica', nombre: 'Redes y Fibra Óptica', categoria: 'redes', emoji: '🌐',
+    descripcion: 'Fusiones, conectorización y enlaces punto a punto para empresas y hogares.',
+    precio: 35, moneda: 'USD', estado: 'publicado', popular: false },
+
+  { id: 'cctv-camaras', nombre: 'Instalación CCTV / DVR / NVR', categoria: 'cctv', emoji: '📹',
+    descripcion: 'Instalación y configuración de cámaras de seguridad con acceso remoto en vivo.',
     precio: 35, moneda: 'USD', estado: 'publicado', popular: true },
 
-  { nombre: 'Instalación Biométrico', categoria: 'cctv', emoji: '🔏',
+  { id: 'biometrico-acceso', nombre: 'Instalación Biométrico & Acceso', categoria: 'cctv', emoji: '🔏',
     descripcion: 'Configuración de lectores biométricos para control de acceso y asistencia.',
     precio: 20, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Diseño de Página Web', categoria: 'web', emoji: '🌐',
-    descripcion: 'Landing page o sitio web profesional, responsive y optimizado para SEO.',
+  { id: 'diseno-web', nombre: 'Diseño de Página Web Profesional', categoria: 'web', emoji: '🌐',
+    descripcion: 'Landing page o sitio web profesional, responsive y optimizado para Google SEO.',
     precio: 80, moneda: 'USD', estado: 'publicado', popular: true },
 
-  { nombre: 'App Android Personalizada', categoria: 'web', emoji: '📱',
-    descripcion: 'Desarrollo de aplicación Android nativa o WebView con Firebase integrado.',
+  { id: 'app-android', nombre: 'App Android Personalizada', categoria: 'web', emoji: '📱',
+    descripcion: 'Desarrollo de aplicación Android nativa o PWA con Firebase y notificaciones push.',
     precio: 150, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Reparación Android (Software)', categoria: 'movil', emoji: '🔧',
-    descripcion: 'Desbloqueo, flasheo, root, recuperación de sistema Android en celulares/tablets.',
+  { id: 'reparacion-android', nombre: 'Reparación Android (Software)', categoria: 'movil', emoji: '🔧',
+    descripcion: 'Desbloqueo, flasheo, root y recuperación de sistema en celulares/tablets.',
     precio: 18, moneda: 'USD', estado: 'publicado', popular: false },
 
-  { nombre: 'Configuración Correo Empresarial', categoria: 'soporte', emoji: '📧',
-    descripcion: 'Configuración de Gmail Workspace, Outlook o servidor de correo propio.',
+  { id: 'correo-empresarial', nombre: 'Configuración Correo Empresarial', categoria: 'soporte', emoji: '📧',
+    descripcion: 'Configuración de Google Workspace, Microsoft 365 o servidores corporativos.',
     precio: 15, moneda: 'USD', estado: 'publicado', popular: false },
+
+  { id: 'impresoras-fiscales', nombre: 'Soporte Impresoras & Fiscales', categoria: 'soporte', emoji: '🖨️',
+    descripcion: 'Instalación de controladores, mantenimiento de impresoras térmicas y fiscales.',
+    precio: 15, moneda: 'USD', estado: 'publicado', popular: false },
+
+  { id: 'energia-ups', nombre: 'Energía, UPS & Inversores', categoria: 'soporte', emoji: '⚡',
+    descripcion: 'Diagnóstico de baterías, respaldo eléctrico y protección de servidores.',
+    precio: 20, moneda: 'USD', estado: 'publicado', popular: false }
 ];
 
 /** Inicializa Firestore con datos predeterminados si está vacío */

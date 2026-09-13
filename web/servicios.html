@@ -104,8 +104,8 @@
 <div id="toast-container"></div>
 
 <script type="module">
-  import { getServiciosPublicados, SERVICIOS_DEFAULT } from './firebase.js?v=2.5';
-  import * as Auth from './auth.js?v=2.5';
+  import { getServiciosPublicados, SERVICIOS_DEFAULT } from './firebase.js?v=2.6';
+  import * as Auth from './auth.js?v=2.6';
 
   // ── Registrar SW ──
   if ('serviceWorker' in navigator) {
@@ -127,22 +127,38 @@
   let catActiva = 'todos';
 
   async function cargarServicios() {
-    const grid = document.getElementById('services-grid');
+    // 1. Renderizar de inmediato desde localStorage o SERVICIOS_DEFAULT para evitar spinner pegado
+    const cached = localStorage.getItem('infovzla_servicios');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          todosServicios = parsed;
+          renderServicios();
+        }
+      } catch (_) {}
+    }
+    if (!todosServicios || !todosServicios.length) {
+      todosServicios = SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
+      renderServicios();
+    }
+
+    // 2. Obtener datos frescos desde Firestore en segundo plano (con timeout de protección)
     try {
-      todosServicios = await getServiciosPublicados();
-      if (!todosServicios.length) {
-        // Usar defaults si Firestore está vacío
-        todosServicios = SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
+      const freshPromise = getServiciosPublicados();
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000));
+      const fresh = await Promise.race([freshPromise, timeoutPromise]);
+      if (fresh && Array.isArray(fresh) && fresh.length > 0) {
+        todosServicios = fresh;
+        localStorage.setItem('infovzla_servicios', JSON.stringify(fresh));
+        renderServicios();
       }
     } catch (err) {
-      // Fallback offline: usar defaults
-      console.warn('[Servicios] Usando defaults offline:', err);
-      todosServicios = SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
-      document.getElementById('offline-banner')?.classList.add('show');
+      console.warn('[Servicios] Usando versión lista:', err);
+      if (!navigator.onLine) {
+        document.getElementById('offline-banner')?.classList.add('show');
+      }
     }
-    // Guardar en cache local
-    localStorage.setItem('infovzla_servicios', JSON.stringify(todosServicios));
-    renderServicios();
   }
 
   function renderServicios() {
