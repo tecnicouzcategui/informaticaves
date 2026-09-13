@@ -317,7 +317,7 @@
         if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'inline-block';
       }
       // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
-      const wa = Auth.getWhatsApp ? Auth.getWhatsApp() : (Auth.userWhatsApp || localStorage.getItem('ives_wa_number'));
+      const wa = Auth.getWhatsApp ? Auth.getWhatsApp() : (Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number'));
       if (wa) {
         if (searchSection) searchSection.style.display = 'none';
         const inputWa = document.getElementById('input-buscar-wa');
@@ -420,6 +420,8 @@
 
         // Obtener el WA del usuario actual
         const wa = (Auth.getWhatsApp ? Auth.getWhatsApp() : null) ||
+                   localStorage.getItem('infovzla_rescued_wa') ||
+                   localStorage.getItem('infovzla_wa_number') ||
                    localStorage.getItem('ives_rescued_wa') ||
                    localStorage.getItem('ives_wa_number') ||
                    (Auth.currentUser ? Auth.currentUser.email?.split('@')[0] : null);
@@ -464,7 +466,7 @@
     }
 
     // Guardar para la próxima vez
-    localStorage.setItem('ives_wa', wa);
+    localStorage.setItem('infovzla_wa', wa);
 
     // Mostrar loader
     container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-dim)"><span class="spinner"></span> Buscando solicitudes...</div>`;
@@ -614,7 +616,7 @@
   });
 
   // Si hay wa guardado, buscar automático
-  const waGuardado = localStorage.getItem('ives_wa');
+  const waGuardado = localStorage.getItem('infovzla_wa') || localStorage.getItem('ives_wa');
   if (waGuardado) {
     document.getElementById('input-buscar-wa').value = waGuardado;
     buscarSolicitudes();

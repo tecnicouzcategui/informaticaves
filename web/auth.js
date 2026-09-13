@@ -16,8 +16,8 @@ import {
 
 // ── Constantes ───────────────────────────────────────────────
 const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
-const WA_KEY         = 'ives_wa_number';
-const ROLE_KEY       = 'ives_user_role';
+const WA_KEY         = 'infovzla_wa_number';
+const ROLE_KEY       = 'infovzla_user_role';
 
 // ── Estado global ────────────────────────────────────────────
 export let currentUser = null;
@@ -451,9 +451,12 @@ export async function loginEmail(email, password) {
 
 // ── Logout ───────────────────────────────────────────────────
 export async function logout() {
+  localStorage.removeItem(LOCAL_ADMIN_KEY);
   localStorage.removeItem('ives_local_admin');
   localStorage.removeItem(WA_KEY);
+  localStorage.removeItem('ives_wa_number');
   localStorage.removeItem(ROLE_KEY);
+  localStorage.removeItem('ives_user_role');
   
   currentUser  = null;
   isAdmin      = false;
@@ -474,7 +477,7 @@ export async function logout() {
 }
 
 // ── Modo Admin Local ─────────────────────────────────────────
-const LOCAL_ADMIN_KEY = 'ives_local_admin';
+const LOCAL_ADMIN_KEY = 'infovzla_local_admin';
 
 export function forceAdmin() {
   currentUser = { displayName: 'Admin', email: ADMIN_EMAIL, uid: 'local-admin' };

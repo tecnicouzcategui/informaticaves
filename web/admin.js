@@ -23,7 +23,7 @@ export function initAdmin() {
   function handleAuth(user, admin) {
     if (!user) {
       // Fallback: chequear localStorage directamente por si el módulo aún no resolvió
-      const localAdmin = localStorage.getItem('ives_local_admin') === '1';
+      const localAdmin = (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
       if (!localAdmin) {
         showAccesoDenegado('Debes iniciar sesión para acceder al panel.');
         return;

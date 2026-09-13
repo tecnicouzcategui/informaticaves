@@ -56,8 +56,8 @@
 <script>
 (function() {
   'use strict';
-  const LOCAL_KEY = 'ives_local_admin';
-  const PASS_KEY  = 'ives_admin_hash';
+  const LOCAL_KEY = 'infovzla_local_admin';
+  const PASS_KEY  = 'infovzla_admin_hash';
 
   async function sha256(txt) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
@@ -592,7 +592,7 @@
   import { db, collection, query, orderBy, getDocs, where } from './firebase.js';
 
   // ── Gestión de contraseña con SHA-256 ──────────────────────────
-  const PASS_KEY     = 'ives_admin_hash';
+  const PASS_KEY     = 'infovzla_admin_hash';
   const DEFAULT_PASS = '@Amy.2023';
 
   async function sha256(text) {
@@ -657,7 +657,7 @@
   // ── En APK Capacitor: restaurar sesión automáticamente si ya hay hash guardado
   (async function checkAutoLogin() {
     const isCapacitor = !!(window.Capacitor);
-    const yaAdmin = localStorage.getItem('ives_local_admin') === '1';
+    const yaAdmin = (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
     if (isCapacitor && yaAdmin) {
       // Sesión ya activa, saltar pantalla de login
       forceAdmin();

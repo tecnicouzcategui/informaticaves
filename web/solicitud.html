@@ -206,7 +206,7 @@
     if (user && !Auth.isAdmin) {
       // Pre-llenar con los datos del cliente
       const nombre = Auth.userNombre || '';
-      const wa     = Auth.userWhatsApp || localStorage.getItem('ives_wa_number') || '';
+      const wa     = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number') || '';
 
       if (inputNombre && nombre) {
         inputNombre.value    = nombre;
