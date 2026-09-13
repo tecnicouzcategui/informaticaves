@@ -48,8 +48,25 @@
       </p>
     </div>
 
+    <!-- ── Acceso Requerido (No Autenticado) ─────────────────── -->
+    <div id="solicitud-auth-required" style="display:none; text-align:center; padding: 3rem 1.5rem; max-width: 480px; margin: 0 auto;" class="card">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+      <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text);">Inicio de Sesión Obligatorio</h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.75rem; line-height: 1.5;">
+        Para solicitar servicio técnico y abrir un ticket en el Help Desk, debes iniciar sesión con tu cuenta de Solicitante o registrarte.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button type="button" class="btn btn-primary w-full" id="btn-sol-login" style="font-weight:700; padding:0.85rem;">
+          🔑 Iniciar Sesión como Solicitante
+        </button>
+        <button type="button" class="btn btn-secondary w-full" id="btn-sol-register" style="font-weight:700; padding:0.85rem;">
+          📝 Registrarme como Solicitante
+        </button>
+      </div>
+    </div>
+
     <!-- ── Formulario ─────────────────────────────────────────── -->
-    <div class="card" style="max-width:580px;margin:0 auto">
+    <div class="card" id="form-solicitud-card" style="max-width:580px;margin:0 auto;display:none;">
       <form id="form-solicitud" novalidate>
 
         <!-- Servicio -->
@@ -114,15 +131,6 @@
           <textarea id="input-descripcion" class="form-textarea" placeholder="Describe brevemente el problema o lo que necesitas..." rows="4"></textarea>
         </div>
 
-        <!-- Login sugerido -->
-        <div class="alert alert-info mb-2" id="login-suggestion" style="cursor:pointer" title="Registrarse o iniciar sesión">
-          <span>🔐</span>
-          <span>
-            <strong>Registírate o inicia sesión</strong> para poder enviar tu solicitud y hacer seguimiento de tus casos.
-            <span id="login-link" style="text-decoration:underline;cursor:pointer">Acceder ahora →</span>
-          </span>
-        </div>
-
         <button type="submit" class="btn btn-primary btn-lg w-full" id="btn-enviar">
           <span>📤</span> Enviar Solicitud
         </button>
@@ -182,9 +190,13 @@
   // Inicializar formulario de solicitud
   initSolicitud();
 
-  // Auth UI
-  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
-  // El avatar ahora es manejado por auth.js (openProfileDropdown)
+  // Auth Buttons en la barrera de acceso
+  document.getElementById('btn-sol-login')?.addEventListener('click', () => {
+    Auth.openAuthModal('solicitante', 'login', true);
+  });
+  document.getElementById('btn-sol-register')?.addEventListener('click', () => {
+    Auth.openAuthModal('solicitante', 'registro', true);
+  });
 
   // Modal WhatsApp
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {
@@ -196,33 +208,46 @@
 
   // Pre-llenar nombre y WhatsApp si el usuario está logueado, y bloquearlos
   Auth.onAuthChange((user) => {
-    const suggestion = document.getElementById('login-suggestion');
-    if (suggestion) suggestion.style.display = user ? 'none' : 'flex';
-
-    const inputNombre = document.getElementById('input-nombre');
-    const inputWa     = document.getElementById('input-whatsapp');
+    const authGate = document.getElementById('solicitud-auth-required');
+    const formCard = document.getElementById('form-solicitud-card');
+    const inputNombre    = document.getElementById('input-nombre');
+    const inputWa        = document.getElementById('input-whatsapp');
+    const inputEmail     = document.getElementById('input-email');
+    const inputDireccion = document.getElementById('input-direccion');
 
     if (user && !Auth.isAdmin) {
+      if (authGate) authGate.style.display = 'none';
+      if (formCard) formCard.style.display = 'block';
+
       // Pre-llenar con los datos del cliente
-      const nombre = Auth.userNombre || '';
-      const wa     = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number') || '';
+      const nombre = Auth.userNombre || (Auth.clienteData && Auth.clienteData.nombre) || user.displayName || '';
+      const wa     = Auth.userWhatsApp || (Auth.clienteData && Auth.clienteData.whatsapp) || localStorage.getItem('infovzla_wa_number') || '';
+      const email  = (Auth.clienteData && Auth.clienteData.email) || user.email || '';
+      const dir    = (Auth.clienteData && (Auth.clienteData.direccionTrabajo || Auth.clienteData.direccionCompania)) || '';
 
       if (inputNombre && nombre) {
         inputNombre.value    = nombre;
         inputNombre.readOnly = true;
-        inputNombre.style.opacity = '0.7';
-        inputNombre.style.cursor  = 'not-allowed';
+        inputNombre.style.opacity = '0.85';
       }
       if (inputWa && wa) {
         inputWa.value    = wa;
         inputWa.readOnly = true;
-        inputWa.style.opacity = '0.7';
-        inputWa.style.cursor  = 'not-allowed';
+        inputWa.style.opacity = '0.85';
       }
+      if (inputEmail && email && !inputEmail.value) {
+        inputEmail.value = email;
+      }
+      if (inputDireccion && dir && !inputDireccion.value) {
+        inputDireccion.value = dir;
+      }
+    } else if (user && Auth.isAdmin) {
+      if (authGate) authGate.style.display = 'none';
+      if (formCard) formCard.style.display = 'block';
     } else {
-      // No logueado: limpiar bloqueo
-      if (inputNombre) { inputNombre.readOnly = false; inputNombre.style.opacity = ''; inputNombre.style.cursor = ''; }
-      if (inputWa)     { inputWa.readOnly = false;     inputWa.style.opacity = '';     inputWa.style.cursor = ''; }
+      // No logueado: BLOQUEAR ACCESO Y MOSTRAR GATE
+      if (authGate) authGate.style.display = 'block';
+      if (formCard) formCard.style.display = 'none';
     }
   });
 

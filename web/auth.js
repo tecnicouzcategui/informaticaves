@@ -1379,6 +1379,19 @@ function updateNavUI() {
     navMisSolicitudes?.closest('li')?.classList.add('hidden');
     navMisSolicitudes?.classList.add('hidden');
   }
+
+  // Interceptar clics en 'Solicitar' cuando no ha iniciado sesión
+  document.querySelectorAll('a[href="solicitud.html"], #nav-solicitar').forEach(link => {
+    if (!link.dataset.authCheckBound) {
+      link.dataset.authCheckBound = '1';
+      link.addEventListener('click', (e) => {
+        if (!currentUser) {
+          e.preventDefault();
+          openAuthModal('solicitante', 'login', true);
+        }
+      });
+    }
+  });
 }
 
 // ── Menú desplegable de Perfil con Información Completa ───────

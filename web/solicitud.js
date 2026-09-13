@@ -315,8 +315,8 @@ async function handleSubmit(e) {
 
   // ─── Auth obligatorio ──────────────────────────────────────
   if (!Auth.currentUser) {
-    showToast('⚠️ Debes registrarte o iniciar sesión para poder enviar una solicitud.', 'error');
-    Auth.openAuthModal();
+    showToast('⚠️ Debes registrarte o iniciar sesión como Solicitante para poder enviar una solicitud.', 'error');
+    Auth.openAuthModal('solicitante', 'login', true);
     return;
   }
 
