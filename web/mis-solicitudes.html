@@ -309,9 +309,9 @@
     db, getDocs, collection, query, where, doc, updateDoc, 
     serverTimestamp, addDoc, COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud,
     onSnapshot
-  } from './firebase.js?v=2.6';
-  import * as Auth from './auth.js?v=2.6';
-  import { onAuthChange, isAdmin } from './auth.js?v=2.6';
+  } from './firebase.js';
+  import * as Auth from './auth.js';
+  import { onAuthChange, isAdmin } from './auth.js';
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);

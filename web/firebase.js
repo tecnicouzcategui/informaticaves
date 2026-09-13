@@ -3,7 +3,7 @@
 // Informáticos Venezuela | El Técnico Luis
 // ============================================================
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {
   getFirestore,
   enableIndexedDbPersistence,
@@ -45,7 +45,7 @@ const firebaseConfig = {
   appId:             "1:56325689764:android:3e68401ed81cf10bb27131"
 };
 
-const app  = initializeApp(firebaseConfig);
+const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
 

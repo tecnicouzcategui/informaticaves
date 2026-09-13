@@ -27,47 +27,51 @@ export async function initSolicitud() {
   bindEvents();
   preseleccionarDesdeURL();
 
-  // Bloquear formulario si es administrador
-  Auth.onAuthChange(() => {
-    if (Auth.isAdmin) bloquearFormAdmin();
-    actualizarUI();
-  });
-  if (Auth.isAdmin) bloquearFormAdmin();
-  actualizarUI();
+  // Bloquear formulario si es administrador o técnico
+  function checkRoleAndAdaptUI() {
+    const isAdmOrTec = Auth.isAdmin || Auth.isTecnico || localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('infovzla_user_role') === 'admin' || localStorage.getItem('infovzla_user_role') === 'tecnico';
+    if (isAdmOrTec) {
+      bloquearFormAdmin();
+    } else {
+      actualizarUI();
+    }
+  }
+
+  Auth.onAuthChange(checkRoleAndAdaptUI);
+  checkRoleAndAdaptUI();
 }
 
 function bloquearFormAdmin() {
   const form = document.getElementById('form-solicitud');
   if (!form) return;
-  // Evitar doble bloqueo
   if (document.getElementById('admin-block-msg')) return;
 
-  // Deshabilitar todos los inputs y botón
-  form.querySelectorAll('input, textarea, select, button').forEach(el => el.disabled = true);
+  // Ocultar formulario de cliente y banners de sesión de solicitante
+  form.style.display = 'none';
+  const guestBanner = document.getElementById('sol-guest-session-banner');
+  const userBanner  = document.getElementById('sol-user-session-banner');
+  if (guestBanner) guestBanner.style.display = 'none';
+  if (userBanner)  userBanner.style.display  = 'none';
 
-  // Insertar aviso visible encima del formulario
+  // Insertar aviso visible para el Técnico / Administrador
   const aviso = document.createElement('div');
   aviso.id = 'admin-block-msg';
-  aviso.style.cssText = [
-    'background:rgba(252,129,129,0.1)',
-    'border:1px solid rgba(252,129,129,0.4)',
-    'border-radius:0.75rem',
-    'padding:1rem 1.25rem',
-    'margin-bottom:1.25rem',
-    'display:flex',
-    'align-items:center',
-    'gap:0.75rem',
-    'color:#fc8181',
-    'font-size:0.875rem',
-    'font-weight:600',
-  ].join(';');
+  aviso.className = 'card';
+  aviso.style.cssText = 'text-align:center; padding:3rem 1.5rem; max-width:640px; margin:1.5rem auto; border:1px solid rgba(246,173,85,0.4); background:linear-gradient(135deg, rgba(246,173,85,0.12), rgba(237,137,54,0.04)); border-radius:1rem;';
   aviso.innerHTML = `
-    <span style="font-size:1.5rem">🔒</span>
-    <div>
-      <div>Eres el administrador — no puedes enviarte solicitudes a ti mismo.</div>
-      <div style="font-weight:400;margin-top:0.2rem;color:var(--text-muted);font-size:0.8rem">
-        Usa el <a href="admin.html" style="color:var(--blue)">Panel Admin</a> para gestionar solicitudes.
-      </div>
+    <div style="font-size:3.5rem; margin-bottom:0.75rem;">⚡</div>
+    <h2 style="font-size:1.5rem; font-weight:800; color:var(--text); margin-bottom:0.5rem;">Bandeja de Entrada de Solicitudes</h2>
+    <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.6; max-width:520px; margin:0 auto 1.75rem;">
+      Has iniciado sesión como <strong>Técnico / Administrador (Luis Uzcátegui)</strong>.<br>
+      Tu rol es <strong>recibir, aprobar, tomar las solicitudes o trasladarlas a otros técnicos</strong> de la red Help Desk.
+    </p>
+    <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
+      <a href="tecnico.html" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:800; padding:0.8rem 1.75rem; font-size:0.92rem; text-decoration:none;">
+        📥 Ver Solicitudes de Clientes →
+      </a>
+      <a href="servicios.html" class="btn btn-secondary" style="font-weight:600; padding:0.8rem 1.25rem; font-size:0.92rem; text-decoration:none;">
+        🛠️ Gestionar Servicios
+      </a>
     </div>`;
   form.insertAdjacentElement('beforebegin', aviso);
 }

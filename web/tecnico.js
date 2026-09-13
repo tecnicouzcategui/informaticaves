@@ -521,54 +521,63 @@ function updateAvailabilityUI(disponible) {
   }
 }
 
-// ── Escuchar Trabajos Asignados (Tiempo Real) ─────────────────
+// ── Escuchar Solicitudes y Trabajos (Tiempo Real) ────────────
 function listenAssignedJobs(tecnicoId) {
   if (unsubscribeJobs) unsubscribeJobs();
 
-  const q = query(
-    collection(db, 'solicitudes'),
-    where('tecnicoAsignadoId', '==', tecnicoId)
-  );
+  // Escuchar toda la colección de solicitudes para que el administrador/técnico
+  // pueda ver las solicitudes entrantes, tomarlas o trasladarlas
+  const q = query(collection(db, 'solicitudes'));
 
   unsubscribeJobs = onSnapshot(q, (snapshot) => {
     assignedJobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     // Ordenar por fecha descendente
     assignedJobs.sort((a, b) => {
-      const ta = a.timestamp?.seconds || 0;
-      const tb = b.timestamp?.seconds || 0;
+      const ta = a.timestamp?.seconds || (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0);
+      const tb = b.timestamp?.seconds || (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0);
       return tb - ta;
     });
 
     updateKPIs();
     renderJobs();
   }, (err) => {
-    console.error('Error en onSnapshot solicitudes asignadas:', err);
+    console.error('Error en onSnapshot solicitudes:', err);
   });
 }
 
 // ── Actualizar KPIs ───────────────────────────────────────────
 function updateKPIs() {
   const total       = assignedJobs.length;
-  const nuevos      = assignedJobs.filter(j => !j.estadoCaso || j.estadoCaso === 'pendiente' || j.estadoCaso === 'tomado').length;
-  const enProgreso  = assignedJobs.filter(j => j.estadoCaso === 'en_camino' || j.estadoCaso === 'en_progreso').length;
+  const sinAsignar  = assignedJobs.filter(j => !j.tecnicoAsignadoId || j.tecnicoAsignadoId === 'sin_asignar' || !j.estadoCaso || j.estadoCaso === 'pendiente').length;
+  const enProgreso  = assignedJobs.filter(j => (j.estadoCaso === 'en_camino' || j.estadoCaso === 'en_progreso' || j.estadoCaso === 'tomado') && j.estadoCaso !== 'finalizado').length;
   const completados = assignedJobs.filter(j => j.estadoCaso === 'finalizado').length;
 
-  document.getElementById('kpi-total').textContent       = total;
-  document.getElementById('kpi-nuevos').textContent      = nuevos;
-  document.getElementById('kpi-progreso').textContent    = enProgreso;
-  document.getElementById('kpi-completados').textContent = completados;
+  const kTotal = document.getElementById('kpi-total');
+  const kNuevos = document.getElementById('kpi-nuevos');
+  const kProg = document.getElementById('kpi-progreso');
+  const kComp = document.getElementById('kpi-completados');
+
+  if (kTotal) kTotal.textContent = total;
+  if (kNuevos) kNuevos.textContent = sinAsignar;
+  if (kProg) kProg.textContent = enProgreso;
+  if (kComp) kComp.textContent = completados;
 }
 
-// ── Renderizar Lista de Trabajos ──────────────────────────────
+// ── Renderizar Lista de Trabajos y Solicitudes ─────────────────
 function renderJobs() {
   const container = document.getElementById('jobs-container');
   if (!container) return;
 
+  const tecId = currentTecnico?.id || '12832779';
+  const tecCed = currentTecnico?.cedula || 'V-12832779';
+
   let filtered = assignedJobs;
-  if (currentFilter === 'pendientes') {
-    filtered = assignedJobs.filter(j => !j.estadoCaso || j.estadoCaso === 'pendiente' || j.estadoCaso === 'tomado');
+  if (currentFilter === 'sin_asignar') {
+    filtered = assignedJobs.filter(j => !j.tecnicoAsignadoId || j.tecnicoAsignadoId === 'sin_asignar' || !j.estadoCaso || j.estadoCaso === 'pendiente');
+  } else if (currentFilter === 'mis_ordenes') {
+    filtered = assignedJobs.filter(j => j.tecnicoAsignadoId === tecId || j.tecnicoAsignadoCedula === tecCed || isSuperAdminIdentifier(j.tecnicoAsignadoId));
   } else if (currentFilter === 'progreso') {
-    filtered = assignedJobs.filter(j => j.estadoCaso === 'en_camino' || j.estadoCaso === 'en_progreso');
+    filtered = assignedJobs.filter(j => (j.estadoCaso === 'en_camino' || j.estadoCaso === 'en_progreso' || j.estadoCaso === 'tomado') && j.estadoCaso !== 'finalizado');
   } else if (currentFilter === 'finalizados') {
     filtered = assignedJobs.filter(j => j.estadoCaso === 'finalizado');
   }
@@ -577,8 +586,8 @@ function renderJobs() {
     container.innerHTML = `
       <div class="card" style="text-align:center; padding:3rem 1.5rem;">
         <div style="font-size:2.5rem; margin-bottom:0.75rem;">📭</div>
-        <h3 style="font-size:1.1rem; margin-bottom:0.35rem;">No hay órdenes en esta sección</h3>
-        <p style="color:var(--text-muted); font-size:0.85rem;">Cuando el administrador te asigne un nuevo trabajo, aparecerá aquí inmediatamente.</p>
+        <h3 style="font-size:1.1rem; margin-bottom:0.35rem;">No hay solicitudes en esta sección</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem;">Cuando los clientes soliciten soporte desde el portal, aparecerán listadas aquí.</p>
       </div>
     `;
     return;
@@ -586,27 +595,26 @@ function renderJobs() {
 
   container.innerHTML = filtered.map(job => {
     const urgencia = (job.urgencia || 'normal').toLowerCase();
-    const estado   = job.estadoCaso || 'tomado';
+    const estado   = job.estadoCaso || (job.tecnicoAsignadoId ? 'tomado' : 'pendiente');
+    const estaSinAsignar = !job.tecnicoAsignadoId || job.tecnicoAsignadoId === 'sin_asignar';
 
-    let estadoLabel = 'Asignado';
-    let estadoClass = 'status-pill-tomado';
+    let estadoLabel = estaSinAsignar ? '📥 Sin Asignar' : 'Asignado';
+    let estadoClass = estaSinAsignar ? 'status-pill-pendiente' : 'status-pill-tomado';
     if (estado === 'en_camino')   { estadoLabel = '🚗 En Camino'; estadoClass = 'status-pill-en_camino'; }
     if (estado === 'en_progreso') { estadoLabel = '🔧 En Reparación'; estadoClass = 'status-pill-en_progreso'; }
     if (estado === 'finalizado')  { estadoLabel = '✅ Completado'; estadoClass = 'status-pill-finalizado'; }
 
     const fechaStr = job.timestamp?.toDate ? job.timestamp.toDate().toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' }) : 'Reciente';
-    
-    // Preparar mensaje de WhatsApp para el cliente
     const clienteWa = (job.whatsapp || '').replace(/[^0-9]/g, '');
-    const waMsg = encodeURIComponent(`Hola ${job.nombre || ''}, te saluda ${currentTecnico.nombre}, el técnico asignado a tu solicitud de ${job.servicio || 'servicio técnico'} en Informáticos Venezuela.`);
+    const waMsg = encodeURIComponent(`Hola ${job.nombre || ''}, te saluda ${currentTecnico.nombre || 'Luis Uzcátegui'} de Informáticos Venezuela sobre tu solicitud de ${job.servicio || 'servicio técnico'}.`);
     const waUrl = `https://wa.me/${clienteWa}?text=${waMsg}`;
 
     return `
-      <div class="job-card ${urgencia}">
+      <div class="job-card ${urgencia}" style="margin-bottom:1.25rem;">
         <div class="job-card-header">
           <div>
-            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-              <h3 style="font-size:1.05rem; font-weight:700; margin:0; color:var(--text);">${escapeHtml(job.servicio || 'Servicio Técnico')}</h3>
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem; flex-wrap:wrap;">
+              <h3 style="font-size:1.1rem; font-weight:800; margin:0; color:var(--text);">${escapeHtml(job.servicio || 'Servicio Técnico')}</h3>
               <span class="job-status-pill ${estadoClass}">${estadoLabel}</span>
             </div>
             <div style="font-size:0.78rem; color:var(--text-dim);">Ticket: <code style="color:var(--blue);font-weight:700;">${escapeHtml(job.correlativo || ('#' + job.id.substring(0, 8)))}</code> • ${fechaStr}</div>
@@ -618,10 +626,10 @@ function renderJobs() {
           </div>
         </div>
 
-        <div class="job-details-grid">
+        <div class="job-details-grid" style="margin-bottom:1rem;">
           <div>
-            <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">👤 Cliente:</div>
-            <div>${escapeHtml(job.nombre || 'Cliente')}</div>
+            <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">👤 Cliente Solicitante:</div>
+            <div><strong>${escapeHtml(job.nombre || 'Cliente')}</strong></div>
             <div style="font-size:0.8rem; color:var(--blue); margin-top:0.15rem;">📱 ${escapeHtml(job.whatsapp || '—')}</div>
           </div>
 
@@ -631,52 +639,80 @@ function renderJobs() {
           </div>
 
           <div>
-            <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">💰 Presupuesto Estimado:</div>
+            <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">💰 Presupuesto Base:</div>
             <div style="font-weight:700; color:var(--green);">${job.precio ? `$${escapeHtml(String(job.precio))} USD` : 'A convenir'}</div>
           </div>
         </div>
 
         ${job.descripcion ? `
           <div style="background:rgba(0,0,0,0.3); border-left:3px solid var(--blue); padding:0.75rem 1rem; border-radius:0.5rem; font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">
-            <strong>📝 Falla / Requerimiento:</strong><br>${escapeHtml(job.descripcion)}
+            <strong>📝 Falla / Requerimiento reportado:</strong><br>${escapeHtml(job.descripcion)}
           </div>
         ` : ''}
 
         ${job.notaTecnica ? `
           <div style="background:rgba(246,173,85,0.08); border-left:3px solid #f6ad55; padding:0.75rem 1rem; border-radius:0.5rem; font-size:0.82rem; color:#fbd38d; margin-bottom:1rem;">
-            <strong>🔧 Tu última nota técnica:</strong><br>${escapeHtml(job.notaTecnica)}
+            <strong>🔧 Última nota técnica / avance:</strong><br>${escapeHtml(job.notaTecnica)}
           </div>
         ` : ''}
 
-        <div class="job-actions-row">
+        <!-- Panel de Asignación / Control del Ticket -->
+        ${estaSinAsignar ? `
+          <div style="background:rgba(246,173,85,0.12); border:1px solid rgba(246,173,85,0.35); padding:0.85rem; border-radius:8px; margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem;">
+            <div>
+              <div style="font-weight:700; color:#f6ad55; font-size:0.88rem;">⚡ Solicitud Abierta en Espera de Atención</div>
+              <div style="font-size:0.78rem; color:var(--text-muted);">Puedes tomar esta orden para atenderla tú mismo o asignársela a otro técnico.</div>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-sm btn-tomar-solicitud" data-id="${job.id}" style="background:#28a745; color:white; font-weight:800; border:none; padding:0.45rem 0.95rem; border-radius:6px; cursor:pointer;">
+                ⚡ Tomar Solicitud
+              </button>
+              <button type="button" class="btn btn-sm btn-abrir-asignar" data-id="${job.id}" data-ticket="${escapeHtml(job.correlativo || job.servicio || job.id)}" style="background:#f6ad55; color:#1a202c; font-weight:800; border:none; padding:0.45rem 0.95rem; border-radius:6px; cursor:pointer;">
+                🔄 Trasladar a Técnico
+              </button>
+            </div>
+          </div>
+        ` : `
+          <div style="background:rgba(99,179,237,0.08); border:1px solid rgba(99,179,237,0.25); padding:0.65rem 0.85rem; border-radius:8px; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div style="font-size:0.82rem; color:var(--text);">
+              👤 Técnico Asignado: <strong style="color:var(--accent);">${escapeHtml(job.tecnicoAsignadoNombre || 'Luis Uzcátegui')}</strong>
+              ${job.tecnicoAsignadoWA ? ` • 📱 <a href="https://wa.me/${job.tecnicoAsignadoWA.replace(/[^0-9]/g, '')}" target="_blank" style="color:var(--accent); text-decoration:underline;">${escapeHtml(job.tecnicoAsignadoWA)}</a>` : ''}
+            </div>
+            <button type="button" class="btn btn-sm btn-abrir-asignar" data-id="${job.id}" data-ticket="${escapeHtml(job.correlativo || job.servicio || job.id)}" style="background:rgba(246,173,85,0.2); border:1px solid rgba(246,173,85,0.4); color:#f6ad55; font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:6px; cursor:pointer;">
+              🔄 Reasignar a otro Técnico
+            </button>
+          </div>
+        `}
+
+        <div class="job-actions-row" style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
             ${clienteWa ? `
-              <a href="${waUrl}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; border:none; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:0.35rem;">
+              <a href="${waUrl}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; border:none; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:0.35rem; padding:0.45rem 0.85rem; border-radius:6px;">
                 💬 WhatsApp Cliente
               </a>
             ` : ''}
             
-            <button class="btn btn-secondary btn-sm btn-update-status" data-id="${job.id}" data-estado="${estado}" data-nota="${encodeURIComponent(job.notaTecnica || '')}" data-title="${job.servicio || 'Servicio'}">
-              🔄 Actualizar Avance
+            <button type="button" class="btn btn-secondary btn-sm btn-update-status" data-id="${job.id}" data-estado="${estado}" data-nota="${encodeURIComponent(job.notaTecnica || '')}" data-title="${job.servicio || 'Servicio'}">
+              📝 Registrar Avance / Reporte
             </button>
           </div>
 
-          <!-- Acciones Rápidas con 1 clic -->
+          <!-- Acciones Rápidas de Estado -->
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
             ${estado !== 'en_camino' && estado !== 'finalizado' ? `
-              <button class="btn btn-sm btn-quick-status" data-id="${job.id}" data-estado="en_camino" style="background:rgba(246,173,85,0.15); border:1px solid rgba(246,173,85,0.3); color:#f6ad55; font-size:0.75rem;">
+              <button type="button" class="btn btn-sm btn-quick-status" data-id="${job.id}" data-estado="en_camino" style="background:rgba(246,173,85,0.15); border:1px solid rgba(246,173,85,0.3); color:#f6ad55; font-size:0.75rem; padding:0.35rem 0.65rem; border-radius:6px; cursor:pointer;">
                 🚗 En camino
               </button>
             ` : ''}
             
             ${estado !== 'en_progreso' && estado !== 'finalizado' ? `
-              <button class="btn btn-sm btn-quick-status" data-id="${job.id}" data-estado="en_progreso" style="background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:#a855f7; font-size:0.75rem;">
+              <button type="button" class="btn btn-sm btn-quick-status" data-id="${job.id}" data-estado="en_progreso" style="background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:#a855f7; font-size:0.75rem; padding:0.35rem 0.65rem; border-radius:6px; cursor:pointer;">
                 🔧 Reparando
               </button>
             ` : ''}
 
             ${estado !== 'finalizado' ? `
-              <button class="btn btn-sm btn-quick-status" data-id="${job.id}" data-estado="finalizado" style="background:rgba(104,211,145,0.15); border:1px solid rgba(104,211,145,0.3); color:#68d391; font-size:0.75rem; font-weight:700;">
+              <button type="button" class="btn btn-sm btn-quick-status" data-id="${job.id}" data-estado="finalizado" style="background:rgba(104,211,145,0.15); border:1px solid rgba(104,211,145,0.3); color:#68d391; font-size:0.75rem; font-weight:700; padding:0.35rem 0.65rem; border-radius:6px; cursor:pointer;">
                 ✅ Finalizar
               </button>
             ` : ''}
@@ -687,7 +723,22 @@ function renderJobs() {
     `;
   }).join('');
 
-  // Eventos de botones
+  // ── Listeners para Tomar Solicitud y Asignar a Técnico ────────
+  container.querySelectorAll('.btn-tomar-solicitud').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.dataset.id;
+      await tomarSolicitud(id);
+    });
+  });
+
+  container.querySelectorAll('.btn-abrir-asignar').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      const ticket = e.currentTarget.dataset.ticket;
+      abrirModalAsignar(id, ticket);
+    });
+  });
+
   container.querySelectorAll('.btn-update-status').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id     = e.currentTarget.dataset.id;
@@ -706,6 +757,134 @@ function renderJobs() {
     });
   });
 }
+
+// ── Tomar Solicitud (Asignación Directa al Administrador/Técnico) ──
+async function tomarSolicitud(jobId) {
+  try {
+    const tecNombre = currentTecnico?.nombre || 'Luis Uzcátegui';
+    const tecId     = currentTecnico?.id || '12832779';
+    const tecWA     = currentTecnico?.whatsapp || '04242964339';
+    const tecCed    = currentTecnico?.cedula || 'V-12832779';
+
+    await updateDoc(doc(db, 'solicitudes', jobId), {
+      tecnicoAsignadoId: tecId,
+      tecnicoAsignadoNombre: tecNombre,
+      tecnicoAsignadoWA: tecWA,
+      tecnicoAsignadoCedula: tecCed,
+      estadoCaso: 'tomado',
+      estado: 'en_proceso',
+      tomadoEn: serverTimestamp()
+    });
+
+    showToast(`✅ ¡Has tomado la solicitud! Asignada directamente a ${tecNombre}.`, 'success');
+  } catch (err) {
+    console.error('Error tomando solicitud:', err);
+    showToast('Error al tomar solicitud: ' + err.message, 'error');
+  }
+}
+
+// ── Modal de Asignación / Traslado a otro Técnico ─────────────
+let assignJobId = null;
+
+async function abrirModalAsignar(jobId, ticketTitle) {
+  assignJobId = jobId;
+  const modal    = document.getElementById('modal-assign-tecnico');
+  const infoEl   = document.getElementById('modal-assign-ticket-info');
+  const select   = document.getElementById('modal-select-tecnico');
+  const preview  = document.getElementById('modal-tecnico-preview');
+
+  if (infoEl) infoEl.textContent = `Ticket: ${ticketTitle}`;
+  if (preview) preview.style.display = 'none';
+
+  select.innerHTML = '<option value="">Cargando técnicos disponibles...</option>';
+  modal?.classList.add('open');
+
+  try {
+    const snap = await getDocs(collection(db, 'tecnicos'));
+    let tecs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Asegurar que el Super Administrador Luis Uzcátegui esté en la lista
+    const hasLuis = tecs.some(t => isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email));
+    if (!hasLuis) {
+      tecs.unshift({
+        id: '12832779',
+        nombre: 'Luis Uzcátegui (Super Admin)',
+        whatsapp: '04242964339',
+        cedula: 'V-12832779',
+        zona: 'Caracas / Toda Venezuela',
+        profesion: 'Ingeniero / Administrador Principal Help Desk'
+      });
+    }
+
+    select.innerHTML = '<option value="">-- Selecciona el técnico de la lista --</option>' +
+      tecs.map(t => `<option value="${t.id}" data-nombre="${escapeHtml(t.nombre || 'Técnico IT')}" data-wa="${escapeHtml(t.whatsapp || '')}" data-cedula="${escapeHtml(t.cedula || '')}" data-zona="${escapeHtml(t.zona || 'Caracas')}">${escapeHtml(t.nombre || 'Técnico')} (${t.cedula || 'V-—'}) • ${escapeHtml(t.zona || 'Caracas')}</option>`).join('');
+
+    select.onchange = () => {
+      const selected = select.options[select.selectedIndex];
+      if (selected && selected.value) {
+        if (preview) {
+          preview.style.display = 'block';
+          preview.innerHTML = `
+            <div style="font-weight:700; color:#f6ad55; margin-bottom:0.25rem;">Técnico seleccionado:</div>
+            <div><strong>${selected.dataset.nombre}</strong> (Cédula: ${selected.dataset.cedula || '—'})</div>
+            <div style="color:var(--text-muted); margin-top:0.2rem;">📱 WhatsApp: ${selected.dataset.wa || '—'} • 📍 Zona: ${selected.dataset.zona || 'Caracas'}</div>
+          `;
+        }
+      } else {
+        if (preview) preview.style.display = 'none';
+      }
+    };
+  } catch (err) {
+    console.error('Error cargando técnicos:', err);
+    select.innerHTML = '<option value="">Error al cargar técnicos de la red.</option>';
+  }
+}
+
+document.getElementById('modal-assign-close')?.addEventListener('click', () => {
+  document.getElementById('modal-assign-tecnico')?.classList.remove('open');
+  assignJobId = null;
+});
+
+document.getElementById('modal-assign-cancel')?.addEventListener('click', () => {
+  document.getElementById('modal-assign-tecnico')?.classList.remove('open');
+  assignJobId = null;
+});
+
+document.getElementById('modal-assign-confirm')?.addEventListener('click', async () => {
+  if (!assignJobId) return;
+  const select = document.getElementById('modal-select-tecnico');
+  const selected = select?.options[select.selectedIndex];
+  if (!selected || !selected.value) {
+    showToast('Selecciona un técnico de la lista para continuar.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('modal-assign-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Asignando...';
+
+  try {
+    await updateDoc(doc(db, 'solicitudes', assignJobId), {
+      tecnicoAsignadoId: selected.value,
+      tecnicoAsignadoNombre: selected.dataset.nombre,
+      tecnicoAsignadoWA: selected.dataset.wa || '',
+      tecnicoAsignadoCedula: selected.dataset.cedula || '',
+      estadoCaso: 'tomado',
+      estado: 'en_proceso',
+      asignadoEn: serverTimestamp()
+    });
+
+    showToast(`✅ ¡Solicitud asignada con éxito a ${selected.dataset.nombre}!`, 'success');
+    document.getElementById('modal-assign-tecnico')?.classList.remove('open');
+    assignJobId = null;
+  } catch (err) {
+    console.error('Error asignando técnico:', err);
+    showToast('Error al asignar la orden: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Confirmar Asignación';
+  }
+});
 
 // ── Modal Actualizar Estado ───────────────────────────────────
 let activeJobId = null;

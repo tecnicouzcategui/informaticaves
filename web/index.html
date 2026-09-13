@@ -427,28 +427,83 @@
       </div>
     </section>
 
-    <!-- ── Dashboard del Técnico (Autenticado) ─────────────────── -->
+    <!-- ── Dashboard del Técnico & Administrador (Autenticado) ───────── -->
     <section id="portal-tecnico-dashboard" class="section" style="display:none; padding-top:0.5rem; padding-bottom:1.5rem;">
-      <div style="max-width:800px; margin:0 auto;">
-        <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.12), rgba(237,137,54,0.05)); border:1px solid rgba(246,173,85,0.35); border-radius:1rem; padding:1.75rem; text-align:center;">
-          <div id="tec-dash-avatar" style="width:68px; height:68px; border-radius:50%; overflow:hidden; background:#f6ad55; display:inline-flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#1a202c; border:2px solid #f6ad55; margin-bottom:0.75rem;">
-            👨‍🔧
+      <div style="max-width:960px; margin:0 auto;">
+        
+        <!-- Header del Técnico / Admin -->
+        <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.14), rgba(237,137,54,0.06)); border:1px solid rgba(246,173,85,0.38); border-radius:1rem; padding:1.5rem; margin-bottom:1.5rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.25rem;">
+            <div style="display:flex; align-items:center; gap:1rem;">
+              <div id="tec-dash-avatar" style="width:64px; height:64px; border-radius:50%; overflow:hidden; background:#f6ad55; display:flex; align-items:center; justify-content:center; font-size:1.9rem; font-weight:800; color:#1a202c; border:2px solid #f6ad55; flex-shrink:0;">
+                👨‍🔧
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <h2 id="tec-dash-name" style="font-size:1.35rem; font-weight:800; color:var(--text); margin:0;">Luis Uzcátegui</h2>
+                  <span id="tec-dash-role-badge" class="badge" style="background:rgba(246,173,85,0.25); color:#f6ad55; font-size:0.75rem; border:1px solid rgba(246,173,85,0.45); font-weight:700;">
+                    👑 Administrador & Técnico Principal
+                  </span>
+                </div>
+                <div style="font-size:0.84rem; color:var(--text-muted); margin-top:0.25rem; display:flex; gap:0.75rem; flex-wrap:wrap;" id="tec-dash-meta">
+                  <span>Cédula: V-12832779 • WhatsApp: 04242964339</span>
+                </div>
+              </div>
+            </div>
+            
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+              <a href="tecnico.html" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.65rem 1.25rem; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.4rem;">
+                <span>📥</span> Bandeja de Solicitudes
+              </a>
+            </div>
           </div>
-          <h2 id="tec-dash-name" style="font-size:1.4rem; font-weight:800; color:var(--text); margin-bottom:0.25rem;">Panel Técnico IT</h2>
-          <div style="display:inline-flex; align-items:center; gap:0.4rem; background:rgba(246,173,85,0.2); color:#f6ad55; padding:0.2rem 0.75rem; border-radius:999px; font-size:0.78rem; font-weight:700; margin-bottom:0.75rem;">
-            ⚡ Técnico Profesional Activo
-          </div>
-          <p id="tec-dash-meta" style="color:var(--text-muted); font-size:0.86rem; margin-bottom:1.5rem;">
-            Bienvenido a tu estación de trabajo. Administra tus órdenes asignadas, actualiza estados y comunícate con clientes.
-          </p>
-          <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
-            <a href="tecnico.html" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.75rem 1.5rem; font-size:0.92rem; text-decoration:none;">
-              📋 Ir a Mi Panel de Órdenes de Trabajo
+        </div>
+
+        <!-- 3 Cards de Acción para el Técnico / Administrador -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem; margin-bottom:1.5rem;">
+          
+          <!-- Card 1: Bandeja de Solicitudes Entrantes (Tickets de Solicitantes) -->
+          <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.1), rgba(237,137,54,0.03)); border:1px solid rgba(246,173,85,0.3); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;">📥</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">Solicitudes Entrantes de Clientes</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;">
+                Revisa los Tickets Help Desk enviados por los solicitantes. Aprueba los requerimientos, <strong>toma la orden para ti o trasládala a otro técnico</strong> de la red.
+              </p>
+            </div>
+            <a href="tecnico.html" class="btn btn-primary w-full" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.65rem; font-size:0.88rem; text-align:center; text-decoration:none;">
+              Ver y Asignar Solicitudes →
             </a>
-            <a href="servicios.html" class="btn btn-secondary" style="border-color:rgba(246,173,85,0.4); color:#f6ad55; font-weight:600; padding:0.75rem 1.25rem; font-size:0.92rem; text-decoration:none;">
-              🛠️ Catálogo de Servicios
+          </div>
+
+          <!-- Card 2: Catálogo de Servicios & Creación -->
+          <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;">🛠️</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">Catálogo & Precios de Servicios</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;">
+                Explora el catálogo público, <strong>agrega nuevos servicios</strong> con su categoría y precio orientativo para los solicitantes.
+              </p>
+            </div>
+            <a href="servicios.html" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem; text-align:center; text-decoration:none;">
+              Administrar Catálogo de Servicios →
             </a>
           </div>
+
+          <!-- Card 3: Panel Administrativo / Órdenes en Curso -->
+          <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:1.5rem; border-radius:1rem; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.2s;">
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:0.5rem;">👑</div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">Panel de Control y Técnicos</h3>
+              <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.5; margin-bottom:1.25rem;">
+                Monitorea a todos los técnicos registrados, administra disponibilidades, clientes registrados y configuraciones globales.
+              </p>
+            </div>
+            <a href="admin.html" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem; text-align:center; text-decoration:none;">
+              Ir al Panel de Control →
+            </a>
+          </div>
+
         </div>
       </div>
     </section>
@@ -1316,8 +1371,8 @@
 </script>
 
 <script type="module">
-  import * as Auth from './auth.js?v=2.6';
-  import { seedFirestoreIfEmpty } from './firebase.js?v=2.6';
+  import * as Auth from './auth.js';
+  import { seedFirestoreIfEmpty } from './firebase.js';
 
   // Exponer Auth globalmente
   window.Auth = Auth;
@@ -1341,7 +1396,7 @@
     const wa = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
     const isAdminUser = !!(Auth.isAdmin || localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
     const hasUser = !!(Auth.currentUser || cedula || wa || isAdminUser || (role && role !== 'null' && role !== 'undefined'));
-    const isTec = !!(Auth.isTecnico || role === 'tecnico');
+    const isTecOrAdmin = !!(Auth.isTecnico || Auth.isAdmin || isAdminUser || role === 'tecnico' || role === 'admin');
 
     if (hasUser) {
       document.documentElement.classList.add('user-logged-in');
@@ -1352,7 +1407,7 @@
         guestSec.setAttribute('hidden', 'true');
       }
 
-      if (isTec) {
+      if (isTecOrAdmin) {
         document.documentElement.classList.add('user-is-tecnico');
         document.documentElement.classList.remove('user-is-solicitante');
         if (document.body) {
@@ -1365,13 +1420,19 @@
           const nameEl   = document.getElementById('tec-dash-name');
           const avatarEl = document.getElementById('tec-dash-avatar');
           const metaEl   = document.getElementById('tec-dash-meta');
+          const badgeEl  = document.getElementById('tec-dash-role-badge');
           
-          const tecName = Auth.userNombre || localStorage.getItem('infovzla_user_nombre') || 'Técnico IT';
-          const tecCed  = Auth.userCedula || localStorage.getItem('infovzla_user_cedula') || '—';
-          const tecWA   = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || '—';
+          const tecName = Auth.userNombre || localStorage.getItem('infovzla_user_nombre') || 'Luis Uzcátegui';
+          const tecCed  = Auth.userCedula || localStorage.getItem('infovzla_user_cedula') || 'V-12832779';
+          const tecWA   = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || '04242964339';
           const tecFoto = Auth.userFoto || localStorage.getItem('infovzla_user_foto');
 
           if (nameEl) nameEl.textContent = `¡Hola, ${tecName}!`;
+          if (badgeEl) {
+            badgeEl.textContent = (Auth.isAdmin || isAdminUser || role === 'admin')
+              ? '👑 Administrador & Técnico Principal'
+              : '⚡ Técnico Profesional Activo';
+          }
           if (avatarEl) {
             if (tecFoto) {
               avatarEl.innerHTML = `<img src="${tecFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
@@ -1380,7 +1441,7 @@
             }
           }
           if (metaEl) {
-            metaEl.textContent = `Cédula: ${tecCed} • WhatsApp: ${tecWA}`;
+            metaEl.innerHTML = `<span>🆔 Cédula: <strong>${tecCed}</strong> • 📱 WhatsApp: <strong>${tecWA}</strong></span>`;
           }
         }
       } else {

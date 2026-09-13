@@ -53,6 +53,22 @@
       📴 Sin conexión — Mostrando precios en caché
     </div>
 
+    <!-- ── Barra de Administración de Servicios (visible para Admin y Técnico) ── -->
+    <div id="admin-servicios-bar" style="display:none; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(246,173,85,0.15), rgba(237,137,54,0.06)); border:1px solid rgba(246,173,85,0.35); padding:1rem 1.25rem; border-radius:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+      <div>
+        <div style="font-weight:800; color:#f6ad55; font-size:1.05rem;">⚙️ Gestión del Catálogo de Servicios</div>
+        <div style="font-size:0.82rem; color:var(--text-muted);">Como Administrador y Técnico puedes publicar nuevos servicios y ajustar precios.</div>
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button id="btn-nuevo-servicio-modal" class="btn btn-primary btn-sm" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.6rem 1rem;">
+          ➕ Nuevo Servicio
+        </button>
+        <a href="tecnico.html" class="btn btn-secondary btn-sm" style="font-weight:600; padding:0.6rem 1rem; text-decoration:none;">
+          📋 Panel de Órdenes
+        </a>
+      </div>
+    </div>
+
     <!-- ── Filtro por categoría ─────────────────────────────── -->
     <div id="filtros-container" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;padding-bottom:0.5rem">
       <button class="btn btn-secondary btn-sm active-filter" data-cat="todos" id="filtro-todos">🔍 Todos</button>
@@ -101,20 +117,150 @@
   </div>
 </div>
 
+<!-- ── Modal Crear / Publicar Nuevo Servicio (Admin & Técnico) ────── -->
+<div class="modal-backdrop" id="modal-nuevo-servicio" role="dialog" aria-modal="true">
+  <div class="modal-box" style="position:relative; max-width:480px; padding:1.75rem;">
+    <button class="modal-close" id="modal-svc-close">✕</button>
+    <div style="text-align:center; margin-bottom:1.25rem;">
+      <div style="font-size:2.2rem; margin-bottom:0.25rem;">🛠️</div>
+      <h2 class="modal-title" id="modal-svc-title" style="font-size:1.25rem;">➕ Publicar Nuevo Servicio</h2>
+      <p class="modal-desc">Este servicio aparecerá de inmediato en el catálogo general.</p>
+    </div>
+    
+    <div class="form-group" style="margin-bottom:0.85rem;">
+      <label class="form-label" for="svc-nombre">Nombre del Servicio *</label>
+      <input type="text" id="svc-nombre" class="form-input" placeholder="Ej: Mantenimiento Preventivo PC & Laptops" required>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.85rem;">
+      <div class="form-group">
+        <label class="form-label" for="svc-categoria">Categoría *</label>
+        <select id="svc-categoria" class="form-input">
+          <option value="soporte">💻 Soporte y Software</option>
+          <option value="redes">📡 Redes y WiFi</option>
+          <option value="cctv">📹 CCTV y Seguridad</option>
+          <option value="web">🌐 Web y Apps</option>
+          <option value="movil">📱 Móvil y Android</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="svc-emoji">Emoji Identificador</label>
+        <select id="svc-emoji" class="form-input" style="font-size:1.1rem; text-align:center;">
+          <option value="💻">💻 Computadora / Laptop</option>
+          <option value="📡">📡 Redes / WiFi</option>
+          <option value="📹">📹 Cámara / CCTV</option>
+          <option value="🌐">🌐 Web / Hosting</option>
+          <option value="📱">📱 Celular / Tablet</option>
+          <option value="⚡">⚡ Energía / UPS</option>
+          <option value="🛡️">🛡️ Ciberseguridad / VPN</option>
+          <option value="🖨️">🖨️ Impresoras</option>
+          <option value="💾">💾 Respaldo de Datos</option>
+          <option value="🔧">🔧 Reparación General</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:0.85rem;">
+      <label class="form-label" for="svc-precio">Precio Base (USD) *</label>
+      <input type="number" id="svc-precio" class="form-input" placeholder="25" min="1" required>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label class="form-label" for="svc-desc">Descripción Detallada *</label>
+      <textarea id="svc-desc" class="form-input" rows="3" placeholder="Detalla qué incluye el servicio técnico..." required></textarea>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem;">
+      <input type="checkbox" id="svc-popular" style="width:18px; height:18px; cursor:pointer;">
+      <label for="svc-popular" style="font-size:0.85rem; color:var(--text); cursor:pointer; font-weight:600;">Destacar como servicio Popular ⭐</label>
+    </div>
+
+    <div class="flex" style="gap:0.75rem;">
+      <button type="button" class="btn btn-secondary w-full" id="modal-svc-cancel">Cancelar</button>
+      <button type="button" class="btn btn-primary w-full" id="modal-svc-save" style="background:#f6ad55; color:#1a202c; font-weight:700;">💾 Publicar Servicio</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script type="module">
-  import { getServiciosPublicados, SERVICIOS_DEFAULT } from './firebase.js?v=2.6';
-  import * as Auth from './auth.js?v=2.6';
+  import { getServiciosPublicados, SERVICIOS_DEFAULT, guardarServicio, COLS, db, collection, addDoc, serverTimestamp } from './firebase.js';
+  import * as Auth from './auth.js';
 
   // ── Registrar SW ──
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  // ── Auth UI ──
+  // ── Auth UI & Admin Bar ──
+  const adminBar      = document.getElementById('admin-servicios-bar');
+  const modalNuevo    = document.getElementById('modal-nuevo-servicio');
+  const btnNuevoModal = document.getElementById('btn-nuevo-servicio-modal');
+  const btnCloseModal = document.getElementById('modal-svc-close');
+  const btnCancelModal= document.getElementById('modal-svc-cancel');
+  const btnSaveModal  = document.getElementById('modal-svc-save');
+
+  function checkAdminBar() {
+    const isAdmOrTec = Auth.isAdmin || Auth.isTecnico || localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('infovzla_user_role') === 'admin' || localStorage.getItem('infovzla_user_role') === 'tecnico';
+    if (adminBar) adminBar.style.display = isAdmOrTec ? 'flex' : 'none';
+  }
+  Auth.onAuthChange(checkAdminBar);
+  checkAdminBar();
+
+  btnNuevoModal?.addEventListener('click', () => modalNuevo?.classList.add('open'));
+  function cerrarModalSvc() { modalNuevo?.classList.remove('open'); }
+  btnCloseModal?.addEventListener('click', cerrarModalSvc);
+  btnCancelModal?.addEventListener('click', cerrarModalSvc);
+
+  btnSaveModal?.addEventListener('click', async () => {
+    const nombre = document.getElementById('svc-nombre')?.value.trim();
+    const cat    = document.getElementById('svc-categoria')?.value;
+    const emoji  = document.getElementById('svc-emoji')?.value || '🛠️';
+    const precio = Number(document.getElementById('svc-precio')?.value);
+    const desc   = document.getElementById('svc-desc')?.value.trim();
+    const popular= document.getElementById('svc-popular')?.checked;
+
+    if (!nombre || !precio || !desc) {
+      Auth.showToast('Completa los campos obligatorios (nombre, precio, descripción).', 'error');
+      return;
+    }
+
+    btnSaveModal.disabled = true;
+    btnSaveModal.textContent = 'Publicando...';
+
+    const nuevo = {
+      nombre,
+      categoria: cat,
+      emoji,
+      precio,
+      moneda: 'USD',
+      descripcion: desc,
+      popular,
+      estado: 'publicado',
+      creadoEn: serverTimestamp()
+    };
+
+    try {
+      await addDoc(collection(db, COLS.servicios), nuevo);
+      Auth.showToast('✅ ¡Servicio publicado con éxito en el catálogo!', 'success');
+      cerrarModalSvc();
+      document.getElementById('svc-nombre').value = '';
+      document.getElementById('svc-precio').value = '';
+      document.getElementById('svc-desc').value = '';
+      todosServicios.unshift({ id: `svc_${Date.now()}`, ...nuevo });
+      renderServicios();
+    } catch (err) {
+      console.error(err);
+      Auth.showToast('Error al publicar servicio: ' + err.message, 'error');
+    } finally {
+      btnSaveModal.disabled = false;
+      btnSaveModal.textContent = '💾 Publicar Servicio';
+    }
+  });
+
   document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
-  // El avatar ahora es manejado por auth.js (openProfileDropdown)
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {
     const num = document.getElementById('input-wa-numero')?.value.trim();
     if (num) Auth.saveWhatsApp(num);
@@ -127,7 +273,7 @@
   let catActiva = 'todos';
 
   async function cargarServicios() {
-    // 1. Renderizar de inmediato desde localStorage o SERVICIOS_DEFAULT para evitar spinner pegado
+    // 1. Renderizar de inmediato desde localStorage o SERVICIOS_DEFAULT
     const cached = localStorage.getItem('infovzla_servicios');
     if (cached) {
       try {
@@ -143,10 +289,10 @@
       renderServicios();
     }
 
-    // 2. Obtener datos frescos desde Firestore en segundo plano (con timeout de protección)
+    // 2. Obtener datos frescos desde Firestore
     try {
       const freshPromise = getServiciosPublicados();
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000));
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
       const fresh = await Promise.race([freshPromise, timeoutPromise]);
       if (fresh && Array.isArray(fresh) && fresh.length > 0) {
         todosServicios = fresh;
@@ -163,6 +309,7 @@
 
   function renderServicios() {
     const grid = document.getElementById('services-grid');
+    const isAdmOrTec = Auth.isAdmin || Auth.isTecnico || localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('infovzla_user_role') === 'admin' || localStorage.getItem('infovzla_user_role') === 'tecnico';
     const filtered = catActiva === 'todos'
       ? todosServicios
       : todosServicios.filter(s => s.categoria === catActiva);
@@ -173,7 +320,7 @@
     }
 
     grid.innerHTML = filtered.map(s => `
-      <div class="service-card cat-${s.categoria}" onclick="irASolicitud('${s.id}')">
+      <div class="service-card cat-${s.categoria}" onclick="${isAdmOrTec ? '' : `irASolicitud('${s.id}')`}">
         ${s.popular ? '<span class="service-badge badge-popular">⭐ Popular</span>' : ''}
         <span class="service-emoji">${s.emoji || '📌'}</span>
         <div class="service-name">${s.nombre}</div>
@@ -183,9 +330,15 @@
           <span class="price-currency">${s.moneda} · Precio base</span>
         </div>
         <div style="margin-top:0.75rem">
-          <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();irASolicitud('${s.id}')">
-            📤 Solicitar este servicio
-          </button>
+          ${isAdmOrTec ? `
+            <a href="admin.html" class="btn btn-secondary btn-sm w-full" style="text-decoration:none; display:inline-block; text-align:center;" onclick="event.stopPropagation();">
+              ⚙️ Gestionar en Panel Admin
+            </a>
+          ` : `
+            <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();irASolicitud('${s.id}')">
+              📤 Solicitar este servicio
+            </button>
+          `}
         </div>
       </div>
     `).join('');

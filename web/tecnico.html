@@ -225,38 +225,39 @@
       <div class="tec-kpi-grid">
         <div class="tec-kpi-card">
           <div class="tec-kpi-val" id="kpi-total">0</div>
-          <div class="tec-kpi-lbl">Total Asignados</div>
+          <div class="tec-kpi-lbl">Total Solicitudes</div>
         </div>
-        <div class="tec-kpi-card" style="border-color:rgba(99,179,237,0.3);">
+        <div class="tec-kpi-card" style="border-color:rgba(99,179,237,0.4);">
           <div class="tec-kpi-val" id="kpi-nuevos" style="color:#63b3ed;">0</div>
-          <div class="tec-kpi-lbl">Nuevos / Pendientes</div>
+          <div class="tec-kpi-lbl">Sin Asignar / Por Tomar</div>
         </div>
-        <div class="tec-kpi-card" style="border-color:rgba(168,85,247,0.3);">
+        <div class="tec-kpi-card" style="border-color:rgba(168,85,247,0.4);">
           <div class="tec-kpi-val" id="kpi-progreso" style="color:#a855f7;">0</div>
-          <div class="tec-kpi-lbl">En Progreso</div>
+          <div class="tec-kpi-lbl">En Curso</div>
         </div>
-        <div class="tec-kpi-card" style="border-color:rgba(104,211,145,0.3);">
+        <div class="tec-kpi-card" style="border-color:rgba(104,211,145,0.4);">
           <div class="tec-kpi-val" id="kpi-completados" style="color:#68d391;">0</div>
-          <div class="tec-kpi-lbl">Completados</div>
+          <div class="tec-kpi-lbl">Completadas</div>
         </div>
       </div>
 
       <!-- Barra de Filtros -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
-        <h2 style="font-size:1.15rem; font-weight:800; color:var(--text); margin:0;">📋 Mis Órdenes de Trabajo</h2>
+        <h2 style="font-size:1.2rem; font-weight:800; color:var(--text); margin:0;">📥 Bandeja de Solicitudes Help Desk</h2>
         
-        <div style="display:flex; gap:0.4rem; background:var(--surface); padding:4px; border-radius:10px; border:1px solid var(--border);">
-          <button class="btn btn-sm filter-btn active" data-filter="todos" id="filter-todos" style="font-size:0.75rem; padding:0.3rem 0.75rem;">Todos</button>
-          <button class="btn btn-sm filter-btn" data-filter="pendientes" id="filter-pendientes" style="font-size:0.75rem; padding:0.3rem 0.75rem;">Nuevos</button>
-          <button class="btn btn-sm filter-btn" data-filter="progreso" id="filter-progreso" style="font-size:0.75rem; padding:0.3rem 0.75rem;">En Curso</button>
-          <button class="btn btn-sm filter-btn" data-filter="finalizados" id="filter-finalizados" style="font-size:0.75rem; padding:0.3rem 0.75rem;">Completados</button>
+        <div style="display:flex; gap:0.4rem; background:var(--surface); padding:4px; border-radius:10px; border:1px solid var(--border); flex-wrap:wrap;">
+          <button class="btn btn-sm filter-btn active" data-filter="todos" id="filter-todos" style="font-size:0.75rem; padding:0.35rem 0.75rem;">Todas</button>
+          <button class="btn btn-sm filter-btn" data-filter="sin_asignar" id="filter-sin-asignar" style="font-size:0.75rem; padding:0.35rem 0.75rem;">📥 Por Tomar</button>
+          <button class="btn btn-sm filter-btn" data-filter="mis_ordenes" id="filter-mis-ordenes" style="font-size:0.75rem; padding:0.35rem 0.75rem;">⚡ Asignadas a Mí</button>
+          <button class="btn btn-sm filter-btn" data-filter="progreso" id="filter-progreso" style="font-size:0.75rem; padding:0.35rem 0.75rem;">🔧 En Curso</button>
+          <button class="btn btn-sm filter-btn" data-filter="finalizados" id="filter-finalizados" style="font-size:0.75rem; padding:0.35rem 0.75rem;">✅ Finalizadas</button>
         </div>
       </div>
 
       <!-- Lista de Trabajos Asignados -->
       <div id="jobs-container">
         <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
-          <p>Cargando órdenes de trabajo...</p>
+          <p>Cargando solicitudes de clientes...</p>
         </div>
       </div>
 
@@ -332,11 +333,39 @@
   </div>
 </div>
 
+<!-- ── Modal Asignar / Trasladar a otro Técnico ───────────── -->
+<div class="modal-backdrop" id="modal-assign-tecnico" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width: 480px; padding: 2rem;">
+    <button class="modal-close" id="modal-assign-close">&times;</button>
+    <div style="text-align:center; margin-bottom:1.25rem;">
+      <div style="font-size:2.5rem; margin-bottom:0.25rem;">🔄</div>
+      <h3 style="font-size:1.25rem; font-weight:800; color:var(--text); margin:0;">Asignar / Trasladar Solicitud</h3>
+      <p style="color:var(--text-muted); font-size:0.82rem; margin-top:0.25rem;" id="modal-assign-ticket-info">Ticket: —</p>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1.25rem;">
+      <label class="form-label">Seleccionar Técnico de la Red IT *</label>
+      <select id="modal-select-tecnico" class="form-input" style="font-size:0.9rem;">
+        <option value="">Cargando técnicos disponibles...</option>
+      </select>
+    </div>
+
+    <div id="modal-tecnico-preview" style="background:rgba(0,0,0,0.25); border:1px solid rgba(246,173,85,0.3); border-radius:8px; padding:0.85rem; margin-bottom:1.25rem; font-size:0.82rem; display:none;">
+      <!-- Datos del técnico seleccionado -->
+    </div>
+
+    <div class="flex" style="gap:0.75rem;">
+      <button class="btn btn-secondary w-full" id="modal-assign-cancel">Cancelar</button>
+      <button class="btn btn-primary w-full" id="modal-assign-confirm" style="background:#f6ad55; color:#1a202c; font-weight:700;">✅ Confirmar Asignación</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Toast Container ───────────────────────────────────────── -->
 <div id="toast-container"></div>
 
 <!-- Vectores IT Flotantes en Fondo -->
 <script src="bg-vectors.js"></script>
-<script type="module" src="tecnico.js?v=2.6"></script>
+<script type="module" src="tecnico.js"></script>
 </body>
 </html>

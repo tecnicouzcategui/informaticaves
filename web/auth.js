@@ -1805,9 +1805,14 @@ function updateNavUI() {
       if (adminBadge) adminBadge.textContent = '👑 Admin';
       adminLink?.classList.remove('hidden');
       navTecnico?.classList.remove('hidden');
-      navSolicitar?.closest('li')?.classList.remove('hidden');
-      navMisSolicitudes?.closest('li')?.classList.remove('hidden');
-      navMisSolicitudes?.classList.remove('hidden');
+      // Para admin / técnico: ocultar "Solicitar"
+      navSolicitar?.closest('li')?.classList.add('hidden');
+      if (navMisSolicitudes) {
+        navMisSolicitudes.textContent = '📥 Solicitudes';
+        navMisSolicitudes.href = 'tecnico.html';
+        navMisSolicitudes.closest('li')?.classList.remove('hidden');
+        navMisSolicitudes.classList.remove('hidden');
+      }
     } else if (isTecnico) {
       adminBadge?.classList.remove('hidden');
       if (adminBadge) {
@@ -1818,16 +1823,25 @@ function updateNavUI() {
       }
       adminLink?.classList.add('hidden');
       navTecnico?.classList.remove('hidden');
+      // Para técnico: ocultar "Solicitar"
       navSolicitar?.closest('li')?.classList.add('hidden');
-      navMisSolicitudes?.closest('li')?.classList.remove('hidden');
-      navMisSolicitudes?.classList.remove('hidden');
+      if (navMisSolicitudes) {
+        navMisSolicitudes.textContent = '📥 Mis Órdenes';
+        navMisSolicitudes.href = 'tecnico.html';
+        navMisSolicitudes.closest('li')?.classList.remove('hidden');
+        navMisSolicitudes.classList.remove('hidden');
+      }
     } else {
       adminBadge?.classList.add('hidden');
       adminLink?.classList.add('hidden');
       navTecnico?.classList.add('hidden');
       navSolicitar?.closest('li')?.classList.remove('hidden');
-      navMisSolicitudes?.closest('li')?.classList.remove('hidden');
-      navMisSolicitudes?.classList.remove('hidden');
+      if (navMisSolicitudes) {
+        navMisSolicitudes.textContent = 'Mis Solicitudes';
+        navMisSolicitudes.href = 'mis-solicitudes.html';
+        navMisSolicitudes.closest('li')?.classList.remove('hidden');
+        navMisSolicitudes.classList.remove('hidden');
+      }
     }
   } else {
     const userWidget = document.getElementById('nav-user-widget');
