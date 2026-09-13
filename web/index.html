@@ -96,9 +96,14 @@
               Crea un <strong>Ticket Help Desk</strong>, reporta fallas en tus equipos o redes y recibe asistencia técnica con asignación directa.
             </p>
           </div>
-          <button id="btn-portal-solicitante" class="btn btn-primary w-full" style="font-weight:700; padding:0.85rem; font-size:0.95rem;">
-            📝 Abrir Ticket / Soy Solicitante
-          </button>
+          <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:auto;">
+            <button id="btn-solicitante-registro" class="btn btn-primary w-full" style="font-weight:700; padding:0.75rem; font-size:0.92rem;">
+              📝 Registrarme / Abrir Ticket
+            </button>
+            <button id="btn-solicitante-login" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem;">
+              🔑 Iniciar Sesión Solicitante
+            </button>
+          </div>
         </div>
 
         <!-- Tarjeta Técnico -->
@@ -110,9 +115,14 @@
               Únete a la Red Profesional de <strong>Informáticos Venezuela Help Desk</strong>. Recibe órdenes asignadas por el Administrador y gestiona tus servicios.
             </p>
           </div>
-          <button id="btn-portal-tecnico" class="btn btn-primary w-full" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.85rem; font-size:0.95rem;">
-            🛠️ Registrarme como Técnico
-          </button>
+          <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:auto;">
+            <button id="btn-tecnico-registro" class="btn btn-primary w-full" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.75rem; font-size:0.92rem;">
+              🛠️ Registrarme como Técnico
+            </button>
+            <button id="btn-tecnico-login" class="btn btn-secondary w-full" style="border-color:rgba(246,173,85,0.4); color:#f6ad55; font-weight:600; padding:0.65rem; font-size:0.88rem;">
+              🔑 Iniciar Sesión Técnico
+            </button>
+          </div>
         </div>
 
       </div>
@@ -174,20 +184,39 @@
   }
 
   // Login / Logout & Dual Help Desk Portal
-  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal('solicitante'));
-  document.getElementById('hero-btn-join-tec')?.addEventListener('click', () => Auth.openAuthModal('tecnico'));
-  document.getElementById('btn-portal-solicitante')?.addEventListener('click', () => {
+  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal('solicitante', 'login'));
+  
+  // Solicitante Buttons
+  document.getElementById('btn-solicitante-registro')?.addEventListener('click', () => {
     if (Auth.currentUser) {
       window.location.href = 'solicitud.html';
     } else {
-      Auth.openAuthModal('solicitante');
+      Auth.openAuthModal('solicitante', 'registro');
     }
   });
-  document.getElementById('btn-portal-tecnico')?.addEventListener('click', () => {
+
+  document.getElementById('btn-solicitante-login')?.addEventListener('click', () => {
+    if (Auth.currentUser) {
+      window.location.href = 'mis-solicitudes.html';
+    } else {
+      Auth.openAuthModal('solicitante', 'login');
+    }
+  });
+
+  // Técnico Buttons
+  document.getElementById('btn-tecnico-registro')?.addEventListener('click', () => {
     if (Auth.isTecnico) {
       window.location.href = 'tecnico.html';
     } else {
-      Auth.openAuthModal('tecnico');
+      Auth.openAuthModal('tecnico', 'registro');
+    }
+  });
+
+  document.getElementById('btn-tecnico-login')?.addEventListener('click', () => {
+    if (Auth.isTecnico) {
+      window.location.href = 'tecnico.html';
+    } else {
+      Auth.openAuthModal('tecnico', 'login');
     }
   });
 

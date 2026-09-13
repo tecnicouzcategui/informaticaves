@@ -45,24 +45,30 @@ function notifyListeners() {
 }
 
 // ── Auth Modal Custom Multi-Rol ──────────────────────────────
-export function openAuthModal(defaultTab = 'solicitante') {
+export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login') {
   let modal = document.getElementById('modal-auth-custom');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'modal-auth-custom';
     modal.className = 'modal-backdrop';
     modal.innerHTML = `
-      <div class="modal-box" style="max-width: 460px; padding: 2rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
+      <div class="modal-box" style="max-width: 480px; padding: 2rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
         <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
         
         <!-- Selector de Rol -->
-        <div class="auth-role-tabs" style="display:flex; gap:0.5rem; background:rgba(0,0,0,0.3); padding:4px; border-radius:12px; margin-bottom:1.5rem;">
-          <button type="button" id="tab-rol-solicitante" class="btn btn-sm w-full" style="background:var(--blue); color:white; border-radius:8px; font-weight:600; font-size:0.82rem; transition:all 0.2s;">👤 Solicitante</button>
-          <button type="button" id="tab-rol-tecnico" class="btn btn-sm w-full" style="background:transparent; color:var(--text-muted); border-radius:8px; font-weight:600; font-size:0.82rem; transition:all 0.2s;">⚡ Soy Técnico</button>
+        <div class="auth-role-tabs" style="display:flex; gap:0.5rem; background:rgba(0,0,0,0.35); padding:4px; border-radius:12px; margin-bottom:0.75rem;">
+          <button type="button" id="tab-rol-solicitante" class="btn btn-sm w-full" style="background:var(--blue); color:white; border-radius:8px; font-weight:700; font-size:0.85rem; transition:all 0.2s;">👤 Solicitante</button>
+          <button type="button" id="tab-rol-tecnico" class="btn btn-sm w-full" style="background:transparent; color:var(--text-muted); border-radius:8px; font-weight:700; font-size:0.85rem; transition:all 0.2s;">⚡ Soy Técnico</button>
         </div>
 
-        <h3 id="auth-modal-title" style="margin-bottom:0.35rem; text-align:center; font-size:1.25rem;">Acceso de Solicitantes</h3>
-        <p id="auth-modal-desc" style="text-align:center; color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">Ingresa con tu WhatsApp para solicitar servicios técnicos.</p>
+        <!-- Selector de Modo: Login vs Registro -->
+        <div class="auth-mode-tabs" style="display:flex; gap:0.35rem; background:rgba(255,255,255,0.05); padding:3px; border-radius:10px; margin-bottom:1.25rem;">
+          <button type="button" id="tab-mode-login" class="btn btn-sm w-full" style="background:rgba(99,179,237,0.2); color:var(--text); border-radius:8px; font-weight:600; font-size:0.8rem; transition:all 0.2s;">🔑 Iniciar Sesión</button>
+          <button type="button" id="tab-mode-register" class="btn btn-sm w-full" style="background:transparent; color:var(--text-muted); border-radius:8px; font-weight:600; font-size:0.8rem; transition:all 0.2s;">📝 Registrarme</button>
+        </div>
+
+        <h3 id="auth-modal-title" style="margin-bottom:0.35rem; text-align:center; font-size:1.25rem; font-weight:800;">Iniciar Sesión</h3>
+        <p id="auth-modal-desc" style="text-align:center; color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">Ingresa con tu WhatsApp para acceder al sistema.</p>
         
         <div class="form-group" style="margin-bottom:1rem;">
           <label class="form-label">WhatsApp (Solo números)</label>
@@ -83,7 +89,7 @@ export function openAuthModal(defaultTab = 'solicitante') {
 
         <!-- Campos de registro para Solicitante -->
         <div id="auth-register-fields" style="display:none; margin-bottom:1.25rem; background:rgba(99,179,237,0.06); padding:1rem; border-radius:10px; border:1px dashed rgba(99,179,237,0.3);">
-          <p style="color:var(--accent); font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">👤 Registro de Solicitante / Cliente</p>
+          <p style="color:var(--accent); font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">👤 Datos de Registro — Solicitante</p>
           
           <div class="form-group" style="margin-bottom:0.6rem;">
             <label class="form-label">Nombre y Apellido *</label>
@@ -96,8 +102,8 @@ export function openAuthModal(defaultTab = 'solicitante') {
               <input type="text" id="auth-cedula" class="form-input" placeholder="V-12345678">
             </div>
             <div>
-              <label class="form-label">Empresa / Gerencia</label>
-              <input type="text" id="auth-empresa" class="form-input" placeholder="Ej: Particular / Gerencia IT">
+              <label class="form-label">Empresa / Dirección</label>
+              <input type="text" id="auth-empresa" class="form-input" placeholder="Ej: Particular / Gerencia">
             </div>
           </div>
 
@@ -109,7 +115,7 @@ export function openAuthModal(defaultTab = 'solicitante') {
 
         <!-- Campos de registro para Técnico -->
         <div id="auth-tecnico-fields" style="display:none; margin-bottom:1.25rem; background:rgba(246,173,85,0.08); padding:1rem; border-radius:10px; border:1px dashed rgba(246,173,85,0.3);">
-          <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro de Técnico Profesional Help Desk</p>
+          <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro Profesional — Red de Técnicos IT</p>
           
           <div class="form-group" style="margin-bottom:0.6rem;">
             <label class="form-label">Nombre Completo *</label>
@@ -150,8 +156,12 @@ export function openAuthModal(defaultTab = 'solicitante') {
           </div>
         </div>
         
-        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.5rem; font-weight:700;">Ingresar</button>
-        <a id="auth-forgot-pass" style="color:var(--blue); font-size:0.82rem; cursor:pointer; display:block; text-align:center; margin-top:0.75rem; text-decoration:underline;">¿Olvidaste tu contraseña?</a>
+        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.75rem; font-weight:700; padding:0.8rem; font-size:0.95rem;">Ingresar</button>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; font-size:0.8rem;">
+          <a id="auth-switch-mode-link" style="color:var(--text-muted); cursor:pointer; text-decoration:underline;">¿No tienes cuenta? Regístrate</a>
+          <a id="auth-forgot-pass" style="color:var(--blue); cursor:pointer; text-decoration:underline;">¿Olvidaste tu clave?</a>
+        </div>
         
         <div id="auth-forgot-panel" style="display:none; background:rgba(99,179,237,0.1); border:1px solid var(--blue); padding:1rem; border-radius:8px; margin-top:1rem; text-align:center;">
           <p style="font-size:0.82rem; color:var(--text); margin-bottom:0.75rem;">Se abrirá WhatsApp para solicitar a Soporte el reinicio de tu clave.</p>
@@ -163,9 +173,13 @@ export function openAuthModal(defaultTab = 'solicitante') {
 
     // Variables internas
     let selectedRole = defaultTab;
+    let currentMode   = initialMode; // 'login' | 'registro'
 
     const tabSolicitante = document.getElementById('tab-rol-solicitante');
     const tabTecnico     = document.getElementById('tab-rol-tecnico');
+    const tabLogin       = document.getElementById('tab-mode-login');
+    const tabRegister    = document.getElementById('tab-mode-register');
+    const switchModeLink = document.getElementById('auth-switch-mode-link');
     const modalTitle     = document.getElementById('auth-modal-title');
     const modalDesc      = document.getElementById('auth-modal-desc');
     const passInput      = document.getElementById('auth-pass');
@@ -180,31 +194,90 @@ export function openAuthModal(defaultTab = 'solicitante') {
     const forgotPanel    = document.getElementById('auth-forgot-panel');
     const recoverBtn     = document.getElementById('auth-btn-recover');
 
-    function switchRole(role) {
-      selectedRole = role;
-      if (role === 'tecnico') {
+    function updateUI() {
+      // 1. Estilos Role Tabs
+      if (selectedRole === 'tecnico') {
         tabTecnico.style.background = '#f6ad55';
         tabTecnico.style.color = '#1a202c';
         tabSolicitante.style.background = 'transparent';
         tabSolicitante.style.color = 'var(--text-muted)';
-        modalTitle.textContent = 'Acceso de Técnicos';
-        modalDesc.textContent = 'Ingresa con tu WhatsApp para gestionar tus trabajos asignados.';
       } else {
         tabSolicitante.style.background = 'var(--blue)';
         tabSolicitante.style.color = 'white';
         tabTecnico.style.background = 'transparent';
         tabTecnico.style.color = 'var(--text-muted)';
-        modalTitle.textContent = 'Acceso de Solicitantes';
-        modalDesc.textContent = 'Ingresa con tu WhatsApp para solicitar y seguir tus servicios.';
       }
-      document.getElementById('auth-register-fields').style.display = 'none';
-      document.getElementById('auth-tecnico-fields').style.display = 'none';
-      submitBtn.textContent = 'Ingresar';
+
+      // 2. Estilos Mode Tabs & Form Visibility
+      const isReg = currentMode === 'registro';
+      if (isReg) {
+        tabRegister.style.background = selectedRole === 'tecnico' ? '#f6ad55' : 'var(--blue)';
+        tabRegister.style.color = selectedRole === 'tecnico' ? '#1a202c' : 'white';
+        tabLogin.style.background = 'transparent';
+        tabLogin.style.color = 'var(--text-muted)';
+
+        if (selectedRole === 'tecnico') {
+          modalTitle.textContent = 'Registro de Técnico IT';
+          modalDesc.textContent = 'Crea tu cuenta profesional para recibir órdenes de trabajo asignadas.';
+          document.getElementById('auth-tecnico-fields').style.display = 'block';
+          document.getElementById('auth-register-fields').style.display = 'none';
+          submitBtn.textContent = '🛠️ Crear Cuenta de Técnico';
+          submitBtn.style.background = '#f6ad55';
+          submitBtn.style.color = '#1a202c';
+        } else {
+          modalTitle.textContent = 'Registro de Solicitante';
+          modalDesc.textContent = 'Crea tu cuenta para abrir tickets y hacer seguimiento.';
+          document.getElementById('auth-register-fields').style.display = 'block';
+          document.getElementById('auth-tecnico-fields').style.display = 'none';
+          submitBtn.textContent = '📝 Crear Cuenta de Solicitante';
+          submitBtn.style.background = 'var(--blue)';
+          submitBtn.style.color = 'white';
+        }
+        if (switchModeLink) switchModeLink.textContent = '¿Ya tienes cuenta? Inicia sesión aquí';
+      } else {
+        tabLogin.style.background = selectedRole === 'tecnico' ? 'rgba(246,173,85,0.25)' : 'rgba(99,179,237,0.25)';
+        tabLogin.style.color = 'var(--text)';
+        tabRegister.style.background = 'transparent';
+        tabRegister.style.color = 'var(--text-muted)';
+
+        document.getElementById('auth-register-fields').style.display = 'none';
+        document.getElementById('auth-tecnico-fields').style.display = 'none';
+
+        if (selectedRole === 'tecnico') {
+          modalTitle.textContent = 'Acceso de Técnicos IT';
+          modalDesc.textContent = 'Ingresa con tu WhatsApp para gestionar tus trabajos asignados.';
+          submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
+          submitBtn.style.background = '#f6ad55';
+          submitBtn.style.color = '#1a202c';
+        } else {
+          modalTitle.textContent = 'Acceso de Solicitantes';
+          modalDesc.textContent = 'Ingresa con tu WhatsApp para solicitar y seguir tus servicios.';
+          submitBtn.textContent = '🔑 Iniciar Sesión';
+          submitBtn.style.background = 'var(--blue)';
+          submitBtn.style.color = 'white';
+        }
+        if (switchModeLink) switchModeLink.textContent = '¿No tienes cuenta? Regístrate aquí';
+      }
+
       revalidatePassword();
     }
 
-    tabSolicitante.addEventListener('click', () => switchRole('solicitante'));
-    tabTecnico.addEventListener('click', () => switchRole('tecnico'));
+    tabSolicitante.addEventListener('click', () => { selectedRole = 'solicitante'; updateUI(); });
+    tabTecnico.addEventListener('click',     () => { selectedRole = 'tecnico'; updateUI(); });
+    tabLogin.addEventListener('click',       () => { currentMode = 'login'; updateUI(); });
+    tabRegister.addEventListener('click',    () => { currentMode = 'registro'; updateUI(); });
+
+    switchModeLink?.addEventListener('click', () => {
+      currentMode = currentMode === 'login' ? 'registro' : 'login';
+      updateUI();
+    });
+
+    // Guardar referencia en el elemento para llamadas posteriores
+    modal._setTabAndMode = function(role, mode) {
+      selectedRole = role || 'solicitante';
+      currentMode  = mode || 'login';
+      updateUI();
+    };
 
     forgotPassLink.addEventListener('click', () => {
       forgotPanel.style.display = forgotPanel.style.display === 'none' ? 'block' : 'none';
@@ -414,9 +487,6 @@ export function openAuthModal(defaultTab = 'solicitante') {
   document.getElementById('auth-pass').value = '';
   document.getElementById('auth-pass').type = 'password';
   document.getElementById('auth-toggle-pass').textContent = '👁️';
-  document.getElementById('auth-register-fields').style.display = 'none';
-  document.getElementById('auth-tecnico-fields').style.display = 'none';
-  document.getElementById('auth-btn-submit').textContent = 'Ingresar';
   document.getElementById('auth-btn-submit').disabled = true;
   document.getElementById('auth-btn-submit').style.opacity = 0.5;
   document.getElementById('dot-letters').style.background = 'var(--red)';
@@ -424,10 +494,8 @@ export function openAuthModal(defaultTab = 'solicitante') {
   document.getElementById('dot-numbers').style.background = 'var(--red)';
   document.getElementById('auth-forgot-panel').style.display = 'none';
 
-  if (defaultTab === 'tecnico') {
-    document.getElementById('tab-rol-tecnico')?.click();
-  } else {
-    document.getElementById('tab-rol-solicitante')?.click();
+  if (typeof modal._setTabAndMode === 'function') {
+    modal._setTabAndMode(defaultTab, initialMode);
   }
 
   modal.classList.add('open');
