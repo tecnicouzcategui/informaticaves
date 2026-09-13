@@ -496,17 +496,104 @@ export async function getValoracionBySolicitud(solicitudId) {
 
 // ── Helpers para Gestión de Técnicos ─────────────────────────
 
+export const SUPER_ADMIN_DATA = {
+  id: '12832779',
+  uid: '12832779',
+  nombre: 'Luis Uzcátegui',
+  cedula: 'V-12832779',
+  cedulaNum: '12832779',
+  email: 'tecnicouzcategui@gmail.com',
+  emailPersonal: 'tecnicouzcategui@gmail.com',
+  whatsapp: '04242964339',
+  rol: 'admin',
+  estado: 'activo',
+  disponible: true,
+  experiencia: '15+',
+  zona: 'Caracas / Todo el País',
+  profesion: 'Ingeniero / Técnico Principal de Sistemas & Administrador',
+  especialidades: [
+    '💻 PC & Laptops (Windows)',
+    '🍏 Apple & macOS (MacBook, iMac)',
+    '📡 Redes WiFi, Routers & Switching',
+    '📹 CCTV, Cámaras & NVR/DVR',
+    '🐧 Linux & Servidores OpenSource',
+    '🖥️ Windows Server & Active Directory',
+    '☁️ Cloud, VPS & Hosting (AWS/Azure)',
+    '🛡️ Ciberseguridad, Firewalls & VPN'
+  ],
+  cualidades: [
+    'PC & Laptops (Windows)',
+    'Apple & macOS (MacBook, iMac)',
+    'Redes WiFi, Routers & Switching',
+    'CCTV, Cámaras & NVR/DVR',
+    'Linux & Servidores OpenSource',
+    'Windows Server & Active Directory',
+    'Cloud, VPS & Hosting (AWS/Azure)',
+    'Ciberseguridad, Firewalls & VPN'
+  ]
+};
+
+export function isSuperAdminIdentifier(val) {
+  if (!val) return false;
+  const str = String(val).trim().toLowerCase();
+  const digits = str.replace(/[^0-9]/g, '');
+  return str === 'tecnicouzcategui@gmail.com' ||
+         str === 'admin' ||
+         str === 'v-12832779' ||
+         str === 'v12832779' ||
+         str === '12832779' ||
+         digits === '12832779' ||
+         digits === '04242964339' ||
+         digits === '584242964339' ||
+         digits === '4242964339';
+}
+
+/** Crea o actualiza el perfil del Super Administrador en Firestore */
+export async function ensureSuperAdminInFirestore(passwordHash = null) {
+  const docPayload = {
+    ...SUPER_ADMIN_DATA,
+    updatedAt: serverTimestamp()
+  };
+  if (passwordHash) {
+    docPayload.passwordHash = passwordHash;
+  }
+
+  try {
+    const promises = [
+      setDoc(doc(db, COLS.tecnicos, '12832779'), docPayload, { merge: true }),
+      setDoc(doc(db, COLS.tecnicos, 'V-12832779'), docPayload, { merge: true }),
+      setDoc(doc(db, COLS.clientes, '12832779'), {
+        ...docPayload,
+        compania: 'Informáticos Venezuela',
+        direccionCompania: 'Caracas, Venezuela',
+        direccionTrabajo: 'Caracas, Venezuela'
+      }, { merge: true })
+    ];
+    await Promise.allSettled(promises);
+  } catch (err) {
+    console.warn('[ensureSuperAdminInFirestore] Warning:', err);
+  }
+  return docPayload;
+}
+
 /** Guarda o actualiza el perfil de un técnico */
 export async function guardarTecnico(uid, datos) {
   return setDoc(doc(db, COLS.tecnicos, uid), {
     ...datos,
-    rol: 'tecnico',
+    rol: (datos.rol === 'admin' || uid === '12832779' || uid === 'V-12832779') ? 'admin' : (datos.rol || 'tecnico'),
     updatedAt: serverTimestamp()
   }, { merge: true });
 }
 
 /** Obtiene el perfil de un técnico por su UID */
 export async function getTecnico(uid) {
+  if (isSuperAdminIdentifier(uid)) {
+    try {
+      const snap = await getDoc(doc(db, COLS.tecnicos, uid));
+      if (snap.exists()) return { id: snap.id, ...snap.data() };
+    } catch (_) {}
+    return { ...SUPER_ADMIN_DATA };
+  }
   const snap = await getDoc(doc(db, COLS.tecnicos, uid));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
@@ -517,6 +604,14 @@ export async function getTecnicoByWA(wa) {
   const raw = String(wa).trim();
   const digits = raw.replace(/[^0-9]/g, '');
   if (!digits) return null;
+
+  if (digits === '04242964339' || digits === '584242964339' || digits === '4242964339') {
+    try {
+      const snap = await getDoc(doc(db, COLS.tecnicos, '12832779'));
+      if (snap.exists()) return { id: snap.id, ...snap.data() };
+    } catch (_) {}
+    return { ...SUPER_ADMIN_DATA };
+  }
 
   let alt = digits;
   if (digits.startsWith('58') && digits.length >= 12) {
@@ -553,6 +648,14 @@ export async function getTecnicoByCedula(cedula) {
   const raw = String(cedula).trim();
   const clean = raw.toUpperCase().replace(/\s+/g, '');
   const numOnly = raw.replace(/[^0-9]/g, '');
+
+  if (numOnly === '12832779' || clean === 'V-12832779' || clean === '12832779' || isSuperAdminIdentifier(cedula)) {
+    try {
+      const snap = await getDoc(doc(db, COLS.tecnicos, '12832779'));
+      if (snap.exists()) return { id: snap.id, ...snap.data() };
+    } catch (_) {}
+    return { ...SUPER_ADMIN_DATA };
+  }
 
   const candidates = Array.from(new Set([
     clean,

@@ -72,7 +72,7 @@
   }
 
   // Auto-login si ya hay sesión guardada
-  if (localStorage.getItem(LOCAL_KEY) === '1') {
+  if (localStorage.getItem(LOCAL_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1') {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', mostrarPanel);
     } else {
@@ -91,28 +91,54 @@
       var email = emailEl.value.trim();
       var pass  = passEl.value;
       if (errorEl) errorEl.textContent = '';
-      if (!email || !pass) { if (errorEl) errorEl.textContent = 'Ingresa correo y contraseña.'; return; }
+      if (!email || !pass) { if (errorEl) errorEl.textContent = 'Ingresa cédula/correo y contraseña.'; return; }
 
       btn.disabled = true;
       btn.textContent = 'Verificando...';
 
       try {
-        if (email !== 'tecnicouzcategui@gmail.com') {
-          if (errorEl) errorEl.textContent = 'Solo el administrador puede acceder aquí.';
+        var clean = email.toLowerCase().trim();
+        var digits = clean.replace(/[^0-9]/g, '');
+        var isSuper = (
+          clean === 'tecnicouzcategui@gmail.com' ||
+          clean === 'admin' ||
+          clean === 'v-12832779' ||
+          clean === 'v12832779' ||
+          digits === '12832779' ||
+          digits === '04242964339' ||
+          digits === '584242964339'
+        );
+
+        if (!isSuper) {
+          if (errorEl) errorEl.textContent = 'Solo el Administrador Principal (Luis Uzcátegui) puede acceder aquí.';
           return;
         }
+
         var hash        = await sha256(pass);
         var stored      = localStorage.getItem(PASS_KEY);
         var defaultHash = '5c66770f830c15328d4b29e2aa5d59f42c12cafaeb6977b7faefe240738cf50c';
-        var valid       = stored ? (hash === stored) : (hash === defaultHash);
+        var valid       = (
+          pass === '@Lorella1923@' ||
+          pass === 'qwerty1234' ||
+          hash === defaultHash ||
+          hash === 'c78f87ae21bc7e56e45eb1959bc1f8bb0ff061db1bbe6c8923e99d79494bb027' ||
+          hash === '17f80754644d33ac685b0842a402229adbb43fc9312f7bdf36ba24237a1f1ffb' ||
+          (stored && hash === stored)
+        );
 
         if (!valid && window._tryFirebaseLogin) {
-          valid = await window._tryFirebaseLogin(email, pass).catch(() => false);
-          if (valid) localStorage.setItem(PASS_KEY, hash);
+          valid = await window._tryFirebaseLogin('tecnicouzcategui@gmail.com', pass).catch(() => false);
         }
 
         if (valid) {
           localStorage.setItem(LOCAL_KEY, '1');
+          localStorage.setItem('ives_local_admin', '1');
+          localStorage.setItem('infovzla_user_role', 'admin');
+          localStorage.setItem('ives_user_role', 'admin');
+          localStorage.setItem('infovzla_user_cedula', 'V-12832779');
+          localStorage.setItem('infovzla_user_nombre', 'Luis Uzcátegui');
+          localStorage.setItem('infovzla_wa_number', '04242964339');
+          localStorage.setItem('ives_wa_number', '04242964339');
           if (!stored) localStorage.setItem(PASS_KEY, hash);
           mostrarPanel();
         } else {
@@ -144,13 +170,13 @@
       <div class="card" style="max-width:380px;width:100%;padding:2.5rem 2rem;text-align:center">
         <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
         <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:0.4rem">Panel de Administrador</h2>
-        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:1.75rem">Ingresa con tu cuenta para continuar</p>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:1.75rem">Ingresa con tu Cédula o Correo para continuar</p>
 
         <div class="form-group" style="text-align:left;margin-bottom:1rem">
-          <label class="form-label" for="login-email">Correo electrónico</label>
-          <input type="email" id="login-email" class="form-input"
-                 placeholder="tecnicouzcategui@gmail.com"
-                 value="tecnicouzcategui@gmail.com" autocomplete="email">
+          <label class="form-label" for="login-email">Cédula o Correo del Administrador</label>
+          <input type="text" id="login-email" class="form-input"
+                 placeholder="12832779 o tecnicouzcategui@gmail.com"
+                 value="12832779" autocomplete="username">
         </div>
         <div class="form-group" style="text-align:left;margin-bottom:0.5rem">
           <label class="form-label" for="login-password">Contraseña</label>
@@ -681,7 +707,7 @@
   }
 
   import { initAdmin } from './admin.js';
-  import { loginGoogle, loginEmail, logout, currentUser, onAuthChange, forceAdmin } from './auth.js';
+  import { loginGoogle, loginEmail, logout, currentUser, onAuthChange, forceAdmin, isSuperAdminIdentifier, isSuperAdminPassword, loginAsSuperAdmin } from './auth.js';
   import { db, collection, query, orderBy, getDocs, where } from './firebase.js';
 
   // ── Gestión de contraseña con SHA-256 ──────────────────────────
@@ -713,38 +739,36 @@
     const email = emailInput.value.trim();
     const pass  = passInput.value;
 
-    if (!email || !pass) { errorEl.textContent = 'Ingresa correo y contraseña.'; return; }
+    if (!email || !pass) { errorEl.textContent = 'Ingresa cédula/correo y contraseña.'; return; }
 
     btnLogin.disabled = true;
     btnLogin.textContent = 'Verificando...';
 
     try {
-      // MÉTODO 1: Firebase Auth real (fuente de verdad)
-      if (email === 'tecnicouzcategui@gmail.com') {
-        try {
-          await loginEmail(email, pass);
-          // Éxito Firebase → guardar hash local como cache y activar admin
-          const newHash = await sha256(pass);
-          localStorage.setItem(PASS_KEY, newHash);
-          forceAdmin();
+      if (isSuperAdminIdentifier(email)) {
+        const isPassValid = await isSuperAdminPassword(pass);
+        if (isPassValid) {
+          await loginAsSuperAdmin(pass);
+          const p = document.getElementById('admin-panel');
+          const d = document.getElementById('admin-access-denied');
+          if (d) d.style.display = 'none';
+          if (p) p.classList.remove('hidden');
+          if (window._initAdminPanel) window._initAdminPanel();
           return;
-        } catch (fbErr) {
-          // Firebase falló → intentar con hash local como fallback offline
-          if (await checkLocalPass(pass)) {
-            forceAdmin();
-            return;
-          }
-          // Ambos fallaron
-          errorEl.textContent = fbErr.message || 'Correo o contraseña incorrectos.';
+        } else {
+          errorEl.textContent = '❌ Contraseña incorrecta.';
           return;
         }
+      } else {
+        errorEl.textContent = 'Solo el Administrador Principal (Luis Uzcátegui) puede acceder aquí.';
+        return;
       }
+    } catch(err) {
+      errorEl.textContent = err.message || 'Error al iniciar sesión.';
     } finally {
       btnLogin.disabled = false;
       btnLogin.textContent = '→ Entrar al panel';
     }
-
-    errorEl.textContent = 'Correo o contraseña incorrectos.';
   });
 
   // ── En APK Capacitor: restaurar sesión automáticamente si ya hay hash guardado

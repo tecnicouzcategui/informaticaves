@@ -11,7 +11,8 @@ import {
   getTodosServicios, COLS,
   actualizarEstadoCaso, getValoraciones,
   seedFAQsIfEmpty, getTodosTecnicos,
-  actualizarEstadoTecnico, asignarTecnicoASolicitud
+  actualizarEstadoTecnico, asignarTecnicoASolicitud,
+  isSuperAdminIdentifier
 } from './firebase.js';
 import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 
@@ -32,27 +33,33 @@ export function escapeHtml(str) {
 // ── Verificación de acceso ────────────────────────────────────
 export function initAdmin() {
   function handleAuth(user, admin) {
-    if (!user) {
-      // Fallback: chequear localStorage directamente por si el módulo aún no resolvió
-      const localAdmin = (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
-      if (!localAdmin) {
-        showAccesoDenegado('Debes iniciar sesión para acceder al panel.');
-        return;
-      }
-      // localStorage dice que es admin — mostrar panel igual
-      admin = true;
-      user = { displayName: 'Admin', email: ADMIN_EMAIL };
-    }
-    if (!admin) {
-      showAccesoDenegado('Acceso restringido al administrador.');
+    const localAdmin = (typeof localStorage !== 'undefined' && (
+      localStorage.getItem('infovzla_local_admin') === '1' ||
+      localStorage.getItem('ives_local_admin') === '1' ||
+      localStorage.getItem('infovzla_user_role') === 'admin' ||
+      isSuperAdminIdentifier(localStorage.getItem('infovzla_user_cedula'))
+    ));
+
+    const isSuper = admin || localAdmin || user?.email === ADMIN_EMAIL || isSuperAdminIdentifier(user?.uid);
+
+    if (!user && !isSuper) {
+      showAccesoDenegado('Debes iniciar sesión con tu cuenta de Administrador.');
       return;
     }
+
+    if (!isSuper) {
+      showAccesoDenegado('Acceso restringido al Administrador Principal.');
+      return;
+    }
+
     // Acceso concedido — cargar panel (solo una vez)
     document.getElementById('admin-access-denied')?.classList.add('hidden');
+    const deniedEl = document.getElementById('admin-access-denied');
+    if (deniedEl) deniedEl.style.display = 'none';
     document.getElementById('admin-panel')?.classList.remove('hidden');
 
     const welcome = document.getElementById('admin-welcome');
-    if (welcome) welcome.textContent = `Bienvenido, ${user.displayName || user.email}`;
+    if (welcome) welcome.textContent = `Bienvenido, Luis Uzcátegui (Super Administrador)`;
 
     if (_panelInited) return;
     _panelInited = true;

@@ -6,7 +6,8 @@ import {
   guardarCliente, getCliente, getClienteByWA, getClienteByCedula,
   guardarTecnico, getTecnico, getTecnicoByWA, getTecnicoByCedula,
   sha256, loginClienteByHash, setClientePasswordHash,
-  collection, doc, setDoc, getDocs, query, where, serverTimestamp
+  collection, doc, setDoc, getDocs, query, where, serverTimestamp,
+  SUPER_ADMIN_DATA, isSuperAdminIdentifier, ensureSuperAdminInFirestore, COLS
 } from './firebase.js';
 
 // ── Helper: Compresión de Imagen en Cliente (JPG/PNG a Base64 optimizado) ──
@@ -62,18 +63,109 @@ function checkPasswordRules(val) {
   return { hasLetters, hasNumbers, isValid: hasLetters && hasNumbers };
 }
 
-// ── Constantes ───────────────────────────────────────────────
-const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
-const WA_KEY         = 'infovzla_wa_number';
-const ROLE_KEY       = 'infovzla_user_role';
-const LOCAL_ADMIN_KEY = 'infovzla_local_admin';
+// ── Constantes del Super Administrador ───────────────────────
+export const ADMIN_EMAIL          = 'tecnicouzcategui@gmail.com';
+export const SUPER_ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
+export const SUPER_ADMIN_CEDULA   = 'V-12832779';
+export const SUPER_ADMIN_CEDULA_NUM = '12832779';
+export const SUPER_ADMIN_NOMBRE   = 'Luis Uzcátegui';
+export const SUPER_ADMIN_WA       = '04242964339';
+export const SUPER_ADMIN_HASH     = '5c66770f830c15328d4b29e2aa5d59f42c12cafaeb6977b7faefe240738cf50c';
+
+export { isSuperAdminIdentifier };
+
+export const WA_KEY               = 'infovzla_wa_number';
+export const ROLE_KEY             = 'infovzla_user_role';
+export const LOCAL_ADMIN_KEY      = 'infovzla_local_admin';
+
+// ── Verificación y Autenticación del Super Administrador ─────
+export async function isSuperAdminPassword(pass) {
+  if (!pass) return false;
+  const clean = String(pass).trim();
+  if (clean === '@Lorella1923@' || clean === 'qwerty1234') return true;
+  const h1 = await sha256(clean);
+  const h2 = await sha256(pass);
+  const storedH = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_admin_hash') || localStorage.getItem('admin_password_hash')) : null;
+  const knownHashes = [
+    SUPER_ADMIN_HASH,
+    'c78f87ae21bc7e56e45eb1959bc1f8bb0ff061db1bbe6c8923e99d79494bb027', // @Lorella1923@
+    '17f80754644d33ac685b0842a402229adbb43fc9312f7bdf36ba24237a1f1ffb'  // qwerty1234
+  ];
+  if (storedH) knownHashes.push(storedH);
+  if (knownHashes.includes(h1) || knownHashes.includes(h2)) return true;
+
+  try {
+    const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pass);
+    if (cred && cred.user) return true;
+  } catch (_) {}
+
+  return false;
+}
+
+export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
+  let hash = SUPER_ADMIN_HASH;
+  if (pass) {
+    try { hash = await sha256(pass); } catch(_) {}
+  }
+
+  localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+  localStorage.setItem('ives_local_admin', '1');
+  localStorage.setItem(ROLE_KEY, 'admin');
+  localStorage.setItem('ives_user_role', 'admin');
+  localStorage.setItem('infovzla_user_cedula', 'V-12832779');
+  localStorage.setItem('infovzla_user_nombre', 'Luis Uzcátegui');
+  localStorage.setItem(WA_KEY, '04242964339');
+  localStorage.setItem('ives_wa_number', '04242964339');
+  if (hash) {
+    localStorage.setItem('infovzla_admin_hash', hash);
+  }
+
+  const profile = { ...SUPER_ADMIN_DATA };
+  try {
+    localStorage.setItem('infovzla_tecnico_data', JSON.stringify(profile));
+  } catch (_) {}
+
+  isAdmin      = true;
+  isTecnico    = true;
+  userRol      = 'admin';
+  userWhatsApp = '04242964339';
+  userNombre   = 'Luis Uzcátegui';
+  userCedula   = 'V-12832779';
+  tecnicoData  = profile;
+  clienteData  = null;
+  currentUser  = {
+    uid: '12832779',
+    displayName: 'Luis Uzcátegui (Super Admin)',
+    email: ADMIN_EMAIL
+  };
+
+  try {
+    await Promise.race([
+      ensureSuperAdminInFirestore(hash),
+      new Promise(r => setTimeout(r, 1200))
+    ]);
+  } catch (_) {}
+
+  notifyListeners();
+  updateNavUI();
+  showToast('👑 ¡Bienvenido Super Administrador Luis Uzcátegui!', 'success');
+
+  if (redirectUrl) {
+    setTimeout(() => { window.location.href = redirectUrl; }, 350);
+  }
+  return true;
+}
 
 // ── Estado global inicializado optimistamente desde localStorage ──
-const _initAdmin  = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1');
-const _initRole   = typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || null) : null;
-const _initCedula = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_cedula') || null) : null;
-const _initWA     = typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null) : null;
-const _initNombre = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_nombre') || null) : null;
+const _rawAdmin = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem(ROLE_KEY) === 'admin');
+const _rawCedula = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_cedula') || null) : null;
+const _isSuperLocal = _rawAdmin || isSuperAdminIdentifier(_rawCedula);
+
+const _initAdmin  = _isSuperLocal;
+const _initRole   = _isSuperLocal ? 'admin' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || null) : null);
+const _initCedula = _isSuperLocal ? 'V-12832779' : _rawCedula;
+const _initWA     = _isSuperLocal ? '04242964339' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null) : null);
+const _initNombre = _isSuperLocal ? 'Luis Uzcátegui' : (typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_nombre') || null) : null);
 const _initFoto   = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_foto') || null) : null;
 
 let _initCliData = null;
@@ -95,7 +187,9 @@ try {
   const rawTec = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_tecnico_data') : null;
   if (rawTec) _initTecData = JSON.parse(rawTec);
 } catch(_) {}
-if (!_initTecData && (_initCedula || _initWA) && _initRole === 'tecnico') {
+if (_isSuperLocal && !_initTecData) {
+  _initTecData = { ...SUPER_ADMIN_DATA };
+} else if (!_initTecData && (_initCedula || _initWA) && _initRole === 'tecnico') {
   _initTecData = {
     cedula: _initCedula,
     whatsapp: _initWA,
@@ -105,16 +199,16 @@ if (!_initTecData && (_initCedula || _initWA) && _initRole === 'tecnico') {
 }
 
 export let isAdmin      = _initAdmin;
-export let isTecnico    = _initRole === 'tecnico';
+export let isTecnico    = _isSuperLocal || _initRole === 'tecnico';
 export let userRol      = _initAdmin ? 'admin' : _initRole;
 export let userWhatsApp = _initWA;
-export let userNombre   = _initAdmin ? 'Administrador Principal' : _initNombre;
-export let userCedula   = _initAdmin ? 'ADMIN' : _initCedula;
+export let userNombre   = _initAdmin ? 'Luis Uzcátegui' : _initNombre;
+export let userCedula   = _initAdmin ? 'V-12832779' : _initCedula;
 export let userFoto     = _initFoto;
 export let clienteData  = _initCliData;
 export let tecnicoData  = _initTecData;
 export let currentUser  = (_initAdmin || _initCedula || _initWA || _initRole)
-  ? { uid: _initCedula || _initWA || (_initAdmin ? 'admin' : 'user'), displayName: userNombre || (_initRole === 'tecnico' ? 'Técnico IT' : 'Solicitante'), email: _initAdmin ? ADMIN_EMAIL : '' }
+  ? { uid: _initAdmin ? '12832779' : (_initCedula || _initWA || 'user'), displayName: userNombre || (_initRole === 'tecnico' ? 'Técnico IT' : 'Solicitante'), email: _initAdmin ? ADMIN_EMAIL : '' }
   : null;
 
 // ── Callbacks registrados ────────────────────────────────────
@@ -1081,6 +1175,22 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             return;
           }
 
+          // ── RECONOCIMIENTO INMEDIATO DEL SUPER ADMINISTRADOR (Cédula 12832779 / Luis Uzcátegui)
+          if (isSuperAdminIdentifier(userInput)) {
+            const isPassValid = await isSuperAdminPassword(pass);
+            if (isPassValid) {
+              const dest = (selectedRole === 'tecnico' || window.location.pathname.includes('tecnico.html')) ? 'tecnico.html' : 'admin.html';
+              closeModalAuth();
+              await loginAsSuperAdmin(pass, dest);
+              return;
+            } else {
+              showToast('❌ Contraseña incorrecta para la cuenta de Super Administrador.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
+              return;
+            }
+          }
+
           if (selectedRole === 'tecnico') {
             // ── LOGIN EXCLUSIVO DE TÉCNICO: PROHIBIDO ENTRAR COMO SOLICITANTE
             let tecExistente = await getTecnicoByCedula(userInput);
@@ -1387,37 +1497,60 @@ export async function logout() {
 
 // ── Modo Admin Local ─────────────────────────────────────────
 export function forceAdmin() {
-  currentUser = { displayName: 'Administrador Principal', email: ADMIN_EMAIL, uid: 'local-admin' };
+  currentUser = { displayName: 'Luis Uzcátegui (Super Admin)', email: ADMIN_EMAIL, uid: '12832779' };
   isAdmin = true;
-  isTecnico = false;
+  isTecnico = true;
   userRol = 'admin';
-  userNombre = 'Administrador Principal';
-  userCedula = 'ADMIN';
+  userNombre = 'Luis Uzcátegui';
+  userCedula = 'V-12832779';
+  userWhatsApp = '04242964339';
+  tecnicoData = { ...SUPER_ADMIN_DATA };
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
+  localStorage.setItem('ives_local_admin', '1');
   localStorage.setItem(ROLE_KEY, 'admin');
+  localStorage.setItem('ives_user_role', 'admin');
+  localStorage.setItem('infovzla_user_cedula', 'V-12832779');
+  localStorage.setItem('infovzla_user_nombre', 'Luis Uzcátegui');
+  localStorage.setItem(WA_KEY, '04242964339');
+  localStorage.setItem('ives_wa_number', '04242964339');
+  try { localStorage.setItem('infovzla_tecnico_data', JSON.stringify(SUPER_ADMIN_DATA)); } catch(_) {}
   updateNavUI();
   notifyListeners();
 }
 
 (function restoreLocalAdmin() {
-  if (typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1')) {
-    currentUser = { displayName: 'Administrador Principal', email: ADMIN_EMAIL, uid: 'local-admin' };
-    isAdmin = true;
-    userRol = 'admin';
-    userNombre = 'Administrador Principal';
-    userCedula = 'ADMIN';
+  if (typeof localStorage !== 'undefined') {
+    const isLocalAdmin = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem(ROLE_KEY) === 'admin';
+    const isLocalSuperCed = isSuperAdminIdentifier(localStorage.getItem('infovzla_user_cedula'));
+    if (isLocalAdmin || isLocalSuperCed) {
+      currentUser = { displayName: 'Luis Uzcátegui (Super Admin)', email: ADMIN_EMAIL, uid: '12832779' };
+      isAdmin = true;
+      isTecnico = true;
+      userRol = 'admin';
+      userNombre = 'Luis Uzcátegui';
+      userCedula = 'V-12832779';
+      userWhatsApp = '04242964339';
+      tecnicoData = { ...SUPER_ADMIN_DATA };
+    }
   }
 })();
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
-  if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || user?.email === ADMIN_EMAIL) {
-    currentUser  = { displayName: 'Administrador Principal', email: ADMIN_EMAIL, uid: user?.uid || 'local-admin' };
+  const localIsAdmin = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem(ROLE_KEY) === 'admin';
+  const isCedAdmin   = isSuperAdminIdentifier(localStorage.getItem('infovzla_user_cedula'));
+  const isFbAdmin    = user?.email === ADMIN_EMAIL;
+
+  if (localIsAdmin || isCedAdmin || isFbAdmin) {
+    currentUser  = { displayName: 'Luis Uzcátegui (Super Admin)', email: ADMIN_EMAIL, uid: user?.uid || '12832779' };
     isAdmin      = true;
-    isTecnico    = false;
+    isTecnico    = true;
     userRol      = 'admin';
-    userNombre   = 'Administrador Principal';
-    userCedula   = 'ADMIN';
+    userNombre   = 'Luis Uzcátegui';
+    userCedula   = 'V-12832779';
+    userWhatsApp = '04242964339';
+    tecnicoData  = { ...SUPER_ADMIN_DATA };
+    try { localStorage.setItem('infovzla_tecnico_data', JSON.stringify(SUPER_ADMIN_DATA)); } catch(_) {}
     notifyListeners();
     updateNavUI();
     import('./admin-notifications.js').then(m => m.initGlobalAdminNotifications()).catch(console.error);
