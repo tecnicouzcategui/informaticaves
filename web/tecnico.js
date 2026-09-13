@@ -98,11 +98,17 @@ function parseItem(itemStr) {
 }
 
 // ── Inicialización ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+function bootTecnico() {
   initEvents();
   initSpecialtiesManager();
   checkAuthAndLoad();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootTecnico);
+} else {
+  bootTecnico();
+}
 
 function initEvents() {
   document.getElementById('btn-login-as-tec')?.addEventListener('click', () => {
