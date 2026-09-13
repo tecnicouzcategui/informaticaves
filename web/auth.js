@@ -83,36 +83,58 @@ export function openAuthModal(defaultTab = 'solicitante') {
 
         <!-- Campos de registro para Solicitante -->
         <div id="auth-register-fields" style="display:none; margin-bottom:1.25rem; background:rgba(99,179,237,0.06); padding:1rem; border-radius:10px; border:1px dashed rgba(99,179,237,0.3);">
-          <p style="color:var(--accent); font-size:0.82rem; margin-bottom:0.5rem; text-align:center; font-weight:600;">✨ ¡Completa tu registro de Solicitante!</p>
-          <div class="form-group">
-            <label class="form-label">Tu Nombre y Apellido</label>
+          <p style="color:var(--accent); font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">👤 Registro de Solicitante / Cliente</p>
+          
+          <div class="form-group" style="margin-bottom:0.6rem;">
+            <label class="form-label">Nombre y Apellido *</label>
             <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: Carlos Pérez">
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.6rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <div>
+              <label class="form-label">Cédula / RIF</label>
+              <input type="text" id="auth-cedula" class="form-input" placeholder="V-12345678">
+            </div>
+            <div>
+              <label class="form-label">Empresa / Gerencia</label>
+              <input type="text" id="auth-empresa" class="form-input" placeholder="Ej: Particular / Gerencia IT">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico (Opcional)</label>
+            <input type="email" id="auth-email-solicitante" class="form-input" placeholder="correo@ejemplo.com">
           </div>
         </div>
 
         <!-- Campos de registro para Técnico -->
         <div id="auth-tecnico-fields" style="display:none; margin-bottom:1.25rem; background:rgba(246,173,85,0.08); padding:1rem; border-radius:10px; border:1px dashed rgba(246,173,85,0.3);">
-          <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro de Técnico Profesional</p>
+          <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro de Técnico Profesional Help Desk</p>
           
-          <div class="form-group" style="margin-bottom:0.75rem;">
-            <label class="form-label">Nombre Completo</label>
+          <div class="form-group" style="margin-bottom:0.6rem;">
+            <label class="form-label">Nombre Completo *</label>
             <input type="text" id="tec-nombre" class="form-input" placeholder="Ej: Luis Rodríguez">
           </div>
 
-          <div class="form-group" style="margin-bottom:0.75rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <div class="form-group" style="margin-bottom:0.6rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
             <div>
-              <label class="form-label">Cédula / Documento</label>
+              <label class="form-label">Cédula / Doc. *</label>
               <input type="text" id="tec-cedula" class="form-input" placeholder="V-12345678">
             </div>
             <div>
-              <label class="form-label">Años de Exp.</label>
+              <label class="form-label">Años de Exp. *</label>
               <input type="number" id="tec-exp" class="form-input" placeholder="Ej: 5" min="0">
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom:0.75rem;">
-            <label class="form-label">Zona o Ciudad de Cobertura</label>
+          <div class="form-group" style="margin-bottom:0.6rem;">
+            <label class="form-label">Zona o Ciudad de Cobertura *</label>
             <input type="text" id="tec-zona" class="form-input" placeholder="Ej: Caracas Este, Chacao, Guarenas">
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.6rem;">
+            <label class="form-label">Correo Electrónico</label>
+            <input type="email" id="tec-email" class="form-input" placeholder="tecnico@ejemplo.com">
           </div>
 
           <div class="form-group" style="margin-bottom:0.25rem;">
@@ -122,8 +144,8 @@ export function openAuthModal(defaultTab = 'solicitante') {
               <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Redes & WiFi"> 📡 Redes & WiFi</label>
               <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="CCTV & Cámaras"> 📹 CCTV & Cámaras</label>
               <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Linux & Servidores"> 🐧 Linux & Servers</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Celulares & Móvil"> 📱 Celulares / Móvil</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Hardware & Electrónica"> ⚡ Hardware & Placas</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Impresoras & Periféricos"> 🖨️ Impresoras / Hardware</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Software & Sistemas"> 🌐 Software & Web</label>
             </div>
           </div>
         </div>
@@ -259,6 +281,7 @@ export function openAuthModal(defaultTab = 'solicitante') {
           const cedula = document.getElementById('tec-cedula').value.trim();
           const exp    = document.getElementById('tec-exp').value.trim();
           const zona   = document.getElementById('tec-zona').value.trim();
+          const emailInput = document.getElementById('tec-email')?.value.trim() || '';
           const espNodes = document.querySelectorAll('input[name="tec_esp"]:checked');
           const especialidades = Array.from(espNodes).map(n => n.value);
 
@@ -271,13 +294,14 @@ export function openAuthModal(defaultTab = 'solicitante') {
           await guardarTecnico(res.user.uid, {
             uid: res.user.uid,
             email: fakeEmail,
+            emailPersonal: emailInput,
             nombre: nombre,
             whatsapp: wa,
             cedula: cedula,
             experiencia: exp || '0',
             zona: zona || 'General',
             especialidades: especialidades,
-            estado: 'activo', // Activo por defecto o pendiente
+            estado: 'activo',
             disponible: true,
             passwordHash: hash,
             rol: 'tecnico'
@@ -292,7 +316,11 @@ export function openAuthModal(defaultTab = 'solicitante') {
 
         } else if (isRegisteringSolicitante) {
           // ── REGISTRO DE SOLICITANTE
-          const nombre = document.getElementById('auth-nombre').value.trim();
+          const nombre  = document.getElementById('auth-nombre').value.trim();
+          const cedula  = document.getElementById('auth-cedula')?.value.trim() || '';
+          const empresa = document.getElementById('auth-empresa')?.value.trim() || '';
+          const emailInput = document.getElementById('auth-email-solicitante')?.value.trim() || '';
+
           if (!nombre) { showToast('Por favor ingresa tu nombre', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Solicitante'; return; }
           
           const hash = await sha256(pass);
@@ -301,7 +329,10 @@ export function openAuthModal(defaultTab = 'solicitante') {
           await guardarCliente(res.user.uid, {
             uid: res.user.uid,
             email: fakeEmail,
+            emailPersonal: emailInput,
             nombre: nombre,
+            cedula: cedula,
+            empresa: empresa,
             whatsapp: wa,
             passwordHash: hash,
             rol: 'solicitante'

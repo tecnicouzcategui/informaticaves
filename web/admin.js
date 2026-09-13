@@ -372,7 +372,7 @@ async function cargarSolicitudes() {
           <td>${urgEmoji}</td>
           <td style="color:var(--text);font-weight:${s.leida ? '400' : '700'}">${s.nombre}</td>
           <td><a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></td>
-          <td style="color:var(--text-muted)">${s.servicio}</td>
+          <td style="color:var(--text-muted)"><code style="color:var(--blue);font-weight:700;font-size:0.75rem;margin-right:0.3rem;">${s.correlativo || ('#' + s.id.substring(0,6))}</code> ${s.servicio}</td>
           <td>${tecCell}</td>
           <td>${estadoChip(estadoActual)}</td>
           <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>

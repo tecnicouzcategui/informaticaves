@@ -518,7 +518,10 @@
             <div class="solicitud-card ${urgClass}" id="card-${s.id}">
               <div class="sol-header">
                 <div>
-                  <div class="sol-title">${urgEmoji} ${s.servicio || '—'}</div>
+                  <div class="sol-title">
+                    <span class="badge" style="background:rgba(99,179,237,0.15);color:var(--blue);font-family:monospace;font-size:0.75rem;margin-right:0.4rem;">${s.correlativo || ('#' + s.id.substring(0,6))}</span>
+                    ${urgEmoji} ${s.servicio || '—'}
+                  </div>
                   <div style="margin-top:0.3rem;">${badgeEstado(estado)}</div>
                 </div>
                 <div class="sol-fecha">${fecha}</div>

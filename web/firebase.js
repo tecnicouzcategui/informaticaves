@@ -109,12 +109,23 @@ export async function getTodosServicios() {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-/** Guarda una solicitud en Firestore */
+/** Guarda una solicitud / Ticket Help Desk en Firestore con correlativo automático */
 export async function guardarSolicitud(datos) {
+  let correlativo = 1001;
+  try {
+    const snap = await getDocs(collection(db, COLS.solicitudes));
+    correlativo = 1001 + snap.size;
+  } catch (_) {}
+
+  const correlativoStr = `TICK-${correlativo}`;
+
   return addDoc(collection(db, COLS.solicitudes), {
     ...datos,
+    correlativo: correlativoStr,
+    correlativoNum: correlativo,
     timestamp: serverTimestamp(),
-    leida: false
+    leida: false,
+    estadoCaso: datos.estadoCaso || 'pendiente'
   });
 }
 

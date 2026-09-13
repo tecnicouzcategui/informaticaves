@@ -100,17 +100,38 @@
       </div>
     </header>
 
-    <!-- ── Banner Únete como Técnico ─────────────────────────── -->
+    <!-- ── Portal Help Desk: Opciones de Registro / Entrada ───── -->
     <section class="section" style="padding-top:0.5rem; padding-bottom:1.5rem;">
-      <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.1), rgba(237,137,54,0.04)); border:1px solid rgba(246,173,85,0.25); text-align:center; padding:1.75rem 1.25rem;">
-        <div style="font-size:2rem; margin-bottom:0.4rem;">💼</div>
-        <h2 style="font-size:1.25rem; font-weight:800; color:var(--text); margin-bottom:0.35rem;">¿Eres Técnico Especialista?</h2>
-        <p style="color:var(--text-muted); font-size:0.86rem; max-width:540px; margin:0 auto 1.25rem;">
-          Únete a la Red Profesional de <strong>InformaticaVES</strong>. Recibe órdenes de servicio técnico en tu zona, gestiona tus clientes y haz crecer tu negocio.
-        </p>
-        <button id="btn-banner-join-tec" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.65rem 1.5rem;">
-          ⚡ Registrarme como Técnico Profesional
-        </button>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; max-width:760px; margin:0 auto;">
+        
+        <!-- Tarjeta Solicitante -->
+        <div class="card" style="background:linear-gradient(135deg, rgba(99,179,237,0.1), rgba(127,156,245,0.04)); border:1px solid rgba(99,179,237,0.25); text-align:center; padding:1.75rem 1.25rem; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="font-size:2.4rem; margin-bottom:0.5rem;">👤</div>
+            <h3 style="font-size:1.2rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">¿Eres Solicitante?</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem; line-height:1.5;">
+              Crea un <strong>Ticket Help Desk</strong>, reporta fallas en tus equipos o redes y recibe asistencia técnica con asignación directa.
+            </p>
+          </div>
+          <button id="btn-portal-solicitante" class="btn btn-primary w-full" style="font-weight:700;">
+            📝 Abrir Ticket / Soy Solicitante
+          </button>
+        </div>
+
+        <!-- Tarjeta Técnico -->
+        <div class="card" style="background:linear-gradient(135deg, rgba(246,173,85,0.1), rgba(237,137,54,0.04)); border:1px solid rgba(246,173,85,0.25); text-align:center; padding:1.75rem 1.25rem; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="font-size:2.4rem; margin-bottom:0.5rem;">⚡</div>
+            <h3 style="font-size:1.2rem; font-weight:800; color:var(--text); margin-bottom:0.4rem;">¿Eres Técnico IT?</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem; line-height:1.5;">
+              Únete a la Red Profesional de <strong>InformaticaVES Help Desk</strong>. Recibe órdenes asignadas por el Administrador y gestiona tus servicios.
+            </p>
+          </div>
+          <button id="btn-portal-tecnico" class="btn btn-primary w-full" style="background:#f6ad55; color:#1a202c; font-weight:700;">
+            🛠️ Registrarme como Técnico
+          </button>
+        </div>
+
       </div>
     </section>
 
@@ -243,10 +264,23 @@
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  // Login / Logout
+  // Login / Logout & Dual Help Desk Portal
   document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal('solicitante'));
   document.getElementById('hero-btn-join-tec')?.addEventListener('click', () => Auth.openAuthModal('tecnico'));
-  document.getElementById('btn-banner-join-tec')?.addEventListener('click', () => Auth.openAuthModal('tecnico'));
+  document.getElementById('btn-portal-solicitante')?.addEventListener('click', () => {
+    if (Auth.currentUser) {
+      window.location.href = 'solicitud.html';
+    } else {
+      Auth.openAuthModal('solicitante');
+    }
+  });
+  document.getElementById('btn-portal-tecnico')?.addEventListener('click', () => {
+    if (Auth.isTecnico) {
+      window.location.href = 'tecnico.html';
+    } else {
+      Auth.openAuthModal('tecnico');
+    }
+  });
 
   // Modal WhatsApp
   document.getElementById('wa-modal-save')?.addEventListener('click', () => {

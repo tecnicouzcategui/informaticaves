@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // tecnico.js — Lógica del Panel de Técnico
 // InformaticaVES | Red Profesional de Técnicos
 // ============================================================
@@ -244,7 +244,7 @@ function renderJobs() {
               <h3 style="font-size:1.05rem; font-weight:700; margin:0; color:var(--text);">${job.servicio || 'Servicio Técnico'}</h3>
               <span class="job-status-pill ${estadoClass}">${estadoLabel}</span>
             </div>
-            <div style="font-size:0.78rem; color:var(--text-dim);">Orden ID: <code style="color:var(--blue);">${job.id.substring(0, 8)}</code> • ${fechaStr}</div>
+            <div style="font-size:0.78rem; color:var(--text-dim);">Ticket: <code style="color:var(--blue);font-weight:700;">${job.correlativo || ('#' + job.id.substring(0, 8))}</code> • ${fechaStr}</div>
           </div>
           <div style="text-align:right;">
             <span class="badge ${urgencia === 'alta' ? 'badge-danger' : (urgencia === 'media' ? 'badge-warning' : 'badge-success')}" style="font-size:0.72rem; text-transform:uppercase;">
