@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mis Solicitudes | Informáticos Venezuela</title>
-  <meta name="description" content="Consulta el estado de tus solicitudes de soporte técnico con El Técnico Luis.">
+  <meta name="description" content="Consulta el estado de tus solicitudes y tickets de soporte en Informáticos Venezuela.">
   <meta name="theme-color" content="#63b3ed">
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -576,7 +576,7 @@
                        📄 Ver mi Factura
                      </a>`
                   : `<button class="btn btn-primary valorar-btn" data-id="${s.id}" data-servicio="${s.servicio}">⭐ Valorar este servicio</button>
-                     <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, mi solicitud de ${s.servicio} ya fue finalizada. ¡Gracias!`)}"
+                     <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Soporte Informáticos Venezuela, mi solicitud de ${s.servicio} ya fue finalizada. ¡Gracias!`)}"
                         class="btn btn-secondary w-full" target="_blank" style="margin-top:0.5rem;">
                        💬 Contactar Soporte
                      </a>`
@@ -584,7 +584,7 @@
               ` : estado === 'cancelado' ? `
                 <div style="text-align:center;color:var(--red);font-size:0.85rem;padding:0.5rem;">❌ Esta solicitud fue cancelada.</div>
               ` : `
-                <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, quiero consultar el estado de mi solicitud de ${s.servicio}.`)}"
+                <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Soporte Informáticos Venezuela, quiero consultar el estado de mi solicitud de ${s.servicio}.`)}"
                    class="btn btn-secondary w-full" target="_blank">
                   💬 Consultar a Soporte
                 </a>

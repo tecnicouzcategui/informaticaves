@@ -416,7 +416,7 @@ function mostrarConfirmacion(data, urgConfig) {
         <div style="font-size:3rem">✅</div>
         <h3 style="font-size:1.2rem;font-weight:800;margin:0.75rem 0 0.5rem">¡Solicitud enviada!</h3>
         <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem">
-          Luis Uzcátegui ha sido notificado y te contactará pronto por WhatsApp.
+          Tu solicitud ha sido registrada en el sistema de Help Desk y el equipo técnico te contactará a la brevedad.
         </p>
         <div class="alert alert-info" style="text-align:left">
           <div>
@@ -425,7 +425,7 @@ function mostrarConfirmacion(data, urgConfig) {
             <div><strong>WhatsApp:</strong> ${escapeHtml(data.whatsapp)}</div>
           </div>
         </div>
-        <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Luis, acabo de enviar una solicitud para: ${data.servicio}. Mi nombre es ${data.nombre}.`)}"
+        <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Soporte Informáticos Venezuela, acabo de enviar una solicitud para: ${data.servicio}. Mi nombre es ${data.nombre}.`)}"
            class="btn btn-primary" target="_blank" style="margin-top:0.75rem">
           💬 Contactar por WhatsApp
         </a>
