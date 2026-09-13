@@ -1206,6 +1206,10 @@ async function cargarTecnicos() {
 
   onSnapshot(collection(db, COLS.tecnicos), snap => {
     tecnicosList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const hasSuper = tecnicosList.some(t => isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email));
+    if (!hasSuper) {
+      tecnicosList.unshift({ ...SUPER_ADMIN_DATA });
+    }
     tecnicosList.sort((a, b) => {
       const tA = a.creadoEn?.seconds || a.updatedAt?.seconds || 0;
       const tB = b.creadoEn?.seconds || b.updatedAt?.seconds || 0;
@@ -1215,6 +1219,11 @@ async function cargarTecnicos() {
     actualizarStatTecnicos();
   }, err => {
     console.error('Error escuchando técnicos:', err);
+    if (!tecnicosList.length) {
+      tecnicosList = [{ ...SUPER_ADMIN_DATA }];
+      renderTablaTecnicos();
+      actualizarStatTecnicos();
+    }
   });
 }
 

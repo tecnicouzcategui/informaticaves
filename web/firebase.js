@@ -405,6 +405,9 @@ export const SERVICIOS_DEFAULT = [
 
 /** Inicializa Firestore con datos predeterminados si está vacío */
 export async function seedFirestoreIfEmpty() {
+  try {
+    ensureSuperAdminInFirestore().catch(() => {});
+  } catch (_) {}
   const snap = await getDocs(collection(db, COLS.servicios));
   if (snap.empty) {
     console.log('[Seed] Inicializando servicios en Firestore...');
@@ -542,6 +545,9 @@ export function isSuperAdminIdentifier(val) {
          str === 'v-12832779' ||
          str === 'v12832779' ||
          str === '12832779' ||
+         str === 'luis uzcategui' ||
+         str === 'luis uzcátegui' ||
+         str.includes('tecnicouzcategui') ||
          digits === '12832779' ||
          digits === '04242964339' ||
          digits === '584242964339' ||
@@ -714,8 +720,17 @@ export async function getTecnicoByCedula(cedula) {
 
 /** Obtiene todos los técnicos registrados (para el administrador) */
 export async function getTodosTecnicos() {
-  const snap = await getDocs(collection(db, COLS.tecnicos));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(collection(db, COLS.tecnicos));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const hasSuper = list.some(t => isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email));
+    if (!hasSuper) {
+      list.unshift({ ...SUPER_ADMIN_DATA });
+    }
+    return list;
+  } catch (_) {
+    return [{ ...SUPER_ADMIN_DATA }];
+  }
 }
 
 /** Actualiza el estado de aprobación de un técnico ('activo', 'pendiente', 'suspendido') */

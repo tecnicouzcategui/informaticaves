@@ -95,7 +95,10 @@ export async function isSuperAdminPassword(pass) {
   if (knownHashes.includes(h1) || knownHashes.includes(h2)) return true;
 
   try {
-    const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pass);
+    const cred = await Promise.race([
+      signInWithEmailAndPassword(auth, ADMIN_EMAIL, pass),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+    ]);
     if (cred && cred.user) return true;
   } catch (_) {}
 
