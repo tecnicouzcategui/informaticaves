@@ -1186,9 +1186,6 @@
     }
 
     btnClose?.addEventListener('click', closeModal);
-    modal?.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
 
     // Diagnóstico inteligente con IA local
     function ejecutarDiagnosticoIA(consulta) {

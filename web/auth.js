@@ -137,16 +137,15 @@ export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
   tecnicoData  = profile;
   clienteData  = null;
   currentUser  = {
+    ...SUPER_ADMIN_DATA,
     uid: '12832779',
     displayName: 'Luis Uzcátegui (Super Admin)',
     email: ADMIN_EMAIL
   };
 
+  // Sync to Firestore in background without blocking UI
   try {
-    await Promise.race([
-      ensureSuperAdminInFirestore(hash),
-      new Promise(r => setTimeout(r, 1200))
-    ]);
+    ensureSuperAdminInFirestore(hash).catch(err => console.warn('[ensureSuperAdminInFirestore] Background warning:', err));
   } catch (_) {}
 
   notifyListeners();
@@ -154,7 +153,9 @@ export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
   showToast('👑 ¡Bienvenido Super Administrador Luis Uzcátegui!', 'success');
 
   if (redirectUrl) {
-    setTimeout(() => { window.location.href = redirectUrl; }, 350);
+    setTimeout(() => { window.location.href = redirectUrl; }, 200);
+  } else {
+    setTimeout(() => { window.location.reload(); }, 200);
   }
   return true;
 }
@@ -257,10 +258,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         <h3 id="auth-modal-title" style="margin-bottom:0.35rem; text-align:center; font-size:1.25rem; font-weight:800;">Iniciar Sesión</h3>
         <p id="auth-modal-desc" style="text-align:center; color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">Ingresa tus credenciales para acceder al sistema.</p>
         
-        <!-- Campo Identificador para Login (Cédula o WhatsApp) -->
+        <!-- Campo Identificador para Login (Cédula, Correo o WhatsApp) -->
         <div id="auth-login-identifier-group" class="form-group" style="margin-bottom:1rem;">
-          <label id="auth-wa-label" class="form-label">Cédula (Usuario) o WhatsApp</label>
-          <input type="text" id="auth-wa" class="form-input" placeholder="Ej: V-12345678 o 04121234567" maxlength="25">
+          <label id="auth-wa-label" class="form-label">Cédula, Correo o WhatsApp</label>
+          <input type="text" id="auth-wa" class="form-input" placeholder="Ej: 12832779, tecnicouzcategui@gmail.com o 04242964339" maxlength="100">
         </div>
 
         <!-- ── Campos de Registro para Solicitante (TODOS OBLIGATORIOS) ── -->
@@ -808,17 +809,17 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
         if (selectedRole === 'tecnico') {
           modalTitle.textContent = 'Acceso de Técnicos IT';
-          modalDesc.textContent = 'Ingresa con tu Cédula o WhatsApp y contraseña.';
-          if (waLabel) waLabel.textContent = 'Cédula o WhatsApp';
-          if (waInput) waInput.placeholder = 'Ej: V-12345678 o 04121234567';
+          modalDesc.textContent = 'Ingresa con tu Cédula, Correo o WhatsApp y contraseña.';
+          if (waLabel) waLabel.textContent = 'Cédula, Correo o WhatsApp';
+          if (waInput) waInput.placeholder = 'Ej: 12832779, tecnicouzcategui@gmail.com o 04242964339';
           submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
           submitBtn.style.background = '#f6ad55';
           submitBtn.style.color = '#1a202c';
         } else {
           modalTitle.textContent = 'Acceso de Solicitantes';
-          modalDesc.textContent = 'Ingresa con tu Cédula (Usuario) o WhatsApp y contraseña.';
-          if (waLabel) waLabel.textContent = 'Cédula (Usuario) o WhatsApp';
-          if (waInput) waInput.placeholder = 'Ej: V-12345678 o 04121234567';
+          modalDesc.textContent = 'Ingresa con tu Cédula, Correo o WhatsApp y contraseña.';
+          if (waLabel) waLabel.textContent = 'Cédula, Correo o WhatsApp';
+          if (waInput) waInput.placeholder = 'Ej: 12832779, tecnicouzcategui@gmail.com o 04242964339';
           submitBtn.textContent = '🔑 Iniciar Sesión';
           submitBtn.style.background = 'var(--blue)';
           submitBtn.style.color = 'white';
@@ -892,9 +893,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     }
 
     closeBtn.addEventListener('click', closeModalAuth);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModalAuth();
-    });
 
     submitBtn.addEventListener('click', async () => {
       const pass = passInput.value;
@@ -1182,43 +1180,68 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           if (isSuperAdminIdentifier(userInput)) {
             const isPassValid = await isSuperAdminPassword(pass);
             if (isPassValid) {
-              const dest = (selectedRole === 'tecnico' || window.location.pathname.includes('tecnico.html')) ? 'tecnico.html' : 'admin.html';
+              const isTecnicoRoute = selectedRole === 'tecnico' || window.location.pathname.includes('tecnico.html');
+              const isAdminRoute   = window.location.pathname.includes('admin.html');
+              const isIndexRoute   = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '';
+              let dest = null;
+              if (isTecnicoRoute) {
+                dest = 'tecnico.html';
+              } else if (isAdminRoute) {
+                dest = 'admin.html';
+              } else if (isIndexRoute) {
+                dest = (selectedRole === 'solicitante') ? null : 'tecnico.html';
+              } else {
+                dest = 'admin.html';
+              }
               closeModalAuth();
               await loginAsSuperAdmin(pass, dest);
               return;
             } else {
               showToast('❌ Contraseña incorrecta para la cuenta de Super Administrador.', 'error');
-              submitBtn.disabled = false;
-              submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
               return;
             }
           }
 
           if (selectedRole === 'tecnico') {
             // ── LOGIN EXCLUSIVO DE TÉCNICO: PROHIBIDO ENTRAR COMO SOLICITANTE
-            let tecExistente = await getTecnicoByCedula(userInput);
+            let tecExistente = await Promise.race([
+              getTecnicoByCedula(userInput),
+              new Promise(r => setTimeout(() => r(null), 3000))
+            ]);
             if (!tecExistente) {
-              tecExistente = await getTecnicoByWA(userInput);
+              tecExistente = await Promise.race([
+                getTecnicoByWA(userInput),
+                new Promise(r => setTimeout(() => r(null), 3000))
+              ]);
             }
             if (!tecExistente && userInput.includes('@')) {
               try {
                 const qEmail = query(collection(db, COLS.tecnicos), where('email', '==', userInput.toLowerCase()));
-                const snapEmail = await getDocs(qEmail);
-                if (!snapEmail.empty) tecExistente = { id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() };
+                const snapEmail = await Promise.race([
+                  getDocs(qEmail),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+                ]);
+                if (snapEmail && !snapEmail.empty) tecExistente = { id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() };
               } catch (_) {}
             }
 
             if (!tecExistente) {
               // Comprobar si existe como Solicitante para orientar de inmediato al usuario
-              let cliExistente = await getClienteByCedula(userInput);
-              if (!cliExistente) cliExistente = await getClienteByWA(userInput);
+              let cliExistente = await Promise.race([
+                getClienteByCedula(userInput),
+                new Promise(r => setTimeout(() => r(null), 2500))
+              ]);
+              if (!cliExistente) {
+                cliExistente = await Promise.race([
+                  getClienteByWA(userInput),
+                  new Promise(r => setTimeout(() => r(null), 2500))
+                ]);
+              }
               if (cliExistente) {
                 showToast('ℹ️ Esta cuenta está registrada como Solicitante. Por favor cambia a la pestaña "👤 Solicitante" arriba para ingresar.', 'info');
               } else {
-                showToast(`❌ No se encontró ninguna cuenta de Técnico con la Cédula o número (${userInput}). Regístrate en la pestaña Registrarme.`, 'error');
+                showToast(`❌ No se encontró ninguna cuenta de Técnico con la Cédula, Correo o número (${userInput}). Regístrate en la pestaña Registrarme.`, 'error');
               }
-              submitBtn.disabled = false;
-              submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
               return;
             }
 
@@ -1241,7 +1264,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
               for (const candEmail of candEmails) {
                 try {
-                  await signInWithEmailAndPassword(auth, candEmail, pass);
+                  await Promise.race([
+                    signInWithEmailAndPassword(auth, candEmail, pass),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+                  ]);
                   authSuccess = true;
                   break;
                 } catch (_) {}
@@ -1251,10 +1277,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             if (authSuccess || hashMatch) {
               if (!tecExistente.passwordHash) {
                 try {
-                  await updateDoc(doc(db, COLS.tecnicos, tecExistente.id || tecExistente.uid), {
+                  updateDoc(doc(db, COLS.tecnicos, tecExistente.id || tecExistente.uid), {
                     passwordHash: hash,
                     updatedAt: serverTimestamp()
-                  });
+                  }).catch(() => {});
                 } catch (_) {}
               }
 
@@ -1290,36 +1316,49 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               return;
             } else {
               showToast('❌ Contraseña incorrecta para tu cuenta de Técnico.', 'error');
-              submitBtn.disabled = false;
-              submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
               return;
             }
 
           } else {
             // ── LOGIN EXCLUSIVO DE SOLICITANTE: PROHIBIDO ENTRAR COMO TÉCNICO
-            let cliExistente = await getClienteByCedula(userInput);
+            let cliExistente = await Promise.race([
+              getClienteByCedula(userInput),
+              new Promise(r => setTimeout(() => r(null), 3000))
+            ]);
             if (!cliExistente) {
-              cliExistente = await getClienteByWA(userInput);
+              cliExistente = await Promise.race([
+                getClienteByWA(userInput),
+                new Promise(r => setTimeout(() => r(null), 3000))
+              ]);
             }
             if (!cliExistente && userInput.includes('@')) {
               try {
                 const qEmail = query(collection(db, COLS.clientes), where('email', '==', userInput.toLowerCase()));
-                const snapEmail = await getDocs(qEmail);
-                if (!snapEmail.empty) cliExistente = { id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() };
+                const snapEmail = await Promise.race([
+                  getDocs(qEmail),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+                ]);
+                if (snapEmail && !snapEmail.empty) cliExistente = { id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() };
               } catch (_) {}
             }
 
             if (!cliExistente) {
               // Comprobar si existe como Técnico
-              let tecExistente = await getTecnicoByCedula(userInput);
-              if (!tecExistente) tecExistente = await getTecnicoByWA(userInput);
+              let tecExistente = await Promise.race([
+                getTecnicoByCedula(userInput),
+                new Promise(r => setTimeout(() => r(null), 2500))
+              ]);
+              if (!tecExistente) {
+                tecExistente = await Promise.race([
+                  getTecnicoByWA(userInput),
+                  new Promise(r => setTimeout(() => r(null), 2500))
+                ]);
+              }
               if (tecExistente) {
                 showToast('ℹ️ Esta cuenta está registrada como Técnico IT. Por favor cambia a la pestaña "🛠️ Soy Técnico" arriba para ingresar.', 'info');
               } else {
-                showToast(`❌ No se encontró ninguna cuenta de Solicitante con la Cédula o número (${userInput}). Regístrate en la pestaña Registrarme.`, 'error');
+                showToast(`❌ No se encontró ninguna cuenta de Solicitante con la Cédula, Correo o número (${userInput}). Regístrate en la pestaña Registrarme.`, 'error');
               }
-              submitBtn.disabled = false;
-              submitBtn.textContent = '🔑 Iniciar Sesión';
               return;
             }
 
@@ -1328,7 +1367,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             const hashTrimmed = await sha256(pass.trim());
             let loginPorHash = null;
             try {
-              loginPorHash = await loginClienteByHash(cliExistente.whatsapp || userInput, hash);
+              loginPorHash = await Promise.race([
+                loginClienteByHash(cliExistente.whatsapp || userInput, hash),
+                new Promise(r => setTimeout(() => r(null), 2000))
+              ]);
             } catch (_) {}
             const hashMatch = loginPorHash || (cliExistente.passwordHash && (cliExistente.passwordHash === hash || cliExistente.passwordHash === hashTrimmed)) || (cliExistente.password && (cliExistente.password === pass || cliExistente.password === pass.trim()));
 
@@ -1346,7 +1388,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
               for (const candEmail of candEmails) {
                 try {
-                  await signInWithEmailAndPassword(auth, candEmail, pass);
+                  await Promise.race([
+                    signInWithEmailAndPassword(auth, candEmail, pass),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+                  ]);
                   authSuccess = true;
                   break;
                 } catch (_) {}
@@ -1356,10 +1401,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             if (authSuccess || hashMatch) {
               if (!cliExistente.passwordHash) {
                 try {
-                  await updateDoc(doc(db, COLS.clientes, cliExistente.id || cliExistente.uid), {
+                  updateDoc(doc(db, COLS.clientes, cliExistente.id || cliExistente.uid), {
                     passwordHash: hash,
                     updatedAt: serverTimestamp()
-                  });
+                  }).catch(() => {});
                 } catch (_) {}
               }
 
@@ -1395,8 +1440,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               return;
             } else {
               showToast('❌ Contraseña incorrecta para tu cuenta de Solicitante.', 'error');
-              submitBtn.disabled = false;
-              submitBtn.textContent = '🔑 Iniciar Sesión';
               return;
             }
           }
@@ -1409,12 +1452,12 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           'auth/email-already-in-use': 'Este correo o usuario ya tiene una cuenta registrada.',
         };
         showToast(msgs[err.code] || 'Error: ' + err.message, 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : (currentMode === 'registro' ? 'Registrarme' : '🔑 Iniciar Sesión');
       } finally {
-        if (submitBtn && submitBtn.textContent === 'Procesando...') {
+        if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : (currentMode === 'registro' ? 'Registrarme' : '🔑 Iniciar Sesión');
+          submitBtn.textContent = selectedRole === 'tecnico'
+            ? (currentMode === 'registro' ? '🛠️ Crear Cuenta de Técnico' : '🔑 Iniciar Sesión Técnico')
+            : (currentMode === 'registro' ? '📝 Crear Cuenta de Solicitante' : '🔑 Iniciar Sesión');
         }
       }
     });
@@ -1933,11 +1976,22 @@ function openProfileDropdown(anchorEl) {
     await logout();
   });
 
+  dropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
   setTimeout(() => {
-    document.addEventListener('click', function handler() {
-      dropdown.remove();
-      document.removeEventListener('click', handler);
-    });
+    function outsideHandler(e) {
+      if (!dropdown.isConnected) {
+        document.removeEventListener('click', outsideHandler);
+        return;
+      }
+      if (!dropdown.contains(e.target) && (!anchorEl || !anchorEl.contains(e.target))) {
+        dropdown.remove();
+        document.removeEventListener('click', outsideHandler);
+      }
+    }
+    document.addEventListener('click', outsideHandler);
   }, 50);
 }
 
@@ -2053,8 +2107,14 @@ window._getSmartSupportUrl = getSmartSupportUrl;
 // ── Soporte Capacitor APK ─────────────────────────────────────
 if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
   window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
-    if (document.querySelector('.modal-backdrop.open')) {
-      document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+    const profileDd = document.getElementById('profile-dropdown');
+    if (profileDd) {
+      profileDd.remove();
+      return;
+    }
+    const openModals = document.querySelectorAll('.modal-backdrop.open');
+    if (openModals.length > 0) {
+      // Modals should only be closed via their explicit close button (✕)
       return;
     }
     if (canGoBack) {
