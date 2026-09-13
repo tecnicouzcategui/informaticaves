@@ -140,10 +140,10 @@
             </p>
           </div>
           <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:auto;">
-            <button id="btn-solicitante-registro" class="btn btn-primary w-full" style="font-weight:700; padding:0.75rem; font-size:0.92rem;">
+            <button id="btn-solicitante-registro" onclick="window.Auth ? window.Auth.openAuthModal('solicitante','registro',false) : (window.openAuthModal && window.openAuthModal('solicitante','registro',false))" class="btn btn-primary w-full" style="font-weight:700; padding:0.75rem; font-size:0.92rem;">
               📝 Registrarme como Solicitante
             </button>
-            <button id="btn-solicitante-login" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem;">
+            <button id="btn-solicitante-login" onclick="window.Auth ? window.Auth.openAuthModal('solicitante','login',false) : (window.openAuthModal && window.openAuthModal('solicitante','login',false))" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem;">
               🔑 Iniciar Sesión como Solicitante
             </button>
           </div>
@@ -159,10 +159,10 @@
             </p>
           </div>
           <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:auto;">
-            <button id="btn-tecnico-registro" class="btn btn-primary w-full" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.75rem; font-size:0.92rem;">
+            <button id="btn-tecnico-registro" onclick="window.Auth ? window.Auth.openAuthModal('tecnico','registro',false) : (window.openAuthModal && window.openAuthModal('tecnico','registro',false))" class="btn btn-primary w-full" style="background:#f6ad55; color:#1a202c; font-weight:700; padding:0.75rem; font-size:0.92rem;">
               🛠️ Registrarme como Técnico
             </button>
-            <button id="btn-tecnico-login" class="btn btn-secondary w-full" style="border-color:rgba(246,173,85,0.4); color:#f6ad55; font-weight:600; padding:0.65rem; font-size:0.88rem;">
+            <button id="btn-tecnico-login" onclick="window.Auth ? window.Auth.openAuthModal('tecnico','login',false) : (window.openAuthModal && window.openAuthModal('tecnico','login',false))" class="btn btn-secondary w-full" style="border-color:rgba(246,173,85,0.4); color:#f6ad55; font-weight:600; padding:0.65rem; font-size:0.88rem;">
               🔑 Iniciar Sesión como Técnico
             </button>
           </div>
@@ -1229,37 +1229,25 @@
   });
 
   // Solicitante Buttons (Guest)
-  document.getElementById('btn-solicitante-registro')?.addEventListener('click', () => {
-    if (Auth.currentUser) {
-      window.location.href = 'solicitud.html';
-    } else {
-      Auth.openAuthModal('solicitante', 'registro', true);
-    }
+  document.getElementById('btn-solicitante-registro')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    Auth.openAuthModal('solicitante', 'registro', false);
   });
 
-  document.getElementById('btn-solicitante-login')?.addEventListener('click', () => {
-    if (Auth.currentUser) {
-      window.location.href = 'mis-solicitudes.html';
-    } else {
-      Auth.openAuthModal('solicitante', 'login', true);
-    }
+  document.getElementById('btn-solicitante-login')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    Auth.openAuthModal('solicitante', 'login', false);
   });
 
   // Técnico Buttons (Guest)
-  document.getElementById('btn-tecnico-registro')?.addEventListener('click', () => {
-    if (Auth.isTecnico) {
-      window.location.href = 'tecnico.html';
-    } else {
-      Auth.openAuthModal('tecnico', 'registro', true);
-    }
+  document.getElementById('btn-tecnico-registro')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    Auth.openAuthModal('tecnico', 'registro', false);
   });
 
-  document.getElementById('btn-tecnico-login')?.addEventListener('click', () => {
-    if (Auth.isTecnico) {
-      window.location.href = 'tecnico.html';
-    } else {
-      Auth.openAuthModal('tecnico', 'login', true);
-    }
+  document.getElementById('btn-tecnico-login')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    Auth.openAuthModal('tecnico', 'login', false);
   });
 
   // Modal WhatsApp

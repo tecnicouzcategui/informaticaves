@@ -97,12 +97,13 @@ function notifyListeners() {
 }
 
 // ── Auth Modal Custom Multi-Rol ──────────────────────────────
-export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login', lockRole = true) {
+export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login', lockRole = false) {
   let modal = document.getElementById('modal-auth-custom');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'modal-auth-custom';
     modal.className = 'modal-backdrop';
+    modal.style.cssText = 'position:fixed !important; inset:0 !important; background:rgba(0,0,0,0.85) !important; backdrop-filter:blur(8px) !important; -webkit-backdrop-filter:blur(8px) !important; z-index:999999 !important; display:none; align-items:center !important; justify-content:center !important; padding:1rem !important; opacity:0; pointer-events:none; transition:opacity 0.25s ease;';
     modal.innerHTML = `
       <div class="modal-box" style="max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 2rem 1.75rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
         <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
@@ -760,7 +761,17 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     passInput.addEventListener('input', revalidatePassword);
     waInput.addEventListener('input', revalidatePassword);
 
-    closeBtn.addEventListener('click', () => modal.classList.remove('open'));
+    function closeModalAuth() {
+      modal.classList.remove('open');
+      modal.style.display = 'none';
+      modal.style.opacity = '0';
+      modal.style.pointerEvents = 'none';
+    }
+
+    closeBtn.addEventListener('click', closeModalAuth);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModalAuth();
+    });
 
     submitBtn.addEventListener('click', async () => {
       const pass = passInput.value;
@@ -1160,6 +1171,13 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
   }
 
   modal.classList.add('open');
+  modal.style.display = 'flex';
+  modal.style.opacity = '1';
+  modal.style.pointerEvents = 'all';
+}
+
+if (typeof window !== 'undefined') {
+  window.openAuthModal = openAuthModal;
 }
 
 export const loginGoogle = openAuthModal;
