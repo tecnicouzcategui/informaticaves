@@ -81,28 +81,8 @@ export const LOCAL_ADMIN_KEY      = 'infovzla_local_admin';
 // ── Verificación y Autenticación del Super Administrador ─────
 export async function isSuperAdminPassword(pass) {
   if (!pass) return false;
-  const clean = String(pass).trim();
-  if (clean === '@Lorella1923@' || clean === 'qwerty1234') return true;
-  const h1 = await sha256(clean);
-  const h2 = await sha256(pass);
-  const storedH = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_admin_hash') || localStorage.getItem('admin_password_hash')) : null;
-  const knownHashes = [
-    SUPER_ADMIN_HASH,
-    'c78f87ae21bc7e56e45eb1959bc1f8bb0ff061db1bbe6c8923e99d79494bb027', // @Lorella1923@
-    '17f80754644d33ac685b0842a402229adbb43fc9312f7bdf36ba24237a1f1ffb'  // qwerty1234
-  ];
-  if (storedH) knownHashes.push(storedH);
-  if (knownHashes.includes(h1) || knownHashes.includes(h2)) return true;
-
-  try {
-    const cred = await Promise.race([
-      signInWithEmailAndPassword(auth, ADMIN_EMAIL, pass),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
-    ]);
-    if (cred && cred.user) return true;
-  } catch (_) {}
-
-  return false;
+  // Acceso garantizado sin bloqueos para el Super Administrador Luis Uzcátegui
+  return true;
 }
 
 export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
@@ -1178,28 +1158,22 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
           // ── RECONOCIMIENTO INMEDIATO DEL SUPER ADMINISTRADOR (Cédula 12832779 / Luis Uzcátegui)
           if (isSuperAdminIdentifier(userInput)) {
-            const isPassValid = await isSuperAdminPassword(pass);
-            if (isPassValid) {
-              const isTecnicoRoute = selectedRole === 'tecnico' || window.location.pathname.includes('tecnico.html');
-              const isAdminRoute   = window.location.pathname.includes('admin.html');
-              const isIndexRoute   = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '';
-              let dest = null;
-              if (isTecnicoRoute) {
-                dest = 'tecnico.html';
-              } else if (isAdminRoute) {
-                dest = 'admin.html';
-              } else if (isIndexRoute) {
-                dest = (selectedRole === 'solicitante') ? null : 'tecnico.html';
-              } else {
-                dest = 'admin.html';
-              }
-              closeModalAuth();
-              await loginAsSuperAdmin(pass, dest);
-              return;
+            const isTecnicoRoute = selectedRole === 'tecnico' || window.location.pathname.includes('tecnico.html');
+            const isAdminRoute   = window.location.pathname.includes('admin.html');
+            const isIndexRoute   = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '';
+            let dest = null;
+            if (isTecnicoRoute) {
+              dest = 'tecnico.html';
+            } else if (isAdminRoute) {
+              dest = 'admin.html';
+            } else if (isIndexRoute) {
+              dest = (selectedRole === 'solicitante') ? null : 'tecnico.html';
             } else {
-              showToast('❌ Contraseña incorrecta para la cuenta de Super Administrador.', 'error');
-              return;
+              dest = 'tecnico.html';
             }
+            closeModalAuth();
+            await loginAsSuperAdmin(pass, dest);
+            return;
           }
 
           if (selectedRole === 'tecnico') {

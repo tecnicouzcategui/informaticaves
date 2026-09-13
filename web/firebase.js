@@ -548,10 +548,14 @@ export function isSuperAdminIdentifier(val) {
          str === 'luis uzcategui' ||
          str === 'luis uzcátegui' ||
          str.includes('tecnicouzcategui') ||
+         str.includes('12832779') ||
          digits === '12832779' ||
          digits === '04242964339' ||
          digits === '584242964339' ||
-         digits === '4242964339';
+         digits === '4242964339' ||
+         digits === '04167474753' ||
+         digits === '584167474753' ||
+         digits === '4167474753';
 }
 
 /** Crea o actualiza el perfil del Super Administrador en Firestore */
