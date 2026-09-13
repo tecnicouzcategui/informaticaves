@@ -53,7 +53,6 @@
     <div class="nav-actions">
       <span class="admin-badge hidden" id="admin-badge">Administrador</span>
       <div class="user-avatar hidden" id="user-avatar" title="Mi cuenta"></div>
-      <button class="btn-nav-auth" id="btn-login">Iniciar Sesión</button>
     </div>
   </div>
 </nav>
@@ -98,10 +97,10 @@
           </div>
           <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:auto;">
             <button id="btn-solicitante-registro" class="btn btn-primary w-full" style="font-weight:700; padding:0.75rem; font-size:0.92rem;">
-              📝 Registrarme / Abrir Ticket
+              📝 Registrarme como Solicitante
             </button>
             <button id="btn-solicitante-login" class="btn btn-secondary w-full" style="font-weight:600; padding:0.65rem; font-size:0.88rem;">
-              🔑 Iniciar Sesión Solicitante
+              🔑 Iniciar Sesión como Solicitante
             </button>
           </div>
         </div>
@@ -120,7 +119,7 @@
               🛠️ Registrarme como Técnico
             </button>
             <button id="btn-tecnico-login" class="btn btn-secondary w-full" style="border-color:rgba(246,173,85,0.4); color:#f6ad55; font-weight:600; padding:0.65rem; font-size:0.88rem;">
-              🔑 Iniciar Sesión Técnico
+              🔑 Iniciar Sesión como Técnico
             </button>
           </div>
         </div>
@@ -183,15 +182,12 @@
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  // Login / Logout & Dual Help Desk Portal
-  document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal('solicitante', 'login'));
-  
   // Solicitante Buttons
   document.getElementById('btn-solicitante-registro')?.addEventListener('click', () => {
     if (Auth.currentUser) {
       window.location.href = 'solicitud.html';
     } else {
-      Auth.openAuthModal('solicitante', 'registro');
+      Auth.openAuthModal('solicitante', 'registro', true);
     }
   });
 
@@ -199,7 +195,7 @@
     if (Auth.currentUser) {
       window.location.href = 'mis-solicitudes.html';
     } else {
-      Auth.openAuthModal('solicitante', 'login');
+      Auth.openAuthModal('solicitante', 'login', true);
     }
   });
 
@@ -208,7 +204,7 @@
     if (Auth.isTecnico) {
       window.location.href = 'tecnico.html';
     } else {
-      Auth.openAuthModal('tecnico', 'registro');
+      Auth.openAuthModal('tecnico', 'registro', true);
     }
   });
 
@@ -216,7 +212,7 @@
     if (Auth.isTecnico) {
       window.location.href = 'tecnico.html';
     } else {
-      Auth.openAuthModal('tecnico', 'login');
+      Auth.openAuthModal('tecnico', 'login', true);
     }
   });
 

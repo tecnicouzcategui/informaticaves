@@ -681,17 +681,16 @@ function updateNavUI() {
     navTecnico = document.getElementById('nav-tecnico');
   }
 
-  if (!btnLogin) return; 
+  btnLogin?.classList.add('hidden');
 
   if (currentUser) {
-    btnLogin.classList.add('hidden');
     userAvatar?.classList.remove('hidden');
     
     const nameToUse = userNombre || currentUser.displayName || (isAdmin ? 'Admin' : (isTecnico ? 'Técnico' : 'Usuario'));
     const initials = nameToUse.charAt(0).toUpperCase();
-    userAvatar.innerHTML = initials;
+    if (userAvatar) userAvatar.innerHTML = initials;
 
-    if (!userAvatar.dataset.profileBound) {
+    if (userAvatar && !userAvatar.dataset.profileBound) {
       userAvatar.dataset.profileBound = '1';
       userAvatar.style.cursor = 'pointer';
       userAvatar.addEventListener('click', (e) => {
@@ -730,7 +729,7 @@ function updateNavUI() {
       navMisSolicitudes?.classList.remove('hidden');
     }
   } else {
-    btnLogin?.classList.remove('hidden');
+    btnLogin?.classList.add('hidden');
     userAvatar?.classList.add('hidden');
     adminBadge?.classList.add('hidden');
     adminLink?.classList.add('hidden');
