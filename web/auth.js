@@ -1,18 +1,67 @@
-// ============================================================
-// auth.js — Autenticación Custom Multi-Rol (Clientes, Técnicos, Admin)
-// Informáticos Venezuela | El Técnico Luis
-// ============================================================
-
 import {
   auth, db,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut, onAuthStateChanged,
-  guardarCliente, getCliente, getClienteByWA,
+  guardarCliente, getCliente, getClienteByWA, getClienteByCedula,
   guardarTecnico, getTecnico, getTecnicoByWA,
   sha256, loginClienteByHash, setClientePasswordHash,
   doc, setDoc, serverTimestamp
 } from './firebase.js';
+
+// ── Helper: Compresión de Imagen en Cliente (JPG/PNG a Base64 optimizado) ──
+function processImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      return reject(new Error('El archivo debe ser una imagen en formato JPG o PNG.'));
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen seleccionada.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Helper: Validación de Contraseña (6 letras y 4 números obligatorios) ────
+function checkPasswordRules(val) {
+  const lettersCount = (val.match(/[a-zA-Z]/g) || []).length;
+  const numCount     = (val.match(/[0-9]/g) || []).length;
+  const hasLetters   = lettersCount >= 6;
+  const hasNumbers   = numCount >= 4;
+  return { hasLetters, hasNumbers, isValid: hasLetters && hasNumbers };
+}
 
 // ── Constantes ───────────────────────────────────────────────
 const ADMIN_EMAIL    = 'tecnicouzcategui@gmail.com';
@@ -52,7 +101,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     modal.id = 'modal-auth-custom';
     modal.className = 'modal-backdrop';
     modal.innerHTML = `
-      <div class="modal-box" style="max-width: 480px; padding: 2rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
+      <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 2rem 1.75rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
         <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
         
         <!-- Selector de Rol (visible solo si lockRole es falso) -->
@@ -68,52 +117,73 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         </div>
 
         <h3 id="auth-modal-title" style="margin-bottom:0.35rem; text-align:center; font-size:1.25rem; font-weight:800;">Iniciar Sesión</h3>
-        <p id="auth-modal-desc" style="text-align:center; color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">Ingresa con tu WhatsApp para acceder al sistema.</p>
+        <p id="auth-modal-desc" style="text-align:center; color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">Ingresa tus credenciales para acceder al sistema.</p>
         
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label">WhatsApp (Solo números)</label>
-          <input type="tel" id="auth-wa" class="form-input" placeholder="04121234567" maxlength="15">
-        </div>
-        
-        <div class="form-group" style="position:relative; margin-bottom:0.5rem;">
-          <label class="form-label">Contraseña</label>
-          <input type="password" id="auth-pass" class="form-input" placeholder="Tu contraseña">
-          <button id="auth-toggle-pass" style="position:absolute; right:10px; top:36px; background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">👁️</button>
-        </div>
-        
-        <div class="auth-dots" style="display:flex; flex-direction:column; gap:0.35rem; margin-bottom:1.25rem; font-size:0.75rem; color:var(--text-dim);">
-          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-letters" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Mínimo 4 letras</div>
-          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-upper" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Al menos 1 mayúscula</div>
-          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-numbers" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Mínimo 4 números</div>
+        <!-- Campo Identificador para Login (Cédula o WhatsApp) -->
+        <div id="auth-login-identifier-group" class="form-group" style="margin-bottom:1rem;">
+          <label id="auth-wa-label" class="form-label">Cédula (Usuario) o WhatsApp</label>
+          <input type="text" id="auth-wa" class="form-input" placeholder="Ej: V-12345678 o 04121234567" maxlength="25">
         </div>
 
-        <!-- Campos de registro para Solicitante -->
-        <div id="auth-register-fields" style="display:none; margin-bottom:1.25rem; background:rgba(99,179,237,0.06); padding:1rem; border-radius:10px; border:1px dashed rgba(99,179,237,0.3);">
-          <p style="color:var(--accent); font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">👤 Datos de Registro — Solicitante</p>
+        <!-- ── Campos de Registro para Solicitante (TODOS OBLIGATORIOS) ── -->
+        <div id="auth-register-fields" style="display:none; margin-bottom:1.25rem; background:rgba(99,179,237,0.06); padding:1.1rem; border-radius:10px; border:1px dashed rgba(99,179,237,0.3);">
+          <p style="color:var(--accent); font-size:0.84rem; margin-bottom:0.85rem; text-align:center; font-weight:800;">
+            👤 Registro de Solicitante <br><span style="font-size:0.75rem; font-weight:normal; color:var(--text-muted);">(Todos los requisitos son obligatorios)</span>
+          </p>
           
-          <div class="form-group" style="margin-bottom:0.6rem;">
-            <label class="form-label">Nombre y Apellido *</label>
-            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: Carlos Pérez">
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">1. Nombre y Apellido *</label>
+            <input type="text" id="auth-nombre" class="form-input" placeholder="Ej: María González" required>
           </div>
 
-          <div class="form-group" style="margin-bottom:0.6rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">2. Compañía / Empresa *</label>
+            <input type="text" id="auth-compania" class="form-input" placeholder="Ej: Corporación Andina C.A. / Particular" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">3. Dirección de la Compañía o Local *</label>
+            <textarea id="auth-dir-compania" class="form-input" rows="2" placeholder="Ej: Av. Principal, Torre Norte, Piso 4, Ofic. 4B" required style="resize:vertical; min-height:50px;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
             <div>
-              <label class="form-label">Cédula / RIF</label>
-              <input type="text" id="auth-cedula" class="form-input" placeholder="V-12345678">
+              <label class="form-label">4. Cédula (Tu Usuario) *</label>
+              <input type="text" id="auth-cedula" class="form-input" placeholder="V-12345678" required>
             </div>
             <div>
-              <label class="form-label">Empresa / Dirección</label>
-              <input type="text" id="auth-empresa" class="form-input" placeholder="Ej: Particular / Gerencia">
+              <label class="form-label">5. WhatsApp / Teléfono *</label>
+              <input type="tel" id="auth-wa-solicitante" class="form-input" placeholder="04121234567" maxlength="15" required>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Correo Electrónico (Opcional)</label>
-            <input type="email" id="auth-email-solicitante" class="form-input" placeholder="correo@ejemplo.com">
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">6. Correo Electrónico *</label>
+            <input type="email" id="auth-email-solicitante" class="form-input" placeholder="correo@ejemplo.com" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.65rem;">
+            <label class="form-label">7. Dirección de donde se hará el trabajo *</label>
+            <textarea id="auth-dir-trabajo" class="form-input" rows="2" placeholder="Dirección del servicio (o indicar 'Misma sede de la compañía')" required style="resize:vertical; min-height:50px;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.35rem;">
+            <label class="form-label">8. Foto de su persona (JPG o PNG) *</label>
+            <div style="display:flex; align-items:center; gap:0.75rem; background:rgba(0,0,0,0.25); padding:0.6rem; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+              <div id="auth-foto-preview-box" style="width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; overflow:hidden; border:2px solid var(--blue); flex-shrink:0;">
+                <img id="auth-foto-preview" src="" alt="Foto" style="display:none; width:100%; height:100%; object-fit:cover;">
+                <span id="auth-foto-placeholder" style="font-size:1.5rem;">📷</span>
+              </div>
+              <div style="flex:1;">
+                <input type="file" id="auth-foto-file" accept="image/jpeg,image/png,image/jpg" style="display:none;">
+                <button type="button" id="auth-btn-upload-foto" class="btn btn-sm" style="background:rgba(99,179,237,0.2); color:var(--text); border:1px solid rgba(99,179,237,0.4); font-size:0.78rem;">📁 Seleccionar Foto</button>
+                <span id="auth-foto-name" style="display:block; font-size:0.72rem; color:var(--text-muted); margin-top:3px; word-break:break-all;">Ningún archivo seleccionado</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Campos de registro para Técnico -->
+        <!-- ── Campos de Registro para Técnico ── -->
         <div id="auth-tecnico-fields" style="display:none; margin-bottom:1.25rem; background:rgba(246,173,85,0.08); padding:1rem; border-radius:10px; border:1px dashed rgba(246,173,85,0.3);">
           <p style="color:#f6ad55; font-size:0.82rem; margin-bottom:0.75rem; text-align:center; font-weight:700;">🛠️ Registro Profesional — Red de Técnicos IT</p>
           
@@ -128,14 +198,20 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               <input type="text" id="tec-cedula" class="form-input" placeholder="V-12345678">
             </div>
             <div>
-              <label class="form-label">Años de Exp. *</label>
-              <input type="number" id="tec-exp" class="form-input" placeholder="Ej: 5" min="0">
+              <label class="form-label">WhatsApp *</label>
+              <input type="tel" id="tec-wa" class="form-input" placeholder="04121234567" maxlength="15">
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom:0.6rem;">
-            <label class="form-label">Zona o Ciudad de Cobertura *</label>
-            <input type="text" id="tec-zona" class="form-input" placeholder="Ej: Caracas Este, Chacao, Guarenas">
+          <div class="form-group" style="margin-bottom:0.6rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+            <div>
+              <label class="form-label">Años de Exp. *</label>
+              <input type="number" id="tec-exp" class="form-input" placeholder="Ej: 5" min="0">
+            </div>
+            <div>
+              <label class="form-label">Zona de Cobertura *</label>
+              <input type="text" id="tec-zona" class="form-input" placeholder="Ej: Caracas, Valencia">
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom:0.6rem;">
@@ -156,7 +232,20 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           </div>
         </div>
         
-        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.75rem; font-weight:700; padding:0.8rem; font-size:0.95rem;">Ingresar</button>
+        <!-- Campo Contraseña -->
+        <div class="form-group" style="position:relative; margin-bottom:0.5rem;">
+          <label class="form-label">Contraseña *</label>
+          <input type="password" id="auth-pass" class="form-input" placeholder="Tu contraseña segura">
+          <button type="button" id="auth-toggle-pass" style="position:absolute; right:10px; top:36px; background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">👁️</button>
+        </div>
+        
+        <!-- Indicadores de Validación de Contraseña -->
+        <div class="auth-dots" style="display:flex; flex-direction:column; gap:0.35rem; margin-bottom:1.25rem; font-size:0.75rem; color:var(--text-dim);">
+          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-letters" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Obligatorio: Mínimo 6 letras (a-z, A-Z)</div>
+          <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-numbers" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Obligatorio: Mínimo 4 números (0-9)</div>
+        </div>
+        
+        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.75rem; font-weight:700; padding:0.85rem; font-size:0.95rem;">Ingresar</button>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; font-size:0.8rem;">
           <a id="auth-switch-mode-link" style="color:var(--text-muted); cursor:pointer; text-decoration:underline;">¿No tienes cuenta? Regístrate</a>
@@ -175,6 +264,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     let selectedRole = defaultTab || 'solicitante';
     let currentMode  = initialMode || 'login'; // 'login' | 'registro'
     let isRoleLocked = lockRole;
+    let uploadedFotoBase64 = null;
 
     const roleTabsContainer = document.getElementById('auth-role-tabs-container');
     const tabSolicitante = document.getElementById('tab-rol-solicitante');
@@ -184,17 +274,45 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     const switchModeLink = document.getElementById('auth-switch-mode-link');
     const modalTitle     = document.getElementById('auth-modal-title');
     const modalDesc      = document.getElementById('auth-modal-desc');
+    const loginIdentGroup = document.getElementById('auth-login-identifier-group');
+    const waLabel        = document.getElementById('auth-wa-label');
     const passInput      = document.getElementById('auth-pass');
     const waInput        = document.getElementById('auth-wa');
     const toggleBtn      = document.getElementById('auth-toggle-pass');
     const submitBtn      = document.getElementById('auth-btn-submit');
     const closeBtn       = document.getElementById('auth-close');
     const dotLetters     = document.getElementById('dot-letters');
-    const dotUpper       = document.getElementById('dot-upper');
     const dotNumbers     = document.getElementById('dot-numbers');
     const forgotPassLink = document.getElementById('auth-forgot-pass');
     const forgotPanel    = document.getElementById('auth-forgot-panel');
     const recoverBtn     = document.getElementById('auth-btn-recover');
+
+    // Manejo de carga de foto para solicitante
+    const fotoFileInput  = document.getElementById('auth-foto-file');
+    const fotoUploadBtn  = document.getElementById('auth-btn-upload-foto');
+    const fotoPreviewImg = document.getElementById('auth-foto-preview');
+    const fotoPlaceholder = document.getElementById('auth-foto-placeholder');
+    const fotoNameSpan   = document.getElementById('auth-foto-name');
+
+    fotoUploadBtn?.addEventListener('click', () => fotoFileInput?.click());
+
+    fotoFileInput?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        uploadedFotoBase64 = await processImageFile(file);
+        if (fotoPreviewImg) {
+          fotoPreviewImg.src = uploadedFotoBase64;
+          fotoPreviewImg.style.display = 'block';
+        }
+        if (fotoPlaceholder) fotoPlaceholder.style.display = 'none';
+        if (fotoNameSpan) fotoNameSpan.textContent = file.name;
+        revalidatePassword();
+      } catch (err) {
+        showToast(err.message || 'Error al procesar la foto', 'error');
+        fotoFileInput.value = '';
+      }
+    });
 
     function updateUI() {
       // Mostrar u ocultar selector de rol
@@ -223,6 +341,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         tabLogin.style.background = 'transparent';
         tabLogin.style.color = 'var(--text-muted)';
 
+        loginIdentGroup.style.display = 'none'; // El registro usa sus propios campos dedicados
+
         if (selectedRole === 'tecnico') {
           modalTitle.textContent = 'Registro de Técnico IT';
           modalDesc.textContent = 'Crea tu cuenta profesional para recibir órdenes de trabajo asignadas.';
@@ -233,7 +353,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           submitBtn.style.color = '#1a202c';
         } else {
           modalTitle.textContent = 'Registro de Solicitante';
-          modalDesc.textContent = 'Crea tu cuenta para abrir tickets y hacer seguimiento.';
+          modalDesc.textContent = 'Completa todos los requisitos obligatorios para crear tu cuenta.';
           document.getElementById('auth-register-fields').style.display = 'block';
           document.getElementById('auth-tecnico-fields').style.display = 'none';
           submitBtn.textContent = '📝 Crear Cuenta de Solicitante';
@@ -247,18 +367,23 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         tabRegister.style.background = 'transparent';
         tabRegister.style.color = 'var(--text-muted)';
 
+        loginIdentGroup.style.display = 'block';
         document.getElementById('auth-register-fields').style.display = 'none';
         document.getElementById('auth-tecnico-fields').style.display = 'none';
 
         if (selectedRole === 'tecnico') {
           modalTitle.textContent = 'Acceso de Técnicos IT';
-          modalDesc.textContent = 'Ingresa con tu WhatsApp para gestionar tus órdenes asignadas.';
+          modalDesc.textContent = 'Ingresa con tu WhatsApp o Cédula y contraseña.';
+          if (waLabel) waLabel.textContent = 'WhatsApp o Cédula';
+          if (waInput) waInput.placeholder = 'Ej: 04121234567 o V-12345678';
           submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
           submitBtn.style.background = '#f6ad55';
           submitBtn.style.color = '#1a202c';
         } else {
           modalTitle.textContent = 'Acceso de Solicitantes';
-          modalDesc.textContent = 'Ingresa con tu WhatsApp para abrir tickets y seguir tus servicios.';
+          modalDesc.textContent = 'Ingresa con tu Cédula (Usuario) o WhatsApp y contraseña.';
+          if (waLabel) waLabel.textContent = 'Cédula (Usuario) o WhatsApp';
+          if (waInput) waInput.placeholder = 'Ej: V-12345678 o 04121234567';
           submitBtn.textContent = '🔑 Iniciar Sesión';
           submitBtn.style.background = 'var(--blue)';
           submitBtn.style.color = 'white';
@@ -292,13 +417,13 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     });
 
     recoverBtn.addEventListener('click', () => {
-      const wa = waInput.value.trim().replace(/[^\d]/g, '');
-      if (!wa || wa.length < 10) {
-        showToast('Ingresa tu número de WhatsApp arriba primero.', 'error');
+      const wa = waInput.value.trim();
+      if (!wa) {
+        showToast('Ingresa tu Cédula o número de WhatsApp arriba primero.', 'error');
         return;
       }
       const adminWa = '584242964339';
-      const text = `Hola Soporte Informáticos Venezuela, soy ${selectedRole === 'tecnico' ? 'el técnico' : 'el usuario'} con WhatsApp ${wa} y solicito restablecer mi contraseña.`;
+      const text = `Hola Soporte Informáticos Venezuela, soy ${selectedRole === 'tecnico' ? 'el técnico' : 'el usuario'} con identificador ${wa} y solicito restablecer mi contraseña.`;
       window.open(`https://wa.me/${adminWa}?text=${encodeURIComponent(text)}`, '_blank');
       showToast('Se abrió WhatsApp para solicitar el reinicio.', 'info');
     });
@@ -315,42 +440,39 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
     function revalidatePassword() {
       const val = passInput.value;
-      const lettersCount = (val.match(/[a-zA-Z]/g) || []).length;
-      const upperCount = (val.match(/[A-Z]/g) || []).length;
-      const numCount = (val.match(/[0-9]/g) || []).length;
+      const passRules = checkPasswordRules(val);
 
-      const hasLetters = lettersCount >= 4;
-      const hasUpper = upperCount >= 1;
-      const hasNumbers = numCount >= 4;
+      dotLetters.style.background = passRules.hasLetters ? 'var(--green)' : 'var(--red)';
+      dotNumbers.style.background = passRules.hasNumbers ? 'var(--green)' : 'var(--red)';
 
-      dotLetters.style.background = hasLetters ? 'var(--green)' : 'var(--red)';
-      dotUpper.style.background = hasUpper ? 'var(--green)' : 'var(--red)';
-      dotNumbers.style.background = hasNumbers ? 'var(--green)' : 'var(--red)';
+      const isReg = currentMode === 'registro';
+      let ready = passRules.isValid;
 
-      if (hasLetters && hasUpper && hasNumbers && waInput.value.length >= 10) {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = 1;
-      } else {
-        submitBtn.disabled = true;
-        submitBtn.style.opacity = 0.5;
+      if (!isReg) {
+        // En login requiere identificador y clave válida
+        if (!waInput.value.trim()) ready = false;
       }
+
+      submitBtn.disabled = !ready;
+      submitBtn.style.opacity = ready ? 1 : 0.5;
     }
 
     passInput.addEventListener('input', revalidatePassword);
-    waInput.addEventListener('input', () => {
-      waInput.value = waInput.value.replace(/[^0-9]/g, '');
-      revalidatePassword();
-    });
+    waInput.addEventListener('input', revalidatePassword);
 
     closeBtn.addEventListener('click', () => modal.classList.remove('open'));
 
     submitBtn.addEventListener('click', async () => {
-      const wa = waInput.value.trim();
       const pass = passInput.value;
-      const fakeEmail = `${wa}@informaticosvenezuela.com`;
-      
-      const isRegisteringSolicitante = document.getElementById('auth-register-fields').style.display !== 'none';
-      const isRegisteringTecnico     = document.getElementById('auth-tecnico-fields').style.display !== 'none';
+      const passRules = checkPasswordRules(pass);
+
+      if (!passRules.isValid) {
+        showToast('La contraseña debe tener obligatoriamente al menos 6 letras y 4 números.', 'error');
+        return;
+      }
+
+      const isRegisteringSolicitante = currentMode === 'registro' && selectedRole === 'solicitante';
+      const isRegisteringTecnico     = currentMode === 'registro' && selectedRole === 'tecnico';
 
       submitBtn.textContent = 'Procesando...';
       submitBtn.disabled = true;
@@ -360,6 +482,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           // ── REGISTRO DE TÉCNICO
           const nombre = document.getElementById('tec-nombre').value.trim();
           const cedula = document.getElementById('tec-cedula').value.trim();
+          const wa     = document.getElementById('tec-wa')?.value.trim().replace(/[^0-9]/g, '') || '';
           const exp    = document.getElementById('tec-exp').value.trim();
           const zona   = document.getElementById('tec-zona').value.trim();
           const emailInput = document.getElementById('tec-email')?.value.trim() || '';
@@ -367,8 +490,11 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           const especialidades = Array.from(espNodes).map(n => n.value);
 
           if (!nombre) { showToast('Ingresa tu nombre completo', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
+          if (!cedula) { showToast('Ingresa tu cédula', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
+          if (!wa || wa.length < 10) { showToast('Ingresa tu número de WhatsApp (mínimo 10 dígitos)', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
           if (especialidades.length === 0) { showToast('Selecciona al menos una especialidad', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Técnico'; return; }
 
+          const fakeEmail = `${wa}@informaticosvenezuela.com`;
           const hash = await sha256(pass);
           const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
           
@@ -378,7 +504,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             emailPersonal: emailInput,
             nombre: nombre,
             whatsapp: wa,
-            cedula: cedula,
+            cedula: cedula.toUpperCase(),
             experiencia: exp || '0',
             zona: zona || 'General',
             especialidades: especialidades,
@@ -396,78 +522,163 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           return;
 
         } else if (isRegisteringSolicitante) {
-          // ── REGISTRO DE SOLICITANTE
-          const nombre  = document.getElementById('auth-nombre').value.trim();
-          const cedula  = document.getElementById('auth-cedula')?.value.trim() || '';
-          const empresa = document.getElementById('auth-empresa')?.value.trim() || '';
-          const emailInput = document.getElementById('auth-email-solicitante')?.value.trim() || '';
+          // ── REGISTRO DE SOLICITANTE (TODOS LOS REQUISITOS OBLIGATORIOS)
+          const nombre       = document.getElementById('auth-nombre')?.value.trim();
+          const compania     = document.getElementById('auth-compania')?.value.trim();
+          const dirCompania  = document.getElementById('auth-dir-compania')?.value.trim();
+          const cedula       = document.getElementById('auth-cedula')?.value.trim();
+          const wa           = document.getElementById('auth-wa-solicitante')?.value.trim().replace(/[^0-9]/g, '');
+          const emailInput   = document.getElementById('auth-email-solicitante')?.value.trim();
+          const dirTrabajo   = document.getElementById('auth-dir-trabajo')?.value.trim();
 
-          if (!nombre) { showToast('Por favor ingresa tu nombre', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Crear Cuenta de Solicitante'; return; }
-          
+          // Validaciones estrictas campo por campo
+          if (!nombre) {
+            showToast('El Nombre y Apellido es obligatorio.', 'error');
+            document.getElementById('auth-nombre')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!compania) {
+            showToast('El nombre de la Compañía o Empresa es obligatorio.', 'error');
+            document.getElementById('auth-compania')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!dirCompania) {
+            showToast('La Dirección de la Compañía o Local es obligatoria.', 'error');
+            document.getElementById('auth-dir-compania')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!cedula) {
+            showToast('La Cédula (que será su usuario) es obligatoria.', 'error');
+            document.getElementById('auth-cedula')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!wa || wa.length < 10) {
+            showToast('El número de WhatsApp / Teléfono es obligatorio (mínimo 10 dígitos).', 'error');
+            document.getElementById('auth-wa-solicitante')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!emailInput || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput)) {
+            showToast('El Correo Electrónico es obligatorio y debe tener formato válido.', 'error');
+            document.getElementById('auth-email-solicitante')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!dirTrabajo) {
+            showToast('La Dirección de donde se hará el trabajo es obligatoria.', 'error');
+            document.getElementById('auth-dir-trabajo')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+          if (!uploadedFotoBase64) {
+            showToast('Subir la Foto de su persona (JPG o PNG) es obligatorio.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+
+          // Verificar si ya existe cédula o WhatsApp
+          const yaExisteCed = await getClienteByCedula(cedula);
+          if (yaExisteCed) {
+            showToast('Esta cédula ya se encuentra registrada como solicitante.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+
+          const yaExisteWA = await getClienteByWA(wa);
+          if (yaExisteWA) {
+            showToast('Este número de WhatsApp ya se encuentra registrado.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
+
           const hash = await sha256(pass);
-          const res = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
-          
-          await guardarCliente(res.user.uid, {
-            uid: res.user.uid,
-            email: fakeEmail,
-            emailPersonal: emailInput,
+          let userCred = null;
+          try {
+            userCred = await createUserWithEmailAndPassword(auth, emailInput, pass);
+          } catch (authErr) {
+            if (authErr.code === 'auth/email-already-in-use') {
+              const fakeEmailCedula = `${cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com`;
+              userCred = await createUserWithEmailAndPassword(auth, fakeEmailCedula, pass);
+            } else {
+              throw authErr;
+            }
+          }
+
+          const uid = userCred ? userCred.user.uid : `cli_${Date.now()}`;
+
+          await guardarCliente(uid, {
+            uid: uid,
             nombre: nombre,
-            cedula: cedula,
-            empresa: empresa,
+            compania: compania,
+            direccionCompania: dirCompania,
+            cedula: cedula.toUpperCase(),
+            cedulaNum: cedula.replace(/[^0-9]/g, ''),
             whatsapp: wa,
+            email: emailInput,
+            emailPersonal: emailInput,
+            direccionTrabajo: dirTrabajo,
+            fotoPerfil: uploadedFotoBase64,
             passwordHash: hash,
             rol: 'solicitante'
           });
 
           localStorage.setItem(ROLE_KEY, 'solicitante');
           localStorage.setItem(WA_KEY, wa);
-          showToast('✅ Cuenta de Solicitante creada con éxito', 'success');
+          localStorage.setItem('infovzla_user_cedula', cedula.toUpperCase());
+          try { localStorage.setItem('infovzla_user_foto', uploadedFotoBase64); } catch(_) {}
+
+          showToast('✅ ¡Cuenta de Solicitante creada exitosamente!', 'success');
           modal.classList.remove('open');
+          window.location.reload();
           return;
 
         } else {
-          // ── LOGIN GENERAL: Detectar si es Técnico, Solicitante o Admin
-          const tecExistente = await getTecnicoByWA(wa);
-          const cliExistente = await getClienteByWA(wa);
+          // ── INICIAR SESIÓN (Solicitante o Técnico)
+          const userInput = waInput.value.trim();
+          if (!userInput) {
+            showToast('Ingresa tu Cédula o WhatsApp para ingresar.', 'error');
+            submitBtn.disabled = false; submitBtn.textContent = 'Ingresar'; return;
+          }
+
+          let cliExistente = await getClienteByCedula(userInput);
+          if (!cliExistente) {
+            cliExistente = await getClienteByWA(userInput.replace(/[^0-9]/g, ''));
+          }
+
+          let tecExistente = null;
+          if (!cliExistente) {
+            tecExistente = await getTecnicoByWA(userInput.replace(/[^0-9]/g, ''));
+          }
 
           if (!tecExistente && !cliExistente) {
-            // Usuario NUEVO -> Mostrar formulario según el tab actual
-            if (selectedRole === 'tecnico') {
-              document.getElementById('auth-tecnico-fields').style.display = 'block';
-              submitBtn.textContent = 'Crear Cuenta de Técnico';
-            } else {
-              document.getElementById('auth-register-fields').style.display = 'block';
-              submitBtn.textContent = 'Crear Cuenta de Solicitante';
-            }
+            showToast('Usuario o número no registrado. Selecciona "Registrarme" para crear tu cuenta.', 'info');
             submitBtn.disabled = false;
-            showToast('Número no registrado. Completa los datos para registrarte.', 'info');
+            submitBtn.textContent = 'Ingresar';
             return;
           }
 
+          const targetEmail = cliExistente ? (cliExistente.email || `${cliExistente.whatsapp}@informaticosvenezuela.com`) : (tecExistente.email || `${tecExistente.whatsapp}@informaticosvenezuela.com`);
+
           // Intentar Login con Firebase Auth
           try {
-            await signInWithEmailAndPassword(auth, fakeEmail, pass);
-            showToast('✅ Sesión iniciada', 'success');
+            await signInWithEmailAndPassword(auth, targetEmail, pass);
+            showToast('✅ Sesión iniciada con éxito', 'success');
             modal.classList.remove('open');
             
             if (tecExistente) {
               localStorage.setItem(ROLE_KEY, 'tecnico');
-              if (window.location.pathname.endsWith('solicitud.html') || window.location.pathname.endsWith('index.html')) {
-                window.location.href = 'tecnico.html';
-              }
+              window.location.href = 'tecnico.html';
             } else {
               localStorage.setItem(ROLE_KEY, 'solicitante');
+              window.location.reload();
             }
           } catch (e) {
-            // Verificar si tiene passwordHash en Firestore (recuperación/hash directo)
+            // Verificar si tiene passwordHash en Firestore
             const hash = await sha256(pass);
-            const loginPorHash = await loginClienteByHash(wa, hash);
-            if (loginPorHash || (tecExistente && tecExistente.passwordHash === hash)) {
+            const loginPorHash = await loginClienteByHash(cliExistente ? cliExistente.whatsapp : userInput, hash);
+            if (loginPorHash || (cliExistente && cliExistente.passwordHash === hash) || (tecExistente && tecExistente.passwordHash === hash)) {
               showToast('✅ Sesión iniciada', 'success');
               modal.classList.remove('open');
               if (tecExistente) {
                 localStorage.setItem(ROLE_KEY, 'tecnico');
                 window.location.href = 'tecnico.html';
+              } else {
+                localStorage.setItem(ROLE_KEY, 'solicitante');
+                window.location.reload();
               }
             } else {
               showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
@@ -481,7 +692,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         const msgs = {
           'auth/wrong-password': 'Contraseña incorrecta.',
           'auth/invalid-credential': 'Contraseña incorrecta.',
-          'auth/email-already-in-use': 'Este número ya tiene una cuenta registrada.',
+          'auth/email-already-in-use': 'Este correo o usuario ya tiene una cuenta registrada.',
         };
         showToast(msgs[err.code] || 'Error: ' + err.message, 'error');
         submitBtn.disabled = false;
@@ -498,12 +709,11 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
   document.getElementById('auth-btn-submit').disabled = true;
   document.getElementById('auth-btn-submit').style.opacity = 0.5;
   document.getElementById('dot-letters').style.background = 'var(--red)';
-  document.getElementById('dot-upper').style.background = 'var(--red)';
   document.getElementById('dot-numbers').style.background = 'var(--red)';
   document.getElementById('auth-forgot-panel').style.display = 'none';
 
   if (typeof modal._setTabAndMode === 'function') {
-    modal._setTabAndMode(defaultTab, initialMode);
+    modal._setTabAndMode(defaultTab, initialMode, lockRole);
   }
 
   modal.classList.add('open');

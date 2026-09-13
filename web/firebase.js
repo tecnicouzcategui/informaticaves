@@ -150,6 +150,24 @@ export async function getClienteByWA(wa) {
   return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
 
+/** Busca si una cédula ya tiene cuenta registrada */
+export async function getClienteByCedula(cedula) {
+  if (!cedula) return null;
+  const clean = cedula.trim().toUpperCase();
+  const q = query(collection(db, COLS.clientes), where('cedula', '==', clean));
+  const snap = await getDocs(q);
+  if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
+  
+  // Buscar también por versión normalizada
+  const numOnly = clean.replace(/[^0-9]/g, '');
+  if (numOnly && numOnly !== clean) {
+    const q2 = query(collection(db, COLS.clientes), where('cedula', '==', numOnly));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) return { id: snap2.docs[0].id, ...snap2.docs[0].data() };
+  }
+  return null;
+}
+
 /** Convierte texto a hash SHA-256 (nativo del navegador, sin dependencias) */
 export async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
