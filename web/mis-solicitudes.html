@@ -439,6 +439,16 @@
   let unsubscribe = null;
   let solicitudesCargadas = [];
 
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function normalizeWA(num) {
     return num.replace(/\s|-|\(|\)/g, '');
   }
@@ -580,8 +590,8 @@
               <div class="sol-header">
                 <div>
                   <div class="sol-title">
-                    <span class="badge" style="background:rgba(99,179,237,0.15);color:var(--blue);font-family:monospace;font-size:0.75rem;margin-right:0.4rem;">${s.correlativo || ('#' + s.id.substring(0,6))}</span>
-                    ${urgEmoji} ${s.servicio || '—'}
+                    <span class="badge" style="background:rgba(99,179,237,0.15);color:var(--blue);font-family:monospace;font-size:0.75rem;margin-right:0.4rem;">${escapeHtml(s.correlativo || ('#' + s.id.substring(0,6)))}</span>
+                    ${urgEmoji} ${escapeHtml(s.servicio || '—')}
                   </div>
                   <div style="margin-top:0.3rem;">${badgeEstado(estado)}</div>
                 </div>
@@ -591,12 +601,12 @@
               ${timeline(estado)}
 
               <div class="sol-detail">
-                <span><strong>Cliente:</strong> ${s.nombre}</span>
-                <span><strong>WhatsApp:</strong> ${s.whatsapp}</span>
-                <span><strong>Urgencia:</strong> ${urgEmoji} ${s.urgenciaLabel || s.urgencia}</span>
-                <span><strong>Precio base:</strong> $${s.precio} ${s.moneda}</span>
-                ${s.direccion ? `<span style="grid-column:1/-1"><strong>Dirección:</strong> ${s.direccion}</span>` : ''}
-                ${s.descripcion && s.descripcion !== '—' ? `<span style="grid-column:1/-1"><strong>Descripción:</strong> ${s.descripcion}</span>` : ''}
+                <span><strong>Cliente:</strong> ${escapeHtml(s.nombre)}</span>
+                <span><strong>WhatsApp:</strong> ${escapeHtml(s.whatsapp)}</span>
+                <span><strong>Urgencia:</strong> ${urgEmoji} ${escapeHtml(s.urgenciaLabel || s.urgencia)}</span>
+                <span><strong>Precio base:</strong> $${escapeHtml(String(s.precio || ''))} ${escapeHtml(s.moneda || 'USD')}</span>
+                ${s.direccion ? `<span style="grid-column:1/-1"><strong>Dirección:</strong> ${escapeHtml(s.direccion)}</span>` : ''}
+                ${s.descripcion && s.descripcion !== '—' ? `<span style="grid-column:1/-1"><strong>Descripción:</strong> ${escapeHtml(s.descripcion)}</span>` : ''}
               </div>
 
               <!-- Información del Técnico Asignado -->
@@ -604,8 +614,8 @@
                 <div style="background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.3);border-radius:10px;padding:0.75rem 1rem;margin:0.75rem 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
                   <div>
                     <div style="font-size:0.72rem;color:#f6ad55;font-weight:700;text-transform:uppercase;">⚡ Técnico Especialista Asignado:</div>
-                    <div style="color:var(--text);font-weight:700;font-size:0.95rem;">${s.tecnicoNombre}</div>
-                    ${s.tecnicoEspecialidad ? `<div style="font-size:0.75rem;color:var(--text-muted);">${s.tecnicoEspecialidad}</div>` : ''}
+                    <div style="color:var(--text);font-weight:700;font-size:0.95rem;">${escapeHtml(s.tecnicoNombre)}</div>
+                    ${s.tecnicoEspecialidad ? `<div style="font-size:0.75rem;color:var(--text-muted);">${escapeHtml(s.tecnicoEspecialidad)}</div>` : ''}
                   </div>
                   ${s.tecnicoWhatsApp ? `
                     <a href="https://wa.me/${s.tecnicoWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${s.tecnicoNombre}, te escribo referente a mi solicitud de ${s.servicio} en Informáticos Venezuela.`)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;border:none;font-size:0.78rem;font-weight:600;text-decoration:none;">
@@ -622,7 +632,7 @@
 
               ${s.notaTecnica ? `
                 <div style="background:rgba(0,0,0,0.25);border-left:3px solid #f6ad55;border-radius:6px;padding:0.6rem 0.85rem;margin:0.75rem 0;font-size:0.8rem;color:#fbd38d;">
-                  <strong>🔧 Reporte Técnico:</strong> ${s.notaTecnica}
+                  <strong>🔧 Reporte Técnico:</strong> ${escapeHtml(s.notaTecnica)}
                 </div>
               ` : ''}
 

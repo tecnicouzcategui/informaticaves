@@ -22,6 +22,16 @@ function _tocarAlarma() {
   } catch(e) { console.warn('Audio error:', e); }
 }
 
+function _escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function _mostrarModalAlerta(datos) {
   let modal = document.getElementById('modal-nueva-solicitud-alerta');
   if (!modal) {
@@ -43,10 +53,10 @@ function _mostrarModalAlerta(datos) {
   
   const urgLabel = datos.urgencia === 'alta' ? '🔴 ALTA' : datos.urgencia === 'media' ? '🟡 MEDIA' : '🟢 BAJA';
   document.getElementById('alerta-contenido').innerHTML =
-    `<p>👤 <strong>Cliente:</strong> ${datos.nombre || '—'}</p>
-     <p>📱 <strong>WhatsApp:</strong> <span style="color:#68d391">${datos.whatsapp || '—'}</span></p>
+    `<p>👤 <strong>Cliente:</strong> ${_escapeHtml(datos.nombre || '—')}</p>
+     <p>📱 <strong>WhatsApp:</strong> <span style="color:#68d391">${_escapeHtml(datos.whatsapp || '—')}</span></p>
      <p>⚡ <strong>Urgencia:</strong> ${urgLabel}</p>
-     <p>🔧 <strong>Servicio:</strong> ${datos.servicio || '—'}</p>`;
+     <p>🔧 <strong>Servicio:</strong> ${_escapeHtml(datos.servicio || '—')}</p>`;
   
   modal.style.display = 'flex';
   

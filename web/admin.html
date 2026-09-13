@@ -103,7 +103,7 @@
         }
         var hash        = await sha256(pass);
         var stored      = localStorage.getItem(PASS_KEY);
-        var defaultHash = await sha256('@Amy.2023');
+        var defaultHash = '5c66770f830c15328d4b29e2aa5d59f42c12cafaeb6977b7faefe240738cf50c';
         var valid       = stored ? (hash === stored) : (hash === defaultHash);
 
         if (!valid && window._tryFirebaseLogin) {
@@ -592,7 +592,7 @@
 
   // ── Gestión de contraseña con SHA-256 ──────────────────────────
   const PASS_KEY     = 'infovzla_admin_hash';
-  const DEFAULT_PASS = '@Amy.2023';
+  const DEFAULT_HASH = '5c66770f830c15328d4b29e2aa5d59f42c12cafaeb6977b7faefe240738cf50c';
 
   async function sha256(text) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -600,7 +600,7 @@
   }
 
   async function getStoredHash() {
-    return localStorage.getItem(PASS_KEY) || await sha256(DEFAULT_PASS);
+    return localStorage.getItem(PASS_KEY) || DEFAULT_HASH;
   }
 
   async function checkLocalPass(pass) {

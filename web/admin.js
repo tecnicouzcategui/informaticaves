@@ -18,6 +18,17 @@ import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 const ADMIN_EMAIL = 'tecnicouzcategui@gmail.com';
 let _panelInited = false;
 
+// ── Helper de Sanitización XSS ───────────────────────────────
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ── Verificación de acceso ────────────────────────────────────
 export function initAdmin() {
   function handleAuth(user, admin) {
@@ -357,12 +368,12 @@ async function cargarSolicitudes() {
       const estadoActual = s.estadoCaso || 'pendiente';
       const val = valoracionMap[s.id];
       const ratingCell = val
-        ? `<span style="color:#f6e05e;font-size:0.9rem;" title="${val.comentario || ''}">${'⭐'.repeat(val.estrellas)}${val.estrellas}/5</span>`
+        ? `<span style="color:#f6e05e;font-size:0.9rem;" title="${escapeHtml(val.comentario || '')}">${'⭐'.repeat(val.estrellas)}${val.estrellas}/5</span>`
         : `<span style="color:var(--text-dim);font-size:0.8rem;">—</span>`;
       
       const tecCell = s.tecnicoNombre
         ? `<div style="display:flex;flex-direction:column;gap:0.2rem;">
-             <span class="badge" style="background:rgba(246,173,85,0.15);color:#f6ad55;border:1px solid rgba(246,173,85,0.3);font-size:0.75rem;white-space:nowrap;">⚡ ${s.tecnicoNombre}</span>
+             <span class="badge" style="background:rgba(246,173,85,0.15);color:#f6ad55;border:1px solid rgba(246,173,85,0.3);font-size:0.75rem;white-space:nowrap;">⚡ ${escapeHtml(s.tecnicoNombre)}</span>
              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:0.1rem 0.3rem;color:var(--blue);" onclick="window.abrirModalAsignar('${s.id}')">🔄 Reasignar</button>
            </div>`
         : `<button class="btn btn-sm" style="background:rgba(246,173,85,0.2);color:#f6ad55;border:1px solid rgba(246,173,85,0.4);font-size:0.75rem;padding:0.25rem 0.6rem;font-weight:700;" onclick="window.abrirModalAsignar('${s.id}')">⚡ Asignar</button>`;
@@ -370,9 +381,9 @@ async function cargarSolicitudes() {
       return `
         <tr style="${!s.leida ? 'background:rgba(99,179,237,0.04)' : ''}">
           <td>${urgEmoji}</td>
-          <td style="color:var(--text);font-weight:${s.leida ? '400' : '700'}">${s.nombre}</td>
-          <td><a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></td>
-          <td style="color:var(--text-muted)"><code style="color:var(--blue);font-weight:700;font-size:0.75rem;margin-right:0.3rem;">${s.correlativo || ('#' + s.id.substring(0,6))}</code> ${s.servicio}</td>
+          <td style="color:var(--text);font-weight:${s.leida ? '400' : '700'}">${escapeHtml(s.nombre)}</td>
+          <td><a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${escapeHtml(s.whatsapp)}</a></td>
+          <td style="color:var(--text-muted)"><code style="color:var(--blue);font-weight:700;font-size:0.75rem;margin-right:0.3rem;">${escapeHtml(s.correlativo || ('#' + s.id.substring(0,6)))}</code> ${escapeHtml(s.servicio)}</td>
           <td>${tecCell}</td>
           <td>${estadoChip(estadoActual)}</td>
           <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
@@ -469,16 +480,16 @@ window.verDetalles = function(id) {
   const estadoLabel = estadoMap[s.estadoCaso || 'pendiente'] || '🟡 Pendiente';
 
   content.innerHTML = `
-    <p><strong>Cliente:</strong> ${s.nombre || '—'}</p>
-    <p><strong>WhatsApp:</strong> <a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${s.whatsapp}</a></p>
-    <p><strong>Servicio:</strong> ${s.servicio}</p>
-    <p><strong>Urgencia:</strong> <span style="text-transform:capitalize">${s.urgencia}</span></p>
+    <p><strong>Cliente:</strong> ${escapeHtml(s.nombre || '—')}</p>
+    <p><strong>WhatsApp:</strong> <a href="https://wa.me/${sanitizeNum(s.whatsapp)}" target="_blank" style="color:var(--green)">${escapeHtml(s.whatsapp)}</a></p>
+    <p><strong>Servicio:</strong> ${escapeHtml(s.servicio)}</p>
+    <p><strong>Urgencia:</strong> <span style="text-transform:capitalize">${escapeHtml(s.urgencia)}</span></p>
     <p><strong>Estado actual:</strong> ${estadoLabel}</p>
-    <p><strong>Dirección:</strong> ${s.direccion || '—'}</p>
+    <p><strong>Dirección:</strong> ${escapeHtml(s.direccion || '—')}</p>
     <p><strong>Mapa:</strong> ${mapaLink}</p>
     <p><strong>Fecha:</strong> ${fecha}</p>
     <hr style="border:0;border-top:1px solid var(--border);margin:1rem 0">
-    <p><strong>Detalles adicionales:</strong><br>${s.detalles || s.descripcion || 'Sin detalles'}</p>
+    <p><strong>Detalles adicionales:</strong><br>${escapeHtml(s.detalles || s.descripcion || 'Sin detalles')}</p>
   `;
 
   const btnFactura = document.getElementById('btn-factura');
@@ -514,7 +525,7 @@ window.verDetalles = function(id) {
         <div style="text-align:center;margin-bottom:0.5rem;color:#68d391;font-weight:700;font-size:0.85rem;">🔒 CASO CERRADO — Valorado por el cliente</div>
         <div style="text-align:center;font-size:1.4rem;margin:0.4rem 0;">${estrellasHTML}</div>
         <div style="text-align:center;color:var(--text);font-weight:600;font-size:0.9rem;">${totalEstrellas}/5 estrellas</div>
-        ${valoracion.comentario ? `<div style="margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.85rem;color:var(--text-dim);">"${valoracion.comentario}"</div>` : ''}
+        ${valoracion.comentario ? `<div style="margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.85rem;color:var(--text-dim);">"${escapeHtml(valoracion.comentario)}"</div>` : ''}
       `;
       sello.style.display = 'block';
       btnFactura.classList.remove('hidden');
@@ -604,10 +615,10 @@ function renderFAQList() {
     <div class="card" style="margin-bottom:0.75rem">
       <div class="flex" style="justify-content:space-between;align-items:flex-start;gap:1rem">
         <div style="flex:1">
-          <div style="font-weight:700;color:var(--text);margin-bottom:0.25rem">${f.pregunta}</div>
-          <div style="font-size:0.85rem;color:var(--text-muted)">${f.respuesta}</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:0.25rem">${escapeHtml(f.pregunta)}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted)">${escapeHtml(f.respuesta)}</div>
           <div style="margin-top:0.5rem">
-            <span class="status-chip ${f.estado === 'publicado' ? 'status-published' : 'status-draft'}">${f.estado}</span>
+            <span class="status-chip ${f.estado === 'publicado' ? 'status-published' : 'status-draft'}">${escapeHtml(f.estado)}</span>
             <span style="font-size:0.75rem;color:var(--text-dim);margin-left:0.5rem">Orden: ${f.orden || 0}</span>
           </div>
         </div>
@@ -837,10 +848,10 @@ async function cargarClientes() {
             <div class="val-card">
               <div class="val-card-stars">${starsHTML(v.estrellas)}</div>
               <div class="val-card-body">
-                <div class="val-card-name">${v.clienteNombre || 'Cliente'}</div>
-                <div class="val-card-srv">Servicio: ${v.servicio || '—'}</div>
-                ${v.comentario ? `<div class="val-card-cmt">"${v.comentario}"</div>` : ''}
-                <div class="val-card-date">${fecha} · WA: ${v.clienteWA || '—'}</div>
+                <div class="val-card-name">${escapeHtml(v.clienteNombre || 'Cliente')}</div>
+                <div class="val-card-srv">Servicio: ${escapeHtml(v.servicio || '—')}</div>
+                ${v.comentario ? `<div class="val-card-cmt">"${escapeHtml(v.comentario)}"</div>` : ''}
+                <div class="val-card-date">${fecha} · WA: ${escapeHtml(v.clienteWA || '—')}</div>
               </div>
             </div>
           `;
@@ -870,9 +881,9 @@ async function cargarClientes() {
           const eInfo = estadoMap[eKey] || estadoMap['pendiente'];
           return `
             <tr>
-              <td style="color:var(--text);font-weight:600">${s.nombre || '—'}</td>
-              <td><a href="https://wa.me/${sanitizeNum(s.whatsapp || '')}" target="_blank" style="color:var(--green)">${s.whatsapp || '—'}</a></td>
-              <td style="color:var(--text-muted)">${s.servicio || '—'}</td>
+              <td style="color:var(--text);font-weight:600">${escapeHtml(s.nombre || '—')}</td>
+              <td><a href="https://wa.me/${sanitizeNum(s.whatsapp || '')}" target="_blank" style="color:var(--green)">${escapeHtml(s.whatsapp || '—')}</a></td>
+              <td style="color:var(--text-muted)">${escapeHtml(s.servicio || '—')}</td>
               <td><span class="estado-chip ${eInfo.cls}">${eInfo.lbl}</span></td>
               <td style="color:var(--text-dim);font-size:0.8rem">${fecha}</td>
               <td>
@@ -965,13 +976,13 @@ function renderTablaTecnicos() {
         <td style="color:var(--text);font-weight:700;">
           <div style="display:flex;align-items:center;gap:0.4rem;">
             <span>⚡</span>
-            <span>${t.nombre || 'Técnico'}</span>
+            <span>${escapeHtml(t.nombre || 'Técnico')}</span>
           </div>
         </td>
-        <td><a href="${waUrl}" target="_blank" style="color:var(--green);text-decoration:none;">📱 ${t.whatsapp || '—'}</a></td>
-        <td style="color:var(--text-dim);font-size:0.82rem;">${t.cedula || '—'} / ${t.experiencia || '0'} años</td>
-        <td style="color:var(--blue);font-size:0.82rem;">📍 ${t.zona || 'General'}</td>
-        <td style="color:var(--text-muted);font-size:0.8rem;max-width:200px;">${espList}</td>
+        <td><a href="${waUrl}" target="_blank" style="color:var(--green);text-decoration:none;">📱 ${escapeHtml(t.whatsapp || '—')}</a></td>
+        <td style="color:var(--text-dim);font-size:0.82rem;">${escapeHtml(t.cedula || '—')} / ${escapeHtml(String(t.experiencia || '0'))} años</td>
+        <td style="color:var(--blue);font-size:0.82rem;">📍 ${escapeHtml(t.zona || 'General')}</td>
+        <td style="color:var(--text-muted);font-size:0.8rem;max-width:200px;">${escapeHtml(espList)}</td>
         <td>${dispBadge}</td>
         <td>${estadoBadge}</td>
         <td>

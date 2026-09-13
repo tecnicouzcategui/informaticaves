@@ -21,6 +21,17 @@ let assignedJobs   = [];
 let currentFilter  = 'todos';
 let unsubscribeJobs = null;
 
+// ── Helper de Sanitización XSS ───────────────────────────────
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const ICONS_OPTIONS = [
   { icon: '💻', label: '💻 PC & Laptops (Windows)' },
   { icon: '🍏', label: '🍏 Apple & macOS (MacBook, iMac)' },
@@ -558,14 +569,14 @@ function renderJobs() {
         <div class="job-card-header">
           <div>
             <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-              <h3 style="font-size:1.05rem; font-weight:700; margin:0; color:var(--text);">${job.servicio || 'Servicio Técnico'}</h3>
+              <h3 style="font-size:1.05rem; font-weight:700; margin:0; color:var(--text);">${escapeHtml(job.servicio || 'Servicio Técnico')}</h3>
               <span class="job-status-pill ${estadoClass}">${estadoLabel}</span>
             </div>
-            <div style="font-size:0.78rem; color:var(--text-dim);">Ticket: <code style="color:var(--blue);font-weight:700;">${job.correlativo || ('#' + job.id.substring(0, 8))}</code> • ${fechaStr}</div>
+            <div style="font-size:0.78rem; color:var(--text-dim);">Ticket: <code style="color:var(--blue);font-weight:700;">${escapeHtml(job.correlativo || ('#' + job.id.substring(0, 8)))}</code> • ${fechaStr}</div>
           </div>
           <div style="text-align:right;">
             <span class="badge ${urgencia === 'alta' ? 'badge-danger' : (urgencia === 'media' ? 'badge-warning' : 'badge-success')}" style="font-size:0.72rem; text-transform:uppercase;">
-              ⚡ Urgencia: ${job.urgencia || 'Normal'}
+              ⚡ Urgencia: ${escapeHtml(job.urgencia || 'Normal')}
             </span>
           </div>
         </div>
@@ -573,30 +584,30 @@ function renderJobs() {
         <div class="job-details-grid">
           <div>
             <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">👤 Cliente:</div>
-            <div>${job.nombre || 'Cliente'}</div>
-            <div style="font-size:0.8rem; color:var(--blue); margin-top:0.15rem;">📱 ${job.whatsapp || '—'}</div>
+            <div>${escapeHtml(job.nombre || 'Cliente')}</div>
+            <div style="font-size:0.8rem; color:var(--blue); margin-top:0.15rem;">📱 ${escapeHtml(job.whatsapp || '—')}</div>
           </div>
 
           <div>
             <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">📍 Ubicación / Zona:</div>
-            <div>${job.direccion || job.zona || 'Caracas'}</div>
+            <div>${escapeHtml(job.direccion || job.zona || 'Caracas')}</div>
           </div>
 
           <div>
             <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">💰 Presupuesto Estimado:</div>
-            <div style="font-weight:700; color:var(--green);">${job.precio ? `$${job.precio} USD` : 'A convenir'}</div>
+            <div style="font-weight:700; color:var(--green);">${job.precio ? `$${escapeHtml(String(job.precio))} USD` : 'A convenir'}</div>
           </div>
         </div>
 
         ${job.descripcion ? `
           <div style="background:rgba(0,0,0,0.3); border-left:3px solid var(--blue); padding:0.75rem 1rem; border-radius:0.5rem; font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">
-            <strong>📝 Falla / Requerimiento:</strong><br>${job.descripcion}
+            <strong>📝 Falla / Requerimiento:</strong><br>${escapeHtml(job.descripcion)}
           </div>
         ` : ''}
 
         ${job.notaTecnica ? `
           <div style="background:rgba(246,173,85,0.08); border-left:3px solid #f6ad55; padding:0.75rem 1rem; border-radius:0.5rem; font-size:0.82rem; color:#fbd38d; margin-bottom:1rem;">
-            <strong>🔧 Tu última nota técnica:</strong><br>${job.notaTecnica}
+            <strong>🔧 Tu última nota técnica:</strong><br>${escapeHtml(job.notaTecnica)}
           </div>
         ` : ''}
 
