@@ -17,6 +17,50 @@
   <meta property="og:description" content="En Informáticos Venezuela contamos con personal técnico capacitado con el más alto estándar en tecnología con la capacidad de solventar cualquiera de sus requerimientos.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://informaticosvenezuela.com">
+
+  <style>
+    #modal-dominio-detalle {
+      position: fixed !important;
+      inset: 0 !important;
+      background: rgba(0, 0, 0, 0.82) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      z-index: 999999 !important;
+      display: none;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 1rem !important;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    #modal-dominio-detalle.open {
+      display: flex !important;
+      opacity: 1 !important;
+      pointer-events: all !important;
+    }
+    #modal-dominio-detalle .modal-box {
+      transform: translateY(16px) scale(0.96);
+      opacity: 0;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    #modal-dominio-detalle.open .modal-box {
+      transform: translateY(0) scale(1) !important;
+      opacity: 1 !important;
+    }
+    .skill-chip {
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .skill-chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(99,179,237,0.25);
+      border-color: rgba(99,179,237,0.6) !important;
+    }
+    .skill-chip:active {
+      transform: scale(0.97);
+    }
+  </style>
 </head>
 <body>
 
@@ -455,18 +499,7 @@
 <div id="toast-container"></div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script type="module">
-  import * as Auth from './auth.js?v=2.5';
-  import { seedFirestoreIfEmpty } from './firebase.js?v=2.5';
-
-  // Inicializar datos de Firestore si están vacíos
-  seedFirestoreIfEmpty().catch(console.warn);
-
-  // Registrar Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(console.warn);
-  }
-
+<script>
   // ── Catálogo de 24 Especialidades de Dominio Técnico ────────
   const DOMINIO_DETAILS = {
     pc: {
@@ -1022,13 +1055,25 @@
       }
     });
 
-    // Delegación global de clicks en chips (para garantizar que NUNCA falle al hacer clic)
+    // Asignación directa e inmediata a cada chip
+    document.querySelectorAll('.skill-chip[data-key]').forEach(chip => {
+      chip.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const key = chip.getAttribute('data-key');
+        if (key && window.abrirModalDominio) {
+          window.abrirModalDominio(key);
+        }
+      };
+    });
+
+    // Delegación global de clicks en chips
     document.addEventListener('click', (e) => {
       const chip = e.target.closest('.skill-chip[data-key]');
       if (chip) {
         e.preventDefault();
         const key = chip.getAttribute('data-key');
-        if (key) {
+        if (key && window.abrirModalDominio) {
           window.abrirModalDominio(key);
         }
       }
@@ -1037,10 +1082,12 @@
     // Botón Solicitar Servicio
     btnSol?.addEventListener('click', () => {
       closeModal();
-      if (Auth.currentUser) {
+      if (window.Auth && window.Auth.currentUser) {
         window.location.href = `solicitud.html?cat=${encodeURIComponent(currentCatKey)}`;
+      } else if (window.Auth && window.Auth.openAuthModal) {
+        window.Auth.openAuthModal('solicitante', 'login', true);
       } else {
-        Auth.openAuthModal('solicitante', 'login', true);
+        window.location.href = `solicitud.html?cat=${encodeURIComponent(currentCatKey)}`;
       }
     });
 
@@ -1049,20 +1096,40 @@
       closeModal();
       const msg = `Hola Soporte Informáticos Venezuela, deseo consultar sobre el servicio de ${currentCatData.title}.`;
       try {
-        const supp = await Auth.getSmartSupportUrl();
-        if (supp && supp.isTecnico && supp.tecnicoWhatsApp) {
-          window.open(`https://wa.me/${supp.tecnicoWhatsApp}?text=${encodeURIComponent(msg)}`, '_blank');
-        } else {
-          window.open(`https://wa.me/584242964339?text=${encodeURIComponent(msg)}`, '_blank');
+        if (window.Auth && window.Auth.getSmartSupportUrl) {
+          const supp = await window.Auth.getSmartSupportUrl();
+          if (supp && supp.isTecnico && supp.tecnicoWhatsApp) {
+            window.open(`https://wa.me/${supp.tecnicoWhatsApp}?text=${encodeURIComponent(msg)}`, '_blank');
+            return;
+          }
         }
-      } catch (err) {
-        window.open(`https://wa.me/584242964339?text=${encodeURIComponent(msg)}`, '_blank');
-      }
+      } catch (err) {}
+      window.open(`https://wa.me/584242964339?text=${encodeURIComponent(msg)}`, '_blank');
     });
   }
 
-  // Inicializar de inmediato
-  initDominioModal();
+  // Inicializar modal de inmediato
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDominioModal);
+  } else {
+    initDominioModal();
+  }
+</script>
+
+<script type="module">
+  import * as Auth from './auth.js?v=2.5';
+  import { seedFirestoreIfEmpty } from './firebase.js?v=2.5';
+
+  // Exponer Auth globalmente
+  window.Auth = Auth;
+
+  // Inicializar datos de Firestore si están vacíos
+  seedFirestoreIfEmpty().catch(console.warn);
+
+  // Registrar Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(console.warn);
+  }
 
   // Actualizar portal según el estado de autenticación
   function updatePortalView() {
