@@ -454,39 +454,57 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     const badgesContainer = document.getElementById('tec-active-badges');
 
     const ICONS_OPTIONS = `
-      <option value="💻">💻</option>
-      <option value="📡">📡</option>
-      <option value="📹">📹</option>
-      <option value="🐧">🐧</option>
-      <option value="🖨️">🖨️</option>
-      <option value="🌐">🌐</option>
-      <option value="⚡">⚡</option>
-      <option value="🔧">🔧</option>
-      <option value="📱">📱</option>
-      <option value="🔒">🔒</option>
-      <option value="💾">💾</option>
-      <option value="🛡️">🛡️</option>
-      <option value="🛠️">🛠️</option>
-      <option value="🔌">🔌</option>
-      <option value="🖥️">🖥️</option>
-      <option value="⚙️">⚙️</option>
+      <option value="💻">💻 PC & Laptops (Windows)</option>
+      <option value="🍏">🍏 Apple & macOS (MacBook, iMac)</option>
+      <option value="📡">📡 Redes WiFi, Routers & Switching</option>
+      <option value="📹">📹 CCTV, Cámaras & NVR/DVR</option>
+      <option value="🐧">🐧 Linux & Servidores OpenSource</option>
+      <option value="🖥️">🖥️ Windows Server & Active Directory</option>
+      <option value="☁️">☁️ Cloud, VPS & Hosting (AWS/Azure)</option>
+      <option value="🛡️">🛡️ Ciberseguridad, Firewalls & VPN</option>
+      <option value="🔌">🔌 Cableado Estructurado & Fibra</option>
+      <option value="🖨️">🖨️ Impresoras, Escáneres & Hardware</option>
+      <option value="⚡">⚡ Energía, UPS & Inversores</option>
+      <option value="💾">💾 Backup, Respaldo & Recuperación</option>
+      <option value="🌐">🌐 Desarrollo Web & Tiendas Online</option>
+      <option value="⚙️">⚙️ Desarrollo de Software & APIs</option>
+      <option value="🗄️">🗄️ Bases de Datos (SQL/NoSQL)</option>
+      <option value="📱">📱 Celulares, Móvil, Android & iOS</option>
+      <option value="📦">📦 Virtualización (VMware, Proxmox, Docker)</option>
+      <option value="🔒">🔒 Antivirus, Seguridad & Malware</option>
+      <option value="📞">📞 Telefonía IP, PBX & VoIP</option>
+      <option value="🔧">🔧 Mantenimiento & Limpieza Física</option>
+      <option value="🤖">🤖 Inteligencia Artificial & Bots</option>
+      <option value="💳">💳 Sistemas POS & Facturación</option>
+      <option value="🎮">🎮 PC Gaming & Estaciones de Trabajo</option>
+      <option value="🛠️">🛠️ Soporte Técnico General / Help Desk</option>
     `;
 
     function detectIconForText(text) {
       const lower = text.toLowerCase();
-      if (lower.includes('wifi') || lower.includes('red') || lower.includes('router') || lower.includes('switch') || lower.includes('internet') || lower.includes('mikrotik')) return '📡';
-      if (lower.includes('camara') || lower.includes('cctv') || lower.includes('dvr') || lower.includes('nvr') || lower.includes('seguridad')) return '📹';
-      if (lower.includes('linux') || lower.includes('ubuntu') || lower.includes('debian') || lower.includes('server') || lower.includes('servidor')) return '🐧';
-      if (lower.includes('impresora') || lower.includes('toner') || lower.includes('escaner') || lower.includes('hardware')) return '🖨️';
-      if (lower.includes('pc') || lower.includes('laptop') || lower.includes('computadora') || lower.includes('windows') || lower.includes('formateo')) return '💻';
-      if (lower.includes('web') || lower.includes('software') || lower.includes('sistema') || lower.includes('sql') || lower.includes('app')) return '🌐';
-      if (lower.includes('ups') || lower.includes('electric') || lower.includes('inversor') || lower.includes('voltaje')) return '⚡';
-      if (lower.includes('mantenimiento') || lower.includes('limpieza') || lower.includes('reparac')) return '🔧';
-      if (lower.includes('celular') || lower.includes('telefono') || lower.includes('movil')) return '📱';
-      if (lower.includes('antivirus') || lower.includes('virus') || lower.includes('bloqueo')) return '🔒';
-      if (lower.includes('disco') || lower.includes('backup') || lower.includes('respaldo') || lower.includes('recuperacion')) return '💾';
-      if (lower.includes('firewall') || lower.includes('ciberseguridad') || lower.includes('vpn')) return '🛡️';
-      if (lower.includes('cableado') || lower.includes('utp') || lower.includes('fibra') || lower.includes('rack')) return '🔌';
+      if (lower.includes('mac') || lower.includes('apple') || lower.includes('macos') || lower.includes('imac') || lower.includes('osx')) return '🍏';
+      if (lower.includes('wifi') || lower.includes('red') || lower.includes('router') || lower.includes('switch') || lower.includes('internet') || lower.includes('mikrotik') || lower.includes('lan') || lower.includes('wan') || lower.includes('vlan')) return '📡';
+      if (lower.includes('camara') || lower.includes('cctv') || lower.includes('dvr') || lower.includes('nvr') || lower.includes('seguridad') || lower.includes('vigilancia') || lower.includes('hikvision') || lower.includes('dahua')) return '📹';
+      if (lower.includes('linux') || lower.includes('ubuntu') || lower.includes('debian') || lower.includes('centos') || lower.includes('redhat') || lower.includes('server') || lower.includes('servidor')) return '🐧';
+      if (lower.includes('windows server') || lower.includes('active directory') || lower.includes('directorio activo') || lower.includes('dominio') || lower.includes('rdp') || lower.includes('iis')) return '🖥️';
+      if (lower.includes('cloud') || lower.includes('nube') || lower.includes('aws') || lower.includes('azure') || lower.includes('vps') || lower.includes('hosting') || lower.includes('gcp')) return '☁️';
+      if (lower.includes('firewall') || lower.includes('ciberseguridad') || lower.includes('vpn') || lower.includes('pfsense') || lower.includes('fortinet')) return '🛡️';
+      if (lower.includes('cableado') || lower.includes('utp') || lower.includes('fibra') || lower.includes('rack') || lower.includes('patch panel') || lower.includes('canaletas')) return '🔌';
+      if (lower.includes('impresora') || lower.includes('toner') || lower.includes('escaner') || lower.includes('plotter') || lower.includes('epson') || lower.includes('hp')) return '🖨️';
+      if (lower.includes('pc') || lower.includes('laptop') || lower.includes('computadora') || lower.includes('windows') || lower.includes('formateo') || lower.includes('portatil')) return '💻';
+      if (lower.includes('ups') || lower.includes('electric') || lower.includes('inversor') || lower.includes('voltaje') || lower.includes('energia') || lower.includes('regulador') || lower.includes('bateria')) return '⚡';
+      if (lower.includes('disco') || lower.includes('backup') || lower.includes('respaldo') || lower.includes('recuperacion') || lower.includes('raid') || lower.includes('hdd') || lower.includes('ssd')) return '💾';
+      if (lower.includes('web') || lower.includes('pagina') || lower.includes('tienda') || lower.includes('ecommerce') || lower.includes('wordpress') || lower.includes('frontend')) return '🌐';
+      if (lower.includes('software') || lower.includes('sistema') || lower.includes('api') || lower.includes('programa') || lower.includes('python') || lower.includes('javascript') || lower.includes('backend') || lower.includes('node')) return '⚙️';
+      if (lower.includes('sql') || lower.includes('mysql') || lower.includes('postgresql') || lower.includes('base de datos') || lower.includes('database') || lower.includes('oracle')) return '🗄️';
+      if (lower.includes('celular') || lower.includes('telefono') || lower.includes('movil') || lower.includes('android') || lower.includes('ios') || lower.includes('tablet') || lower.includes('ipad')) return '📱';
+      if (lower.includes('virtualizacion') || lower.includes('vmware') || lower.includes('proxmox') || lower.includes('docker') || lower.includes('hyper-v') || lower.includes('contenedor')) return '📦';
+      if (lower.includes('antivirus') || lower.includes('virus') || lower.includes('malware') || lower.includes('bloqueo') || lower.includes('troyano') || lower.includes('spyware')) return '🔒';
+      if (lower.includes('voip') || lower.includes('asterisk') || lower.includes('pbx') || lower.includes('telefonia') || lower.includes('central telefonica') || lower.includes('sip')) return '📞';
+      if (lower.includes('mantenimiento') || lower.includes('limpieza') || lower.includes('pasta termica') || lower.includes('reparac') || lower.includes('ensamblaje')) return '🔧';
+      if (lower.includes('ia') || lower.includes('ai') || lower.includes('bot') || lower.includes('automatizacion') || lower.includes('chatbot') || lower.includes('gpt')) return '🤖';
+      if (lower.includes('pos') || lower.includes('punto de venta') || lower.includes('facturacion') || lower.includes('caja') || lower.includes('fiscal') || lower.includes('valery') || lower.includes('saint')) return '💳';
+      if (lower.includes('gaming') || lower.includes('gamer') || lower.includes('workstation') || lower.includes('gpu') || lower.includes('tarjeta grafica')) return '🎮';
       return null;
     }
 
@@ -533,8 +551,16 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       });
     }
 
-    // Bind existing rows
-    cualidadesList?.querySelectorAll('.cualidad-row').forEach(bindRowEvents);
+    // Bind existing rows and ensure full 24 category options
+    cualidadesList?.querySelectorAll('.cualidad-row').forEach(row => {
+      const select = row.querySelector('.tec-cualidad-icon');
+      if (select) {
+        const val = select.value;
+        select.innerHTML = ICONS_OPTIONS;
+        select.value = val;
+      }
+      bindRowEvents(row);
+    });
     updateActiveBadges();
 
     btnAddCualidad?.addEventListener('click', () => {

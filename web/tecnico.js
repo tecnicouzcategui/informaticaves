@@ -21,40 +21,58 @@ let assignedJobs   = [];
 let currentFilter  = 'todos';
 let unsubscribeJobs = null;
 
-const ICONS_OPTIONS = `
-  <option value="💻">💻 PC & Laptops</option>
-  <option value="📡">📡 Redes & WiFi</option>
-  <option value="📹">📹 CCTV & Cámaras</option>
-  <option value="🐧">🐧 Linux & Servidores</option>
-  <option value="🖨️">🖨️ Impresoras / Hardware</option>
-  <option value="🌐">🌐 Web & Software</option>
-  <option value="⚡">⚡ Electricidad & UPS</option>
-  <option value="🔧">🔧 Mantenimiento</option>
-  <option value="📱">📱 Telefonía / Móvil</option>
-  <option value="🔒">🔒 Seguridad & Claves</option>
-  <option value="💾">💾 Respaldo & Datos</option>
-  <option value="🛡️">🛡️ Ciberseguridad</option>
-  <option value="🛠️">🛠️ Soporte General</option>
-  <option value="🔌">🔌 Cableado UTP / Fibra</option>
-  <option value="🖥️">🖥️ Servidores & VMs</option>
-  <option value="⚙️">⚙️ Configuración / Otros</option>
-`;
+const ICONS_OPTIONS = [
+  { icon: '💻', label: '💻 PC & Laptops (Windows)' },
+  { icon: '🍏', label: '🍏 Apple & macOS (MacBook, iMac)' },
+  { icon: '📡', label: '📡 Redes WiFi, Routers & Switching' },
+  { icon: '📹', label: '📹 CCTV, Cámaras & NVR/DVR' },
+  { icon: '🐧', label: '🐧 Linux & Servidores OpenSource' },
+  { icon: '🖥️', label: '🖥️ Windows Server & Active Directory' },
+  { icon: '☁️', label: '☁️ Cloud, VPS & Hosting (AWS/Azure)' },
+  { icon: '🛡️', label: '🛡️ Ciberseguridad, Firewalls & VPN' },
+  { icon: '🔌', label: '🔌 Cableado Estructurado & Fibra' },
+  { icon: '🖨️', label: '🖨️ Impresoras, Escáneres & Hardware' },
+  { icon: '⚡', label: '⚡ Energía, UPS & Inversores' },
+  { icon: '💾', label: '💾 Backup, Respaldo & Recuperación' },
+  { icon: '🌐', label: '🌐 Desarrollo Web & Tiendas Online' },
+  { icon: '⚙️', label: '⚙️ Desarrollo de Software & APIs' },
+  { icon: '🗄️', label: '🗄️ Bases de Datos (SQL/NoSQL)' },
+  { icon: '📱', label: '📱 Celulares, Móvil, Android & iOS' },
+  { icon: '📦', label: '📦 Virtualización (VMware, Proxmox, Docker)' },
+  { icon: '🔒', label: '🔒 Antivirus, Seguridad & Malware' },
+  { icon: '📞', label: '📞 Telefonía IP, PBX & VoIP' },
+  { icon: '🔧', label: '🔧 Mantenimiento & Limpieza Física' },
+  { icon: '🤖', label: '🤖 Inteligencia Artificial & Bots' },
+  { icon: '💳', label: '💳 Sistemas POS & Facturación' },
+  { icon: '🎮', label: '🎮 PC Gaming & Estaciones de Trabajo' },
+  { icon: '🛠️', label: '🛠️ Soporte Técnico General / Help Desk' }
+];
 
 function detectIconForText(text) {
   const lower = text.toLowerCase();
-  if (lower.includes('wifi') || lower.includes('red') || lower.includes('router') || lower.includes('switch') || lower.includes('internet') || lower.includes('mikrotik')) return '📡';
-  if (lower.includes('camara') || lower.includes('cctv') || lower.includes('dvr') || lower.includes('nvr') || lower.includes('seguridad')) return '📹';
-  if (lower.includes('linux') || lower.includes('ubuntu') || lower.includes('debian') || lower.includes('server') || lower.includes('servidor')) return '🐧';
-  if (lower.includes('impresora') || lower.includes('toner') || lower.includes('escaner') || lower.includes('hardware')) return '🖨️';
-  if (lower.includes('pc') || lower.includes('laptop') || lower.includes('computadora') || lower.includes('windows') || lower.includes('formateo')) return '💻';
-  if (lower.includes('web') || lower.includes('software') || lower.includes('sistema') || lower.includes('sql') || lower.includes('app')) return '🌐';
-  if (lower.includes('ups') || lower.includes('electric') || lower.includes('inversor') || lower.includes('voltaje')) return '⚡';
-  if (lower.includes('mantenimiento') || lower.includes('limpieza') || lower.includes('reparac')) return '🔧';
-  if (lower.includes('celular') || lower.includes('telefono') || lower.includes('movil')) return '📱';
-  if (lower.includes('antivirus') || lower.includes('virus') || lower.includes('bloqueo')) return '🔒';
-  if (lower.includes('disco') || lower.includes('backup') || lower.includes('respaldo') || lower.includes('recuperacion')) return '💾';
-  if (lower.includes('firewall') || lower.includes('ciberseguridad') || lower.includes('vpn')) return '🛡️';
-  if (lower.includes('cableado') || lower.includes('utp') || lower.includes('fibra') || lower.includes('rack')) return '🔌';
+  if (lower.includes('mac') || lower.includes('apple') || lower.includes('macos') || lower.includes('imac') || lower.includes('osx')) return '🍏';
+  if (lower.includes('wifi') || lower.includes('red') || lower.includes('router') || lower.includes('switch') || lower.includes('internet') || lower.includes('mikrotik') || lower.includes('lan') || lower.includes('wan') || lower.includes('vlan')) return '📡';
+  if (lower.includes('camara') || lower.includes('cctv') || lower.includes('dvr') || lower.includes('nvr') || lower.includes('seguridad') || lower.includes('vigilancia') || lower.includes('hikvision') || lower.includes('dahua')) return '📹';
+  if (lower.includes('linux') || lower.includes('ubuntu') || lower.includes('debian') || lower.includes('centos') || lower.includes('redhat') || lower.includes('server') || lower.includes('servidor')) return '🐧';
+  if (lower.includes('windows server') || lower.includes('active directory') || lower.includes('directorio activo') || lower.includes('dominio') || lower.includes('rdp') || lower.includes('iis')) return '🖥️';
+  if (lower.includes('cloud') || lower.includes('nube') || lower.includes('aws') || lower.includes('azure') || lower.includes('vps') || lower.includes('hosting') || lower.includes('gcp')) return '☁️';
+  if (lower.includes('firewall') || lower.includes('ciberseguridad') || lower.includes('vpn') || lower.includes('pfsense') || lower.includes('fortinet')) return '🛡️';
+  if (lower.includes('cableado') || lower.includes('utp') || lower.includes('fibra') || lower.includes('rack') || lower.includes('patch panel') || lower.includes('canaletas')) return '🔌';
+  if (lower.includes('impresora') || lower.includes('toner') || lower.includes('escaner') || lower.includes('plotter') || lower.includes('epson') || lower.includes('hp')) return '🖨️';
+  if (lower.includes('pc') || lower.includes('laptop') || lower.includes('computadora') || lower.includes('windows') || lower.includes('formateo') || lower.includes('portatil')) return '💻';
+  if (lower.includes('ups') || lower.includes('electric') || lower.includes('inversor') || lower.includes('voltaje') || lower.includes('energia') || lower.includes('regulador') || lower.includes('bateria')) return '⚡';
+  if (lower.includes('disco') || lower.includes('backup') || lower.includes('respaldo') || lower.includes('recuperacion') || lower.includes('raid') || lower.includes('hdd') || lower.includes('ssd')) return '💾';
+  if (lower.includes('web') || lower.includes('pagina') || lower.includes('tienda') || lower.includes('ecommerce') || lower.includes('wordpress') || lower.includes('frontend')) return '🌐';
+  if (lower.includes('software') || lower.includes('sistema') || lower.includes('api') || lower.includes('programa') || lower.includes('python') || lower.includes('javascript') || lower.includes('backend') || lower.includes('node')) return '⚙️';
+  if (lower.includes('sql') || lower.includes('mysql') || lower.includes('postgresql') || lower.includes('base de datos') || lower.includes('database') || lower.includes('oracle')) return '🗄️';
+  if (lower.includes('celular') || lower.includes('telefono') || lower.includes('movil') || lower.includes('android') || lower.includes('ios') || lower.includes('tablet') || lower.includes('ipad')) return '📱';
+  if (lower.includes('virtualizacion') || lower.includes('vmware') || lower.includes('proxmox') || lower.includes('docker') || lower.includes('hyper-v') || lower.includes('contenedor')) return '📦';
+  if (lower.includes('antivirus') || lower.includes('virus') || lower.includes('malware') || lower.includes('bloqueo') || lower.includes('troyano') || lower.includes('spyware')) return '🔒';
+  if (lower.includes('voip') || lower.includes('asterisk') || lower.includes('pbx') || lower.includes('telefonia') || lower.includes('central telefonica') || lower.includes('sip')) return '📞';
+  if (lower.includes('mantenimiento') || lower.includes('limpieza') || lower.includes('pasta termica') || lower.includes('reparac') || lower.includes('ensamblaje')) return '🔧';
+  if (lower.includes('ia') || lower.includes('ai') || lower.includes('bot') || lower.includes('automatizacion') || lower.includes('chatbot') || lower.includes('gpt')) return '🤖';
+  if (lower.includes('pos') || lower.includes('punto de venta') || lower.includes('facturacion') || lower.includes('caja') || lower.includes('fiscal') || lower.includes('valery') || lower.includes('saint')) return '💳';
+  if (lower.includes('gaming') || lower.includes('gamer') || lower.includes('workstation') || lower.includes('gpu') || lower.includes('tarjeta grafica')) return '🎮';
   return '🛠️';
 }
 
@@ -238,24 +256,10 @@ function initSpecialtiesManager() {
     const row = document.createElement('div');
     row.className = 'tec-manage-row';
     row.style.cssText = 'display:flex; gap:0.45rem; align-items:center; background:rgba(0,0,0,0.2); padding:0.4rem; border-radius:8px; border:1px solid rgba(255,255,255,0.06);';
+    const optionsHtml = ICONS_OPTIONS.map(opt => `<option value="${opt.icon}" ${opt.icon === icon ? 'selected' : ''}>${opt.label}</option>`).join('');
     row.innerHTML = `
       <select class="form-input tec-manage-icon-select" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Cambiar icono">
-        <option value="💻" ${icon === '💻' ? 'selected' : ''}>💻</option>
-        <option value="📡" ${icon === '📡' ? 'selected' : ''}>📡</option>
-        <option value="📹" ${icon === '📹' ? 'selected' : ''}>📹</option>
-        <option value="🐧" ${icon === '🐧' ? 'selected' : ''}>🐧</option>
-        <option value="🖨️" ${icon === '🖨️' ? 'selected' : ''}>🖨️</option>
-        <option value="🌐" ${icon === '🌐' ? 'selected' : ''}>🌐</option>
-        <option value="⚡" ${icon === '⚡' ? 'selected' : ''}>⚡</option>
-        <option value="🔧" ${icon === '🔧' ? 'selected' : ''}>🔧</option>
-        <option value="📱" ${icon === '📱' ? 'selected' : ''}>📱</option>
-        <option value="🔒" ${icon === '🔒' ? 'selected' : ''}>🔒</option>
-        <option value="💾" ${icon === '💾' ? 'selected' : ''}>💾</option>
-        <option value="🛡️" ${icon === '🛡️' ? 'selected' : ''}>🛡️</option>
-        <option value="🛠️" ${icon === '🛠️' ? 'selected' : ''}>🛠️</option>
-        <option value="🔌" ${icon === '🔌' ? 'selected' : ''}>🔌</option>
-        <option value="🖥️" ${icon === '🖥️' ? 'selected' : ''}>🖥️</option>
-        <option value="⚙️" ${icon === '⚙️' ? 'selected' : ''}>⚙️</option>
+        ${optionsHtml}
       </select>
       <input type="text" class="form-input tec-manage-text-input" placeholder="Nombre de la especialidad o cualidad..." value="${text}" style="font-size:0.84rem; padding:0.5rem; flex:1;">
       <button type="button" class="btn-remove-manage-row" style="background:none; border:none; color:#fc8181; font-size:1.3rem; cursor:pointer; padding:0 6px;" title="Eliminar">&times;</button>
