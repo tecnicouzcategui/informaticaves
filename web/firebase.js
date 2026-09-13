@@ -147,6 +147,14 @@ export async function getTodosServicios() {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+/** Guarda o publica un nuevo servicio en Firestore */
+export async function guardarServicio(servicioData) {
+  return addDoc(collection(db, COLS.servicios), {
+    ...servicioData,
+    creadoEn: serverTimestamp()
+  });
+}
+
 /** Guarda una solicitud / Ticket Help Desk en Firestore con correlativo automático */
 export async function guardarSolicitud(datos) {
   let correlativo = 1001;

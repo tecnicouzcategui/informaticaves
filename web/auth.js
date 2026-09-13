@@ -1758,11 +1758,27 @@ function updateNavUI() {
 
   btnLogin?.classList.add('hidden');
 
-  if (currentUser) {
-    const nameToUse = userNombre || currentUser.displayName || (isAdmin ? 'Administrador' : (isTecnico ? 'Técnico IT' : 'Solicitante'));
+  const savedCedula = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_cedula') : null;
+  const savedRole   = typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role')) : null;
+  const savedNombre = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_nombre') : null;
+  const savedAdmin  = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1');
+  const hasUserSession = !!(currentUser || savedCedula || (savedRole && savedRole !== 'null') || savedAdmin);
+
+  if (hasUserSession) {
+    const roleIsTec = isTecnico || savedRole === 'tecnico';
+    const roleIsAdm = isAdmin || savedAdmin || savedRole === 'admin';
+    const nameToUse = userNombre || savedNombre || currentUser?.displayName || (roleIsAdm ? 'Administrador' : (roleIsTec ? 'Técnico IT' : 'Solicitante'));
     const initials = nameToUse.charAt(0).toUpperCase();
-    const cedulaToUse = userCedula || localStorage.getItem('infovzla_user_cedula') || '';
-    const fotoToUse = userFoto || localStorage.getItem('infovzla_user_foto') || null;
+    const cedulaToUse = userCedula || savedCedula || '';
+    const fotoToUse = userFoto || (typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_foto') : null) || null;
+
+    if (!currentUser) {
+      currentUser = {
+        uid: roleIsAdm ? '12832779' : (savedCedula || 'user'),
+        displayName: nameToUse,
+        email: roleIsAdm ? ADMIN_EMAIL : ''
+      };
+    }
 
     let userWidget = document.getElementById('nav-user-widget');
     if (!userWidget) {
@@ -1778,15 +1794,15 @@ function updateNavUI() {
 
     if (userWidget) {
       userWidget.style.display = 'flex';
-      userWidget.style.borderColor = isTecnico ? 'rgba(246,173,85,0.45)' : (isAdmin ? 'rgba(168,85,247,0.45)' : 'rgba(99,179,237,0.45)');
+      userWidget.style.borderColor = roleIsTec ? 'rgba(246,173,85,0.45)' : (roleIsAdm ? 'rgba(168,85,247,0.45)' : 'rgba(99,179,237,0.45)');
       userWidget.innerHTML = `
-        <div style="width:34px; height:34px; border-radius:50%; overflow:hidden; background:${isTecnico ? '#f6ad55' : (isAdmin ? '#a855f7' : '#3182ce')}; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:0.9rem; flex-shrink:0;">
+        <div style="width:34px; height:34px; border-radius:50%; overflow:hidden; background:${roleIsTec ? '#f6ad55' : (roleIsAdm ? '#a855f7' : '#3182ce')}; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:0.9rem; flex-shrink:0;">
           ${fotoToUse ? `<img src="${fotoToUse}" alt="Foto Perfil" style="width:100%; height:100%; object-fit:cover;">` : initials}
         </div>
         <div style="display:flex; flex-direction:column; text-align:left; line-height:1.2; padding-right:4px;">
           <span style="font-size:0.82rem; font-weight:700; color:var(--text); white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis;">${nameToUse}</span>
-          <span style="font-size:0.68rem; font-weight:600; color:${isTecnico ? '#f6ad55' : (isAdmin ? '#c084fc' : '#63b3ed')};">
-            ${cedulaToUse ? cedulaToUse + ' • ' : ''}${isTecnico ? 'Técnico IT' : (isAdmin ? 'Admin' : 'Solicitante')}
+          <span style="font-size:0.68rem; font-weight:600; color:${roleIsTec ? '#f6ad55' : (roleIsAdm ? '#c084fc' : '#63b3ed')};">
+            ${cedulaToUse ? cedulaToUse + ' • ' : ''}${roleIsTec ? 'Técnico IT' : (roleIsAdm ? 'Admin' : 'Solicitante')}
           </span>
         </div>
       `;
@@ -1800,7 +1816,7 @@ function updateNavUI() {
       }
     }
 
-    if (isAdmin) {
+    if (roleIsAdm) {
       adminBadge?.classList.remove('hidden');
       if (adminBadge) adminBadge.textContent = '👑 Admin';
       adminLink?.classList.remove('hidden');
@@ -1813,7 +1829,7 @@ function updateNavUI() {
         navMisSolicitudes.closest('li')?.classList.remove('hidden');
         navMisSolicitudes.classList.remove('hidden');
       }
-    } else if (isTecnico) {
+    } else if (roleIsTec) {
       adminBadge?.classList.remove('hidden');
       if (adminBadge) {
         adminBadge.textContent = '⚡ Técnico';
@@ -1868,6 +1884,18 @@ function updateNavUI() {
       });
     }
   });
+}
+
+export { updateNavUI };
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      try { updateNavUI(); } catch (e) { console.warn(e); }
+    });
+  } else {
+    try { updateNavUI(); } catch (e) { console.warn(e); }
+  }
 }
 
 // ── Menú desplegable de Perfil con Información Completa ───────

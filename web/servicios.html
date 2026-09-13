@@ -273,36 +273,46 @@
   let catActiva = 'todos';
 
   async function cargarServicios() {
-    // 1. Renderizar de inmediato desde localStorage o SERVICIOS_DEFAULT
-    const cached = localStorage.getItem('infovzla_servicios');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          todosServicios = parsed;
-          renderServicios();
-        }
-      } catch (_) {}
-    }
-    if (!todosServicios || !todosServicios.length) {
-      todosServicios = SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado');
-      renderServicios();
-    }
-
-    // 2. Obtener datos frescos desde Firestore
     try {
-      const freshPromise = getServiciosPublicados();
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
-      const fresh = await Promise.race([freshPromise, timeoutPromise]);
-      if (fresh && Array.isArray(fresh) && fresh.length > 0) {
-        todosServicios = fresh;
-        localStorage.setItem('infovzla_servicios', JSON.stringify(fresh));
+      // 1. Renderizar de inmediato desde localStorage o SERVICIOS_DEFAULT
+      let loaded = false;
+      const cached = localStorage.getItem('infovzla_servicios');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            todosServicios = parsed;
+            renderServicios();
+            loaded = true;
+          }
+        } catch (_) {}
+      }
+      if (!loaded || !todosServicios || !todosServicios.length) {
+        todosServicios = Array.isArray(SERVICIOS_DEFAULT) ? SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado') : [];
         renderServicios();
       }
-    } catch (err) {
-      console.warn('[Servicios] Usando versión lista:', err);
-      if (!navigator.onLine) {
-        document.getElementById('offline-banner')?.classList.add('show');
+
+      // 2. Obtener datos frescos desde Firestore
+      try {
+        const freshPromise = getServiciosPublicados();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+        const fresh = await Promise.race([freshPromise, timeoutPromise]);
+        if (fresh && Array.isArray(fresh) && fresh.length > 0) {
+          todosServicios = fresh;
+          localStorage.setItem('infovzla_servicios', JSON.stringify(fresh));
+          renderServicios();
+        }
+      } catch (err) {
+        console.warn('[Servicios] Usando versión en caché o base:', err);
+        if (!navigator.onLine) {
+          document.getElementById('offline-banner')?.classList.add('show');
+        }
+      }
+    } catch (e) {
+      console.error('[Servicios Error]', e);
+      if (!todosServicios || !todosServicios.length) {
+        todosServicios = Array.isArray(SERVICIOS_DEFAULT) ? SERVICIOS_DEFAULT.filter(s => s.estado === 'publicado') : [];
+        renderServicios();
       }
     }
   }
@@ -367,6 +377,7 @@
   window.addEventListener('online',  () => document.getElementById('offline-banner')?.classList.remove('show'));
   window.addEventListener('offline', () => document.getElementById('offline-banner')?.classList.add('show'));
 
+  try { Auth.updateNavUI(); } catch (_) {}
   cargarServicios();
 </script>
 
