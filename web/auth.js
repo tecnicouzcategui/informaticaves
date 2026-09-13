@@ -69,12 +69,40 @@ const ROLE_KEY       = 'infovzla_user_role';
 const LOCAL_ADMIN_KEY = 'infovzla_local_admin';
 
 // ── Estado global inicializado optimistamente desde localStorage ──
-const _initAdmin  = typeof localStorage !== 'undefined' && localStorage.getItem(LOCAL_ADMIN_KEY) === '1';
-const _initRole   = typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || null) : null;
+const _initAdmin  = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1');
+const _initRole   = typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || null) : null;
 const _initCedula = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_cedula') || null) : null;
-const _initWA     = typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || null) : null;
+const _initWA     = typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null) : null;
 const _initNombre = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_nombre') || null) : null;
 const _initFoto   = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_foto') || null) : null;
+
+let _initCliData = null;
+try {
+  const rawCli = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_cliente_data') : null;
+  if (rawCli) _initCliData = JSON.parse(rawCli);
+} catch(_) {}
+if (!_initCliData && (_initCedula || _initWA) && _initRole !== 'tecnico' && !_initAdmin) {
+  _initCliData = {
+    cedula: _initCedula,
+    whatsapp: _initWA,
+    nombre: _initNombre || 'Solicitante',
+    fotoPerfil: _initFoto
+  };
+}
+
+let _initTecData = null;
+try {
+  const rawTec = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_tecnico_data') : null;
+  if (rawTec) _initTecData = JSON.parse(rawTec);
+} catch(_) {}
+if (!_initTecData && (_initCedula || _initWA) && _initRole === 'tecnico') {
+  _initTecData = {
+    cedula: _initCedula,
+    whatsapp: _initWA,
+    nombre: _initNombre || 'Técnico IT',
+    fotoPerfil: _initFoto
+  };
+}
 
 export let isAdmin      = _initAdmin;
 export let isTecnico    = _initRole === 'tecnico';
@@ -83,10 +111,10 @@ export let userWhatsApp = _initWA;
 export let userNombre   = _initAdmin ? 'Administrador Principal' : _initNombre;
 export let userCedula   = _initAdmin ? 'ADMIN' : _initCedula;
 export let userFoto     = _initFoto;
-export let clienteData  = null;
-export let tecnicoData  = null;
-export let currentUser  = (_initAdmin || _initCedula || _initWA)
-  ? { uid: _initCedula || _initWA || 'admin', displayName: userNombre || (_initRole === 'tecnico' ? 'Técnico IT' : 'Solicitante'), email: _initAdmin ? ADMIN_EMAIL : '' }
+export let clienteData  = _initCliData;
+export let tecnicoData  = _initTecData;
+export let currentUser  = (_initAdmin || _initCedula || _initWA || _initRole)
+  ? { uid: _initCedula || _initWA || (_initAdmin ? 'admin' : 'user'), displayName: userNombre || (_initRole === 'tecnico' ? 'Técnico IT' : 'Solicitante'), email: _initAdmin ? ADMIN_EMAIL : '' }
   : null;
 
 // ── Callbacks registrados ────────────────────────────────────
@@ -1057,7 +1085,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             // ── LOGIN EXCLUSIVO DE TÉCNICO: PROHIBIDO ENTRAR COMO SOLICITANTE
             let tecExistente = await getTecnicoByCedula(userInput);
             if (!tecExistente) {
-              tecExistente = await getTecnicoByWA(userInput.replace(/[^0-9]/g, ''));
+              tecExistente = await getTecnicoByWA(userInput);
             }
 
             if (!tecExistente) {
@@ -1067,50 +1095,71 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               return;
             }
 
-            const targetEmail = tecExistente.email || `${(tecExistente.whatsapp || tecExistente.cedulaNum || 'tec')}@informaticosvenezuela.com`;
+            const candEmails = [
+              tecExistente.email,
+              tecExistente.emailPersonal,
+              tecExistente.cedula ? `${tecExistente.cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com` : null,
+              tecExistente.cedulaNum ? `${tecExistente.cedulaNum}@informaticosvenezuela.com` : null,
+              tecExistente.whatsapp ? `${String(tecExistente.whatsapp).replace(/[^0-9]/g, '')}@informaticosvenezuela.com` : null
+            ].filter(Boolean);
 
-            try {
-              try { await signOut(auth); } catch (_) {}
-              await signInWithEmailAndPassword(auth, targetEmail, pass);
+            let authSuccess = false;
+            for (const candEmail of candEmails) {
+              try {
+                await signInWithEmailAndPassword(auth, candEmail, pass);
+                authSuccess = true;
+                break;
+              } catch (_) {}
+            }
+
+            const hash = await sha256(pass);
+            const hashTrimmed = await sha256(pass.trim());
+            const hashMatch = (tecExistente.passwordHash && (tecExistente.passwordHash === hash || tecExistente.passwordHash === hashTrimmed)) || (tecExistente.password && tecExistente.password === pass);
+
+            if (authSuccess || hashMatch) {
               localStorage.setItem(ROLE_KEY, 'tecnico');
-              localStorage.setItem(WA_KEY, tecExistente.whatsapp);
-              localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
-              localStorage.setItem('infovzla_user_nombre', tecExistente.nombre);
+              if (tecExistente.whatsapp) localStorage.setItem(WA_KEY, tecExistente.whatsapp);
+              if (tecExistente.cedula) localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
+              if (tecExistente.nombre) localStorage.setItem('infovzla_user_nombre', tecExistente.nombre);
               if (tecExistente.fotoPerfil) {
                 try { localStorage.setItem('infovzla_user_foto', tecExistente.fotoPerfil); } catch (_) {}
               }
+              try { localStorage.setItem('infovzla_tecnico_data', JSON.stringify(tecExistente)); } catch(_) {}
+
+              isAdmin = false;
+              isTecnico = true;
+              userRol = 'tecnico';
+              userWhatsApp = tecExistente.whatsapp || null;
+              userNombre = tecExistente.nombre || 'Técnico IT';
+              userCedula = tecExistente.cedula || userInput;
+              userFoto = tecExistente.fotoPerfil || null;
+              tecnicoData = tecExistente;
+              clienteData = null;
+              currentUser = {
+                uid: tecExistente.uid || tecExistente.id || tecExistente.cedula || 'tec',
+                displayName: userNombre,
+                email: tecExistente.email || ''
+              };
+
               showToast('✅ Sesión de Técnico iniciada con éxito', 'success');
               modal.classList.remove('open');
+              closeModalAuth();
+              notifyListeners();
+              updateNavUI();
               window.location.href = 'tecnico.html';
               return;
-            } catch (e) {
-              // Verificar hash en base de datos
-              const hash = await sha256(pass);
-              if (tecExistente.passwordHash === hash) {
-                localStorage.setItem(ROLE_KEY, 'tecnico');
-                localStorage.setItem(WA_KEY, tecExistente.whatsapp);
-                localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
-                localStorage.setItem('infovzla_user_nombre', tecExistente.nombre);
-                if (tecExistente.fotoPerfil) {
-                  try { localStorage.setItem('infovzla_user_foto', tecExistente.fotoPerfil); } catch (_) {}
-                }
-                showToast('✅ Sesión de Técnico iniciada con éxito', 'success');
-                modal.classList.remove('open');
-                window.location.href = 'tecnico.html';
-                return;
-              } else {
-                showToast('❌ Contraseña incorrecta para tu cuenta de Técnico.', 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
-                return;
-              }
+            } else {
+              showToast('❌ Contraseña incorrecta para tu cuenta de Técnico.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
+              return;
             }
 
           } else {
             // ── LOGIN EXCLUSIVO DE SOLICITANTE: PROHIBIDO ENTRAR COMO TÉCNICO
             let cliExistente = await getClienteByCedula(userInput);
             if (!cliExistente) {
-              cliExistente = await getClienteByWA(userInput.replace(/[^0-9]/g, ''));
+              cliExistente = await getClienteByWA(userInput);
             }
 
             if (!cliExistente) {
@@ -1120,44 +1169,68 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               return;
             }
 
-            const targetEmail = cliExistente.email || `${(cliExistente.whatsapp || cliExistente.cedulaNum || 'cli')}@informaticosvenezuela.com`;
+            const candEmails = [
+              cliExistente.email,
+              cliExistente.emailPersonal,
+              cliExistente.cedula ? `${cliExistente.cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com` : null,
+              cliExistente.cedulaNum ? `${cliExistente.cedulaNum}@informaticosvenezuela.com` : null,
+              cliExistente.whatsapp ? `${String(cliExistente.whatsapp).replace(/[^0-9]/g, '')}@informaticosvenezuela.com` : null
+            ].filter(Boolean);
 
+            let authSuccess = false;
+            for (const candEmail of candEmails) {
+              try {
+                await signInWithEmailAndPassword(auth, candEmail, pass);
+                authSuccess = true;
+                break;
+              } catch (_) {}
+            }
+
+            const hash = await sha256(pass);
+            const hashTrimmed = await sha256(pass.trim());
+            let loginPorHash = null;
             try {
-              try { await signOut(auth); } catch (_) {}
-              await signInWithEmailAndPassword(auth, targetEmail, pass);
+              loginPorHash = await loginClienteByHash(cliExistente.whatsapp || userInput, hash);
+            } catch (_) {}
+            const hashMatch = loginPorHash || (cliExistente.passwordHash && (cliExistente.passwordHash === hash || cliExistente.passwordHash === hashTrimmed)) || (cliExistente.password && cliExistente.password === pass);
+
+            if (authSuccess || hashMatch) {
               localStorage.setItem(ROLE_KEY, 'solicitante');
-              localStorage.setItem(WA_KEY, cliExistente.whatsapp);
-              localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
-              localStorage.setItem('infovzla_user_nombre', cliExistente.nombre);
+              if (cliExistente.whatsapp) localStorage.setItem(WA_KEY, cliExistente.whatsapp);
+              if (cliExistente.cedula) localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
+              if (cliExistente.nombre) localStorage.setItem('infovzla_user_nombre', cliExistente.nombre);
               if (cliExistente.fotoPerfil) {
                 try { localStorage.setItem('infovzla_user_foto', cliExistente.fotoPerfil); } catch (_) {}
               }
+              try { localStorage.setItem('infovzla_cliente_data', JSON.stringify(cliExistente)); } catch(_) {}
+
+              isAdmin = false;
+              isTecnico = false;
+              userRol = 'solicitante';
+              userWhatsApp = cliExistente.whatsapp || null;
+              userNombre = cliExistente.nombre || 'Solicitante';
+              userCedula = cliExistente.cedula || userInput;
+              userFoto = cliExistente.fotoPerfil || null;
+              clienteData = cliExistente;
+              tecnicoData = null;
+              currentUser = {
+                uid: cliExistente.uid || cliExistente.id || cliExistente.cedula || 'cli',
+                displayName: userNombre,
+                email: cliExistente.email || ''
+              };
+
               showToast('✅ Sesión de Solicitante iniciada con éxito', 'success');
               modal.classList.remove('open');
+              closeModalAuth();
+              notifyListeners();
+              updateNavUI();
               window.location.reload();
               return;
-            } catch (e) {
-              // Verificar hash en base de datos
-              const hash = await sha256(pass);
-              const loginPorHash = await loginClienteByHash(cliExistente.whatsapp || userInput, hash);
-              if (loginPorHash || cliExistente.passwordHash === hash) {
-                localStorage.setItem(ROLE_KEY, 'solicitante');
-                localStorage.setItem(WA_KEY, cliExistente.whatsapp);
-                localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
-                localStorage.setItem('infovzla_user_nombre', cliExistente.nombre);
-                if (cliExistente.fotoPerfil) {
-                  try { localStorage.setItem('infovzla_user_foto', cliExistente.fotoPerfil); } catch (_) {}
-                }
-                showToast('✅ Sesión de Solicitante iniciada con éxito', 'success');
-                modal.classList.remove('open');
-                window.location.reload();
-                return;
-              } else {
-                showToast('❌ Contraseña incorrecta para tu cuenta de Solicitante.', 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🔑 Iniciar Sesión';
-                return;
-              }
+            } else {
+              showToast('❌ Contraseña incorrecta para tu cuenta de Solicitante.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = '🔑 Iniciar Sesión';
+              return;
             }
           }
         }
@@ -1170,7 +1243,12 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         };
         showToast(msgs[err.code] || 'Error: ' + err.message, 'error');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Ingresar';
+        submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : (currentMode === 'registro' ? 'Registrarme' : '🔑 Iniciar Sesión');
+      } finally {
+        if (submitBtn.textContent === 'Procesando...') {
+          submitBtn.disabled = false;
+          submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
+        }
       }
     });
   }
@@ -1225,6 +1303,8 @@ export async function logout() {
   localStorage.removeItem('infovzla_user_cedula');
   localStorage.removeItem('infovzla_user_foto');
   localStorage.removeItem('infovzla_user_nombre');
+  localStorage.removeItem('infovzla_cliente_data');
+  localStorage.removeItem('infovzla_tecnico_data');
   
   currentUser  = null;
   isAdmin      = false;
@@ -1236,6 +1316,10 @@ export async function logout() {
   userFoto     = null;
   tecnicoData  = null;
   clienteData  = null;
+
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('user-logged-in', 'user-is-tecnico', 'user-is-solicitante');
+  }
   
   try {
     await signOut(auth);
@@ -1262,7 +1346,7 @@ export function forceAdmin() {
 }
 
 (function restoreLocalAdmin() {
-  if (typeof localStorage !== 'undefined' && localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
+  if (typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1')) {
     currentUser = { displayName: 'Administrador Principal', email: ADMIN_EMAIL, uid: 'local-admin' };
     isAdmin = true;
     userRol = 'admin';
@@ -1273,7 +1357,7 @@ export function forceAdmin() {
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
-  if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || user?.email === ADMIN_EMAIL) {
+  if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || user?.email === ADMIN_EMAIL) {
     currentUser  = { displayName: 'Administrador Principal', email: ADMIN_EMAIL, uid: user?.uid || 'local-admin' };
     isAdmin      = true;
     isTecnico    = false;
@@ -1286,9 +1370,9 @@ onAuthStateChanged(auth, async user => {
     return;
   }
 
-  const savedRole   = localStorage.getItem(ROLE_KEY) || 'solicitante';
+  const savedRole   = localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || 'solicitante';
   const savedCedula = localStorage.getItem('infovzla_user_cedula') || null;
-  const savedWA     = localStorage.getItem(WA_KEY) || null;
+  const savedWA     = localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null;
   const savedNombre = localStorage.getItem('infovzla_user_nombre') || null;
   const savedFoto   = localStorage.getItem('infovzla_user_foto') || null;
 
@@ -1299,8 +1383,6 @@ onAuthStateChanged(auth, async user => {
   userNombre   = savedNombre;
   userCedula   = savedCedula;
   userFoto     = savedFoto;
-  tecnicoData  = null;
-  clienteData  = null;
 
   if (user) {
     currentUser = user;
@@ -1314,6 +1396,7 @@ onAuthStateChanged(auth, async user => {
           isTecnico    = true;
           userRol      = 'tecnico';
           tecnicoData  = perfilTec;
+          clienteData  = null;
           userWhatsApp = perfilTec.whatsapp || savedWA;
           userNombre   = perfilTec.nombre || savedNombre;
           userCedula   = perfilTec.cedula || savedCedula;
@@ -1323,6 +1406,7 @@ onAuthStateChanged(auth, async user => {
           if (userNombre) localStorage.setItem('infovzla_user_nombre', userNombre);
           if (userCedula) localStorage.setItem('infovzla_user_cedula', userCedula);
           if (userFoto) try { localStorage.setItem('infovzla_user_foto', userFoto); } catch(_) {}
+          try { localStorage.setItem('infovzla_tecnico_data', JSON.stringify(perfilTec)); } catch(_) {}
         }
       } else {
         let perfilCli = await getCliente(user.uid);
@@ -1330,8 +1414,10 @@ onAuthStateChanged(auth, async user => {
         if (!perfilCli && savedWA)     perfilCli = await getClienteByWA(savedWA);
 
         if (perfilCli) {
+          isTecnico    = false;
           userRol      = 'solicitante';
           clienteData  = perfilCli;
+          tecnicoData  = null;
           userWhatsApp = perfilCli.whatsapp || savedWA;
           userNombre   = perfilCli.nombre || savedNombre;
           userCedula   = perfilCli.cedula || savedCedula;
@@ -1341,62 +1427,73 @@ onAuthStateChanged(auth, async user => {
           if (userNombre) localStorage.setItem('infovzla_user_nombre', userNombre);
           if (userCedula) localStorage.setItem('infovzla_user_cedula', userCedula);
           if (userFoto) try { localStorage.setItem('infovzla_user_foto', userFoto); } catch(_) {}
+          try { localStorage.setItem('infovzla_cliente_data', JSON.stringify(perfilCli)); } catch(_) {}
         }
       }
     } catch (e) {
       console.warn('[Auth] Error cargando perfil:', e);
     }
-  } else if (savedCedula || savedWA) {
+  } else if (savedCedula || savedWA || savedRole) {
     // Sesión guardada por Cédula o WhatsApp sin Firebase Auth activo
     try {
       if (savedRole === 'tecnico') {
         let perfilTec = null;
         if (savedCedula) perfilTec = await getTecnicoByCedula(savedCedula);
         if (!perfilTec && savedWA) perfilTec = await getTecnicoByWA(savedWA);
+        if (!perfilTec && typeof localStorage !== 'undefined' && localStorage.getItem('infovzla_tecnico_data')) {
+          try { perfilTec = JSON.parse(localStorage.getItem('infovzla_tecnico_data')); } catch(_) {}
+        }
 
         if (perfilTec) {
           isTecnico    = true;
           userRol      = 'tecnico';
           tecnicoData  = perfilTec;
+          clienteData  = null;
           userWhatsApp = perfilTec.whatsapp || savedWA;
           userNombre   = perfilTec.nombre || savedNombre;
           userCedula   = perfilTec.cedula || savedCedula;
           userFoto     = perfilTec.fotoPerfil || savedFoto;
-          currentUser  = { uid: perfilTec.uid || perfilTec.id || savedCedula, displayName: userNombre, email: perfilTec.email || '' };
-          localStorage.setItem(WA_KEY, userWhatsApp);
+          currentUser  = { uid: perfilTec.uid || perfilTec.id || savedCedula || 'tec', displayName: userNombre, email: perfilTec.email || '' };
+          if (userWhatsApp) localStorage.setItem(WA_KEY, userWhatsApp);
           localStorage.setItem(ROLE_KEY, 'tecnico');
           if (userNombre) localStorage.setItem('infovzla_user_nombre', userNombre);
           if (userCedula) localStorage.setItem('infovzla_user_cedula', userCedula);
           if (userFoto) try { localStorage.setItem('infovzla_user_foto', userFoto); } catch(_) {}
+          try { localStorage.setItem('infovzla_tecnico_data', JSON.stringify(perfilTec)); } catch(_) {}
         } else {
-          currentUser = { uid: savedCedula || savedWA, displayName: savedNombre || 'Técnico IT', email: '' };
+          currentUser = { uid: savedCedula || savedWA || 'tec', displayName: savedNombre || 'Técnico IT', email: '' };
         }
       } else {
         let perfilCli = null;
         if (savedCedula) perfilCli = await getClienteByCedula(savedCedula);
         if (!perfilCli && savedWA) perfilCli = await getClienteByWA(savedWA);
+        if (!perfilCli && typeof localStorage !== 'undefined' && localStorage.getItem('infovzla_cliente_data')) {
+          try { perfilCli = JSON.parse(localStorage.getItem('infovzla_cliente_data')); } catch(_) {}
+        }
 
         if (perfilCli) {
           isTecnico    = false;
           userRol      = 'solicitante';
           clienteData  = perfilCli;
+          tecnicoData  = null;
           userWhatsApp = perfilCli.whatsapp || savedWA;
           userNombre   = perfilCli.nombre || savedNombre;
           userCedula   = perfilCli.cedula || savedCedula;
           userFoto     = perfilCli.fotoPerfil || savedFoto;
-          currentUser  = { uid: perfilCli.uid || perfilCli.id || savedCedula, displayName: userNombre, email: perfilCli.email || '' };
-          localStorage.setItem(WA_KEY, userWhatsApp);
+          currentUser  = { uid: perfilCli.uid || perfilCli.id || savedCedula || 'cli', displayName: userNombre, email: perfilCli.email || '' };
+          if (userWhatsApp) localStorage.setItem(WA_KEY, userWhatsApp);
           localStorage.setItem(ROLE_KEY, 'solicitante');
           if (userNombre) localStorage.setItem('infovzla_user_nombre', userNombre);
           if (userCedula) localStorage.setItem('infovzla_user_cedula', userCedula);
           if (userFoto) try { localStorage.setItem('infovzla_user_foto', userFoto); } catch(_) {}
+          try { localStorage.setItem('infovzla_cliente_data', JSON.stringify(perfilCli)); } catch(_) {}
         } else {
-          currentUser = { uid: savedCedula || savedWA, displayName: savedNombre || 'Solicitante', email: '' };
+          currentUser = { uid: savedCedula || savedWA || 'cli', displayName: savedNombre || 'Solicitante', email: '' };
         }
       }
     } catch (e) {
       console.warn('[Auth] Error recuperando sesión:', e);
-      currentUser = { uid: savedCedula || savedWA, displayName: savedNombre || 'Solicitante', email: '' };
+      currentUser = { uid: savedCedula || savedWA || 'user', displayName: savedNombre || (savedRole === 'tecnico' ? 'Técnico IT' : 'Solicitante'), email: '' };
     }
   } else {
     currentUser  = null;
@@ -1404,6 +1501,8 @@ onAuthStateChanged(auth, async user => {
     userNombre   = null;
     userCedula   = null;
     userFoto     = null;
+    tecnicoData  = null;
+    clienteData  = null;
   }
 
   updateNavUI();

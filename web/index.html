@@ -20,6 +20,37 @@
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 
+  <!-- Anti-flicker y Ocultación Inmediata de Menú Visitante si ya está Logueado -->
+  <script>
+    (function() {
+      try {
+        var r = localStorage.getItem('infovzla_user_role') || localStorage.getItem('ives_user_role');
+        var c = localStorage.getItem('infovzla_user_cedula');
+        var w = localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
+        var a = localStorage.getItem('infovzla_local_admin') || localStorage.getItem('ives_local_admin');
+        if (c || w || a || (r && r !== 'null')) {
+          document.documentElement.classList.add('user-logged-in');
+          if (r === 'tecnico') {
+            document.documentElement.classList.add('user-is-tecnico');
+          } else {
+            document.documentElement.classList.add('user-is-solicitante');
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    html.user-logged-in #portal-guest-section {
+      display: none !important;
+    }
+    html.user-is-solicitante #portal-solicitante-dashboard {
+      display: block !important;
+    }
+    html.user-is-tecnico #portal-tecnico-dashboard {
+      display: block !important;
+    }
+  </style>
+
   <!-- Open Graph / Facebook / WhatsApp (Vista Previa Rica) -->
   <meta property="og:site_name" content="Informáticos Venezuela">
   <meta property="og:title" content="Informáticos Venezuela — Soporte Técnico Especializado & Software">
@@ -1302,10 +1333,21 @@
     const solDash  = document.getElementById('portal-solicitante-dashboard');
     const tecDash  = document.getElementById('portal-tecnico-dashboard');
 
-    if (Auth.currentUser) {
-      if (guestSec) guestSec.style.display = 'none';
+    const role = Auth.userRol || localStorage.getItem('infovzla_user_role') || localStorage.getItem('ives_user_role');
+    const hasUser = !!(Auth.currentUser || localStorage.getItem('infovzla_user_cedula') || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('infovzla_local_admin') || (role && role !== 'null'));
+    const isTec = !!(Auth.isTecnico || role === 'tecnico');
 
-      if (Auth.isTecnico) {
+    if (hasUser) {
+      document.documentElement.classList.add('user-logged-in');
+      if (guestSec) {
+        guestSec.style.display = 'none';
+        guestSec.classList.add('hidden');
+        guestSec.setAttribute('hidden', 'true');
+      }
+
+      if (isTec) {
+        document.documentElement.classList.add('user-is-tecnico');
+        document.documentElement.classList.remove('user-is-solicitante');
         if (solDash) solDash.style.display = 'none';
         if (tecDash) {
           tecDash.style.display = 'block';
@@ -1313,20 +1355,27 @@
           const avatarEl = document.getElementById('tec-dash-avatar');
           const metaEl   = document.getElementById('tec-dash-meta');
           
-          if (nameEl) nameEl.textContent = `¡Hola, ${Auth.userNombre || 'Técnico IT'}!`;
+          const tecName = Auth.userNombre || localStorage.getItem('infovzla_user_nombre') || 'Técnico IT';
+          const tecCed  = Auth.userCedula || localStorage.getItem('infovzla_user_cedula') || '—';
+          const tecWA   = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || '—';
+          const tecFoto = Auth.userFoto || localStorage.getItem('infovzla_user_foto');
+
+          if (nameEl) nameEl.textContent = `¡Hola, ${tecName}!`;
           if (avatarEl) {
-            if (Auth.userFoto) {
-              avatarEl.innerHTML = `<img src="${Auth.userFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
+            if (tecFoto) {
+              avatarEl.innerHTML = `<img src="${tecFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
             } else {
-              avatarEl.textContent = (Auth.userNombre || 'T').charAt(0).toUpperCase();
+              avatarEl.textContent = tecName.charAt(0).toUpperCase();
             }
           }
           if (metaEl) {
-            metaEl.textContent = `Cédula: ${Auth.userCedula || '—'} • WhatsApp: ${Auth.userWhatsApp || '—'}`;
+            metaEl.textContent = `Cédula: ${tecCed} • WhatsApp: ${tecWA}`;
           }
         }
       } else {
         // Solicitante / Cliente
+        document.documentElement.classList.add('user-is-solicitante');
+        document.documentElement.classList.remove('user-is-tecnico');
         if (tecDash) tecDash.style.display = 'none';
         if (solDash) {
           solDash.style.display = 'block';
@@ -1336,49 +1385,64 @@
           const empresaEl= document.getElementById('sol-dash-empresa');
           const waEl     = document.getElementById('sol-dash-wa');
           
-          const cli = Auth.clienteData;
-          if (nameEl) nameEl.textContent = `¡Bienvenido, ${Auth.userNombre || 'Solicitante'}!`;
+          const solName = Auth.userNombre || localStorage.getItem('infovzla_user_nombre') || 'Solicitante';
+          const solCed  = Auth.userCedula || localStorage.getItem('infovzla_user_cedula') || '—';
+          const solWA   = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || '—';
+          const solFoto = Auth.userFoto || localStorage.getItem('infovzla_user_foto');
+          let cli = Auth.clienteData;
+          if (!cli && localStorage.getItem('infovzla_cliente_data')) {
+            try { cli = JSON.parse(localStorage.getItem('infovzla_cliente_data')); } catch(_) {}
+          }
+
+          if (nameEl) nameEl.textContent = `¡Bienvenido, ${solName}!`;
           if (avatarEl) {
-            if (Auth.userFoto) {
-              avatarEl.innerHTML = `<img src="${Auth.userFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
+            if (solFoto) {
+              avatarEl.innerHTML = `<img src="${solFoto}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">`;
             } else {
-              avatarEl.textContent = (Auth.userNombre || 'S').charAt(0).toUpperCase();
+              avatarEl.textContent = solName.charAt(0).toUpperCase();
             }
           }
-          if (cedulaEl)  cedulaEl.textContent  = `🆔 Cédula: ${Auth.userCedula || '—'}`;
+          if (cedulaEl)  cedulaEl.textContent  = `🆔 Cédula: ${solCed}`;
           if (empresaEl) empresaEl.textContent = `🏢 Empresa: ${cli?.compania || cli?.profesion || 'Particular'}`;
-          if (waEl)      waEl.textContent      = `📱 WhatsApp: ${Auth.userWhatsApp || '—'}`;
+          if (waEl)      waEl.textContent      = `📱 WhatsApp: ${solWA}`;
 
           // Cargar información inteligente de soporte / técnico asignado
-          Auth.getSmartSupportUrl().then(supp => {
-            const btnSupp   = document.getElementById('btn-sol-contact-support');
-            const descSupp  = document.getElementById('sol-support-desc');
-            const titleSupp = document.getElementById('sol-support-title');
-            if (supp.isTecnico) {
-              if (titleSupp) titleSupp.textContent = `Chatear con ${supp.tecnicoNombre}`;
-              if (descSupp)  descSupp.innerHTML  = `Tienes una orden activa de <strong>${supp.servicio}</strong>. Comunícate directamente con tu técnico asignado.`;
-              if (btnSupp) {
-                btnSupp.innerHTML = `💬 Chat con ${supp.tecnicoNombre} →`;
-                btnSupp.style.background = '#25D366';
-                btnSupp.style.color = '#ffffff';
-                btnSupp.style.border = 'none';
+          if (typeof Auth.getSmartSupportUrl === 'function') {
+            Auth.getSmartSupportUrl().then(supp => {
+              const btnSupp   = document.getElementById('btn-sol-contact-support');
+              const descSupp  = document.getElementById('sol-support-desc');
+              const titleSupp = document.getElementById('sol-support-title');
+              if (supp && supp.isTecnico) {
+                if (titleSupp) titleSupp.textContent = `Chatear con ${supp.tecnicoNombre}`;
+                if (descSupp)  descSupp.innerHTML  = `Tienes una orden activa de <strong>${supp.servicio}</strong>. Comunícate directamente con tu técnico asignado.`;
+                if (btnSupp) {
+                  btnSupp.innerHTML = `💬 Chat con ${supp.tecnicoNombre} →`;
+                  btnSupp.style.background = '#25D366';
+                  btnSupp.style.color = '#ffffff';
+                  btnSupp.style.border = 'none';
+                }
+              } else {
+                if (titleSupp) titleSupp.textContent = 'Consultar con Soporte';
+                if (descSupp)  descSupp.innerHTML  = 'Comunícate vía WhatsApp con la línea de <strong>Soporte Central (0424-296-4339)</strong> para cualquier consulta.';
+                if (btnSupp) {
+                  btnSupp.innerHTML = '💬 Consultar Soporte (0424-296-4339) →';
+                  btnSupp.style.background = '';
+                  btnSupp.style.color = '';
+                  btnSupp.style.border = '';
+                }
               }
-            } else {
-              if (titleSupp) titleSupp.textContent = 'Consultar con Soporte';
-              if (descSupp)  descSupp.innerHTML  = 'Comunícate vía WhatsApp con la línea de <strong>Soporte Central (0424-296-4339)</strong> para cualquier consulta.';
-              if (btnSupp) {
-                btnSupp.innerHTML = '💬 Consultar Soporte (0424-296-4339) →';
-                btnSupp.style.background = '';
-                btnSupp.style.color = '';
-                btnSupp.style.border = '';
-              }
-            }
-          }).catch(console.warn);
+            }).catch(console.warn);
+          }
         }
       }
     } else {
       // Visitante no autenticado
-      if (guestSec) guestSec.style.display = 'block';
+      document.documentElement.classList.remove('user-logged-in', 'user-is-tecnico', 'user-is-solicitante');
+      if (guestSec) {
+        guestSec.style.display = 'block';
+        guestSec.classList.remove('hidden');
+        guestSec.removeAttribute('hidden');
+      }
       if (solDash)  solDash.style.display  = 'none';
       if (tecDash)  tecDash.style.display  = 'none';
     }

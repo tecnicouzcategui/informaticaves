@@ -7,7 +7,7 @@ import {
   auth, db,
   collection, doc, onSnapshot, query, where,
   getDoc, getDocs, updateDoc, serverTimestamp,
-  getTecnico, getTecnicoByWA, guardarTecnico, actualizarDisponibilidadTecnico,
+  getTecnico, getTecnicoByWA, getTecnicoByCedula, guardarTecnico, actualizarDisponibilidadTecnico,
   actualizarEstadoPorTecnico
 } from './firebase.js';
 
@@ -143,13 +143,20 @@ async function checkAuthAndLoad() {
       // Si es admin o técnico
       let tecData = null;
       if (user.uid) {
-        tecData = await getTecnico(user.uid);
+        try { tecData = await getTecnico(user.uid); } catch(_) {}
       }
-      if (!tecData && userWhatsApp) {
-        tecData = await getTecnicoByWA(userWhatsApp);
+      if (!tecData && (userCedula || localStorage.getItem('infovzla_user_cedula'))) {
+        try { tecData = await getTecnicoByCedula(userCedula || localStorage.getItem('infovzla_user_cedula')); } catch(_) {}
+      }
+      if (!tecData && (userWhatsApp || localStorage.getItem('infovzla_wa_number'))) {
+        try { tecData = await getTecnicoByWA(userWhatsApp || localStorage.getItem('infovzla_wa_number')); } catch(_) {}
+      }
+      if (!tecData && typeof localStorage !== 'undefined' && localStorage.getItem('infovzla_tecnico_data')) {
+        try { tecData = JSON.parse(localStorage.getItem('infovzla_tecnico_data')); } catch(_) {}
       }
 
-      if (!tecData && !admin) {
+      const isTecRole = tec || (typeof localStorage !== 'undefined' && (localStorage.getItem('infovzla_user_role') === 'tecnico' || localStorage.getItem('ives_user_role') === 'tecnico'));
+      if (!tecData && !admin && !isTecRole) {
         if (accessDenied) accessDenied.style.display = 'block';
         if (panelContent) panelContent.style.display = 'none';
         return;
@@ -157,9 +164,11 @@ async function checkAuthAndLoad() {
 
       // Usuario autorizado como técnico
       currentTecnico = tecData || {
-        id: user.uid,
-        nombre: user.displayName || 'Administrador Técnico',
-        whatsapp: userWhatsApp || '—',
+        id: user.uid || userCedula || userWhatsApp || 'tec',
+        nombre: user.displayName || localStorage.getItem('infovzla_user_nombre') || 'Técnico Especialista',
+        whatsapp: userWhatsApp || localStorage.getItem('infovzla_wa_number') || '—',
+        cedula: userCedula || localStorage.getItem('infovzla_user_cedula') || '—',
+        fotoPerfil: userFoto || localStorage.getItem('infovzla_user_foto') || null,
         zona: 'Todas las Zonas',
         especialidades: ['💻 Diagnóstico PC / Laptops', '📡 Redes WiFi', '📹 CCTV & Cámaras'],
         cualidades: ['Diagnóstico PC / Laptops', 'Redes WiFi', 'CCTV & Cámaras'],
