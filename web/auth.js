@@ -45,7 +45,7 @@ function notifyListeners() {
 }
 
 // ── Auth Modal Custom Multi-Rol ──────────────────────────────
-export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login') {
+export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login', lockRole = true) {
   let modal = document.getElementById('modal-auth-custom');
   if (!modal) {
     modal = document.createElement('div');
@@ -55,8 +55,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login')
       <div class="modal-box" style="max-width: 480px; padding: 2rem; position: relative; border: 1px solid rgba(99,179,237,0.25);">
         <button id="auth-close" style="position:absolute; right:15px; top:15px; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
         
-        <!-- Selector de Rol -->
-        <div class="auth-role-tabs" style="display:flex; gap:0.5rem; background:rgba(0,0,0,0.35); padding:4px; border-radius:12px; margin-bottom:0.75rem;">
+        <!-- Selector de Rol (visible solo si lockRole es falso) -->
+        <div id="auth-role-tabs-container" class="auth-role-tabs" style="display:flex; gap:0.5rem; background:rgba(0,0,0,0.35); padding:4px; border-radius:12px; margin-bottom:0.75rem;">
           <button type="button" id="tab-rol-solicitante" class="btn btn-sm w-full" style="background:var(--blue); color:white; border-radius:8px; font-weight:700; font-size:0.85rem; transition:all 0.2s;">👤 Solicitante</button>
           <button type="button" id="tab-rol-tecnico" class="btn btn-sm w-full" style="background:transparent; color:var(--text-muted); border-radius:8px; font-weight:700; font-size:0.85rem; transition:all 0.2s;">⚡ Soy Técnico</button>
         </div>
@@ -172,9 +172,11 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login')
     document.body.appendChild(modal);
 
     // Variables internas
-    let selectedRole = defaultTab;
-    let currentMode   = initialMode; // 'login' | 'registro'
+    let selectedRole = defaultTab || 'solicitante';
+    let currentMode  = initialMode || 'login'; // 'login' | 'registro'
+    let isRoleLocked = lockRole;
 
+    const roleTabsContainer = document.getElementById('auth-role-tabs-container');
     const tabSolicitante = document.getElementById('tab-rol-solicitante');
     const tabTecnico     = document.getElementById('tab-rol-tecnico');
     const tabLogin       = document.getElementById('tab-mode-login');
@@ -195,6 +197,11 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login')
     const recoverBtn     = document.getElementById('auth-btn-recover');
 
     function updateUI() {
+      // Mostrar u ocultar selector de rol
+      if (roleTabsContainer) {
+        roleTabsContainer.style.display = isRoleLocked ? 'none' : 'flex';
+      }
+
       // 1. Estilos Role Tabs
       if (selectedRole === 'tecnico') {
         tabTecnico.style.background = '#f6ad55';
@@ -245,13 +252,13 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login')
 
         if (selectedRole === 'tecnico') {
           modalTitle.textContent = 'Acceso de Técnicos IT';
-          modalDesc.textContent = 'Ingresa con tu WhatsApp para gestionar tus trabajos asignados.';
+          modalDesc.textContent = 'Ingresa con tu WhatsApp para gestionar tus órdenes asignadas.';
           submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
           submitBtn.style.background = '#f6ad55';
           submitBtn.style.color = '#1a202c';
         } else {
           modalTitle.textContent = 'Acceso de Solicitantes';
-          modalDesc.textContent = 'Ingresa con tu WhatsApp para solicitar y seguir tus servicios.';
+          modalDesc.textContent = 'Ingresa con tu WhatsApp para abrir tickets y seguir tus servicios.';
           submitBtn.textContent = '🔑 Iniciar Sesión';
           submitBtn.style.background = 'var(--blue)';
           submitBtn.style.color = 'white';
@@ -273,9 +280,10 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login')
     });
 
     // Guardar referencia en el elemento para llamadas posteriores
-    modal._setTabAndMode = function(role, mode) {
+    modal._setTabAndMode = function(role, mode, lock) {
       selectedRole = role || 'solicitante';
       currentMode  = mode || 'login';
+      isRoleLocked = (typeof lock === 'boolean') ? lock : (role !== null);
       updateUI();
     };
 
@@ -697,8 +705,9 @@ function updateNavUI() {
       if (adminBadge) adminBadge.textContent = 'Administrador';
       adminLink?.classList.remove('hidden');
       navTecnico?.classList.remove('hidden');
-      navSolicitar?.closest('li')?.classList.add('hidden');
-      navMisSolicitudes?.closest('li')?.classList.add('hidden');
+      navSolicitar?.closest('li')?.classList.remove('hidden');
+      navMisSolicitudes?.closest('li')?.classList.remove('hidden');
+      navMisSolicitudes?.classList.remove('hidden');
     } else if (isTecnico) {
       adminBadge?.classList.remove('hidden');
       if (adminBadge) {
@@ -710,13 +719,15 @@ function updateNavUI() {
       adminLink?.classList.add('hidden');
       navTecnico?.classList.remove('hidden');
       navSolicitar?.closest('li')?.classList.add('hidden');
-      navMisSolicitudes?.closest('li')?.classList.add('hidden');
+      navMisSolicitudes?.closest('li')?.classList.remove('hidden');
+      navMisSolicitudes?.classList.remove('hidden');
     } else {
       adminBadge?.classList.add('hidden');
       adminLink?.classList.add('hidden');
       navTecnico?.classList.add('hidden');
       navSolicitar?.closest('li')?.classList.remove('hidden');
       navMisSolicitudes?.closest('li')?.classList.remove('hidden');
+      navMisSolicitudes?.classList.remove('hidden');
     }
   } else {
     btnLogin?.classList.remove('hidden');
@@ -725,7 +736,8 @@ function updateNavUI() {
     adminLink?.classList.add('hidden');
     navTecnico?.classList.add('hidden');
     navSolicitar?.closest('li')?.classList.remove('hidden');
-    navMisSolicitudes?.closest('li')?.classList.remove('hidden');
+    navMisSolicitudes?.closest('li')?.classList.add('hidden');
+    navMisSolicitudes?.classList.add('hidden');
   }
 }
 
