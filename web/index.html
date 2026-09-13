@@ -456,8 +456,8 @@
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
 <script type="module">
-  import * as Auth from './auth.js';
-  import { seedFirestoreIfEmpty } from './firebase.js';
+  import * as Auth from './auth.js?v=2.5';
+  import { seedFirestoreIfEmpty } from './firebase.js?v=2.5';
 
   // Inicializar datos de Firestore si están vacíos
   seedFirestoreIfEmpty().catch(console.warn);
