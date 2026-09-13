@@ -1,15 +1,15 @@
-# InformaticaVES — El Técnico Luis ⚡
+# Informáticos Venezuela — El Técnico Luis ⚡
 
-> **Aplicación web y Android para soporte técnico especializado**  
+> **Plataforma Web, Help Desk y Marketplace de Soporte Técnico Especializado**  
 > Luis Uzcátegui | 30 años de experiencia | Caracas, Venezuela
 
-[![Build APK](https://github.com/TU_USUARIO/informaticaVES/actions/workflows/build_apk.yml/badge.svg)](https://github.com/TU_USUARIO/informaticaVES/actions/workflows/build_apk.yml)
+[![Build APK](https://github.com/tecnicouzcategui/informaticaves/actions/workflows/build_apk.yml/badge.svg)](https://github.com/tecnicouzcategui/informaticaves/actions/workflows/build_apk.yml)
 
 ---
 
 ## 📱 Descripción
 
-**InformaticaVES** es una Progressive Web App (PWA) + App Android que permite a los clientes de El Técnico Luis:
+**Informáticos Venezuela** es una plataforma web PWA y Help Desk multi-rol que permite:
 
 - 📋 **Consultar el catálogo** de servicios informáticos con precios actualizados
 - 🔧 **Solicitar servicios** con selección de urgencia y alertas automáticas a Telegram

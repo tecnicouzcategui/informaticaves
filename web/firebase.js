@@ -1,6 +1,6 @@
 // ============================================================
 // firebase.js — Firebase Config + Firestore Offline Persistence
-// InformaticaVES | El Técnico Luis
+// Informáticos Venezuela | El Técnico Luis
 // ============================================================
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';

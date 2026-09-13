@@ -1,6 +1,6 @@
 // ============================================================
 // auth.js — Autenticación Custom Multi-Rol (Clientes, Técnicos, Admin)
-// InformaticaVES | El Técnico Luis
+// Informáticos Venezuela | El Técnico Luis
 // ============================================================
 
 import {
@@ -217,7 +217,7 @@ export function openAuthModal(defaultTab = 'solicitante') {
         return;
       }
       const adminWa = '584242964339';
-      const text = `Hola Soporte InformaticaVES, soy ${selectedRole === 'tecnico' ? 'el técnico' : 'el usuario'} con WhatsApp ${wa} y solicito restablecer mi contraseña.`;
+      const text = `Hola Soporte Informáticos Venezuela, soy ${selectedRole === 'tecnico' ? 'el técnico' : 'el usuario'} con WhatsApp ${wa} y solicito restablecer mi contraseña.`;
       window.open(`https://wa.me/${adminWa}?text=${encodeURIComponent(text)}`, '_blank');
       showToast('Se abrió WhatsApp para solicitar el reinicio.', 'info');
     });
@@ -266,7 +266,7 @@ export function openAuthModal(defaultTab = 'solicitante') {
     submitBtn.addEventListener('click', async () => {
       const wa = waInput.value.trim();
       const pass = passInput.value;
-      const fakeEmail = `${wa}@informaticaves.app`;
+      const fakeEmail = `${wa}@informaticosvenezuela.com`;
       
       const isRegisteringSolicitante = document.getElementById('auth-register-fields').style.display !== 'none';
       const isRegisteringTecnico     = document.getElementById('auth-tecnico-fields').style.display !== 'none';

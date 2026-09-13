@@ -1,6 +1,6 @@
 // ============================================================
 // solicitud.js — Formulario de Solicitud + Alertas Telegram
-// InformaticaVES | El Técnico Luis
+// Informáticos Venezuela | El Técnico Luis
 // ============================================================
 
 import { guardarSolicitud, getServiciosPublicados, COLS } from './firebase.js';
@@ -232,7 +232,7 @@ function autocompletarDatos() {
     }
     // El correo es siempre editable; solo lo vacíamos si es interno
     if (inputEmail) { 
-      inputEmail.value = (email && !email.includes('@informaticaves.app')) ? email : '';
+      inputEmail.value = (email && !email.includes('@informaticaves.app') && !email.includes('@informaticosvenezuela.com')) ? email : '';
     }
   } else {
     const freeStyle = '';
@@ -370,7 +370,7 @@ async function handleSubmit(e) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          source: 'Web InformaticaVES',
+          source: 'Web Informáticos Venezuela',
           email: solicitudData.email || 'tecnicouzcategui@gmail.com',
           content: `Solicitud Web: ${solicitudData.servicio} (${solicitudData.urgenciaLabel})\nCliente: ${solicitudData.nombre} (WhatsApp: ${solicitudData.whatsapp})\nDirección: ${solicitudData.direccion}\nDetalle: ${solicitudData.descripcion}`
         })

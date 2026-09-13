@@ -1,6 +1,6 @@
 // ============================================================
 // tecnico.js — Lógica del Panel de Técnico
-// InformaticaVES | Red Profesional de Técnicos
+// Informáticos Venezuela | Red Profesional de Técnicos
 // ============================================================
 
 import {
@@ -233,7 +233,7 @@ function renderJobs() {
     
     // Preparar mensaje de WhatsApp para el cliente
     const clienteWa = (job.whatsapp || '').replace(/[^0-9]/g, '');
-    const waMsg = encodeURIComponent(`Hola ${job.nombre || ''}, te saluda ${currentTecnico.nombre}, el técnico asignado a tu solicitud de ${job.servicio || 'servicio técnico'} en InformaticaVES.`);
+    const waMsg = encodeURIComponent(`Hola ${job.nombre || ''}, te saluda ${currentTecnico.nombre}, el técnico asignado a tu solicitud de ${job.servicio || 'servicio técnico'} en Informáticos Venezuela.`);
     const waUrl = `https://wa.me/${clienteWa}?text=${waMsg}`;
 
     return `

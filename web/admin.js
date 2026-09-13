@@ -1,7 +1,7 @@
 // ============================================================
 // admin.js — Panel Administrador (Solo tecnicouzcategui@gmail.com)
 // Flujo: Borrador → Vista Previa → Publicado
-// InformaticaVES | El Técnico Luis
+// Informáticos Venezuela | El Técnico Luis
 // ============================================================
 
 import {
@@ -774,7 +774,7 @@ window.gestionarClave = async function(wa) {
 
       const waNum = '58' + wa.replace(/\D/g,'').slice(-10);
       const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(
-        `¡Hola! Hemos restablecido tu acceso a *InformaticaVES*.\n\n🔑 Tu nueva contraseña es:\n\n*${tempPass}*\n\nPuedes cambiarla luego desde la sección Mis Solicitudes. ¡Saludos!`
+        `¡Hola! Hemos restablecido tu acceso a *Informáticos Venezuela*.\n\n🔑 Tu nueva contraseña es:\n\n*${tempPass}*\n\nPuedes cambiarla luego desde la sección Mis Solicitudes. ¡Saludos!`
       )}`;
 
       modal.innerHTML = `
@@ -1109,7 +1109,7 @@ window.notificarTecnicoWhatsApp = function() {
 
   const tecWa = sanitizeNum(tec.whatsapp);
   const mensaje = encodeURIComponent(
-    `⚡ *NUEVA ORDEN ASIGNADA — InformaticaVES*\n\n` +
+    `⚡ *NUEVA ORDEN ASIGNADA — Informáticos Venezuela*\n\n` +
     `Hola *${tec.nombre}*, se te ha asignado una orden de trabajo:\n\n` +
     `📋 *Servicio:* ${s.servicio}\n` +
     `👤 *Cliente:* ${s.nombre}\n` +
