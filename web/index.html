@@ -28,7 +28,7 @@
         var c = localStorage.getItem('infovzla_user_cedula');
         var w = localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
         var a = localStorage.getItem('infovzla_local_admin') || localStorage.getItem('ives_local_admin');
-        if (c || w || a || (r && r !== 'null')) {
+        if (c || w || a || (r && r !== 'null' && r !== 'undefined')) {
           document.documentElement.classList.add('user-logged-in');
           if (r === 'tecnico') {
             document.documentElement.classList.add('user-is-tecnico');
@@ -40,13 +40,19 @@
     })();
   </script>
   <style>
-    html.user-logged-in #portal-guest-section {
+    html.user-logged-in #portal-guest-section,
+    body.user-logged-in #portal-guest-section,
+    .user-logged-in #portal-guest-section {
       display: none !important;
     }
-    html.user-is-solicitante #portal-solicitante-dashboard {
+    html.user-is-solicitante #portal-solicitante-dashboard,
+    body.user-is-solicitante #portal-solicitante-dashboard,
+    .user-is-solicitante #portal-solicitante-dashboard {
       display: block !important;
     }
-    html.user-is-tecnico #portal-tecnico-dashboard {
+    html.user-is-tecnico #portal-tecnico-dashboard,
+    body.user-is-tecnico #portal-tecnico-dashboard,
+    .user-is-tecnico #portal-tecnico-dashboard {
       display: block !important;
     }
   </style>
@@ -1334,11 +1340,15 @@
     const tecDash  = document.getElementById('portal-tecnico-dashboard');
 
     const role = Auth.userRol || localStorage.getItem('infovzla_user_role') || localStorage.getItem('ives_user_role');
-    const hasUser = !!(Auth.currentUser || localStorage.getItem('infovzla_user_cedula') || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('infovzla_local_admin') || (role && role !== 'null'));
+    const cedula = Auth.userCedula || localStorage.getItem('infovzla_user_cedula');
+    const wa = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
+    const isAdminUser = !!(Auth.isAdmin || localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
+    const hasUser = !!(Auth.currentUser || cedula || wa || isAdminUser || (role && role !== 'null' && role !== 'undefined'));
     const isTec = !!(Auth.isTecnico || role === 'tecnico');
 
     if (hasUser) {
       document.documentElement.classList.add('user-logged-in');
+      if (document.body) document.body.classList.add('user-logged-in');
       if (guestSec) {
         guestSec.style.display = 'none';
         guestSec.classList.add('hidden');
@@ -1348,6 +1358,10 @@
       if (isTec) {
         document.documentElement.classList.add('user-is-tecnico');
         document.documentElement.classList.remove('user-is-solicitante');
+        if (document.body) {
+          document.body.classList.add('user-is-tecnico');
+          document.body.classList.remove('user-is-solicitante');
+        }
         if (solDash) solDash.style.display = 'none';
         if (tecDash) {
           tecDash.style.display = 'block';
@@ -1376,6 +1390,10 @@
         // Solicitante / Cliente
         document.documentElement.classList.add('user-is-solicitante');
         document.documentElement.classList.remove('user-is-tecnico');
+        if (document.body) {
+          document.body.classList.add('user-is-solicitante');
+          document.body.classList.remove('user-is-tecnico');
+        }
         if (tecDash) tecDash.style.display = 'none';
         if (solDash) {
           solDash.style.display = 'block';
@@ -1438,6 +1456,7 @@
     } else {
       // Visitante no autenticado
       document.documentElement.classList.remove('user-logged-in', 'user-is-tecnico', 'user-is-solicitante');
+      if (document.body) document.body.classList.remove('user-logged-in', 'user-is-tecnico', 'user-is-solicitante');
       if (guestSec) {
         guestSec.style.display = 'block';
         guestSec.classList.remove('hidden');

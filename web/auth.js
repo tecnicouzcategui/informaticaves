@@ -1087,36 +1087,64 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             if (!tecExistente) {
               tecExistente = await getTecnicoByWA(userInput);
             }
+            if (!tecExistente && userInput.includes('@')) {
+              try {
+                const qEmail = query(collection(db, COLS.tecnicos), where('email', '==', userInput.toLowerCase()));
+                const snapEmail = await getDocs(qEmail);
+                if (!snapEmail.empty) tecExistente = { id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() };
+              } catch (_) {}
+            }
 
             if (!tecExistente) {
-              showToast('❌ No existe una cuenta de Técnico con esta Cédula o teléfono. Si eres Solicitante cambia a la pestaña Solicitante, o pulsa Registrarme para unirte a la red de técnicos.', 'error');
+              // Comprobar si existe como Solicitante para orientar de inmediato al usuario
+              let cliExistente = await getClienteByCedula(userInput);
+              if (!cliExistente) cliExistente = await getClienteByWA(userInput);
+              if (cliExistente) {
+                showToast('ℹ️ Esta cuenta está registrada como Solicitante. Por favor cambia a la pestaña "👤 Solicitante" arriba para ingresar.', 'info');
+              } else {
+                showToast(`❌ No se encontró ninguna cuenta de Técnico con la Cédula o número (${userInput}). Regístrate en la pestaña Registrarme.`, 'error');
+              }
               submitBtn.disabled = false;
               submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
               return;
             }
 
-            const candEmails = [
-              tecExistente.email,
-              tecExistente.emailPersonal,
-              tecExistente.cedula ? `${tecExistente.cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com` : null,
-              tecExistente.cedulaNum ? `${tecExistente.cedulaNum}@informaticosvenezuela.com` : null,
-              tecExistente.whatsapp ? `${String(tecExistente.whatsapp).replace(/[^0-9]/g, '')}@informaticosvenezuela.com` : null
-            ].filter(Boolean);
-
-            let authSuccess = false;
-            for (const candEmail of candEmails) {
-              try {
-                await signInWithEmailAndPassword(auth, candEmail, pass);
-                authSuccess = true;
-                break;
-              } catch (_) {}
-            }
-
+            // 1. Verificación instantánea por hash SHA-256 local
             const hash = await sha256(pass);
             const hashTrimmed = await sha256(pass.trim());
-            const hashMatch = (tecExistente.passwordHash && (tecExistente.passwordHash === hash || tecExistente.passwordHash === hashTrimmed)) || (tecExistente.password && tecExistente.password === pass);
+            const hashMatch = (tecExistente.passwordHash && (tecExistente.passwordHash === hash || tecExistente.passwordHash === hashTrimmed)) || (tecExistente.password && (tecExistente.password === pass || tecExistente.password === pass.trim()));
+
+            let authSuccess = false;
+            if (!hashMatch) {
+              // 2. Intentar autenticación con Firebase Auth
+              const candEmails = [
+                tecExistente.email,
+                tecExistente.emailPersonal,
+                tecExistente.cedula ? `${tecExistente.cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com` : null,
+                tecExistente.cedulaNum ? `${tecExistente.cedulaNum}@informaticosvenezuela.com` : null,
+                tecExistente.whatsapp ? `${String(tecExistente.whatsapp).replace(/[^0-9]/g, '')}@informaticosvenezuela.com` : null,
+                `tec_${tecExistente.cedulaNum || tecExistente.cedula || ''}@informaticosvenezuela.com`
+              ].filter(Boolean);
+
+              for (const candEmail of candEmails) {
+                try {
+                  await signInWithEmailAndPassword(auth, candEmail, pass);
+                  authSuccess = true;
+                  break;
+                } catch (_) {}
+              }
+            }
 
             if (authSuccess || hashMatch) {
+              if (!tecExistente.passwordHash) {
+                try {
+                  await updateDoc(doc(db, COLS.tecnicos, tecExistente.id || tecExistente.uid), {
+                    passwordHash: hash,
+                    updatedAt: serverTimestamp()
+                  });
+                } catch (_) {}
+              }
+
               localStorage.setItem(ROLE_KEY, 'tecnico');
               if (tecExistente.whatsapp) localStorage.setItem(WA_KEY, tecExistente.whatsapp);
               if (tecExistente.cedula) localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
@@ -1142,7 +1170,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               };
 
               showToast('✅ Sesión de Técnico iniciada con éxito', 'success');
-              modal.classList.remove('open');
               closeModalAuth();
               notifyListeners();
               updateNavUI();
@@ -1161,40 +1188,68 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             if (!cliExistente) {
               cliExistente = await getClienteByWA(userInput);
             }
+            if (!cliExistente && userInput.includes('@')) {
+              try {
+                const qEmail = query(collection(db, COLS.clientes), where('email', '==', userInput.toLowerCase()));
+                const snapEmail = await getDocs(qEmail);
+                if (!snapEmail.empty) cliExistente = { id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() };
+              } catch (_) {}
+            }
 
             if (!cliExistente) {
-              showToast('❌ No existe una cuenta de Solicitante con esta Cédula o teléfono. Si eres Técnico cambia a la pestaña "Soy Técnico", o pulsa Registrarme.', 'error');
+              // Comprobar si existe como Técnico
+              let tecExistente = await getTecnicoByCedula(userInput);
+              if (!tecExistente) tecExistente = await getTecnicoByWA(userInput);
+              if (tecExistente) {
+                showToast('ℹ️ Esta cuenta está registrada como Técnico IT. Por favor cambia a la pestaña "🛠️ Soy Técnico" arriba para ingresar.', 'info');
+              } else {
+                showToast(`❌ No se encontró ninguna cuenta de Solicitante con la Cédula o número (${userInput}). Regístrate en la pestaña Registrarme.`, 'error');
+              }
               submitBtn.disabled = false;
               submitBtn.textContent = '🔑 Iniciar Sesión';
               return;
             }
 
-            const candEmails = [
-              cliExistente.email,
-              cliExistente.emailPersonal,
-              cliExistente.cedula ? `${cliExistente.cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com` : null,
-              cliExistente.cedulaNum ? `${cliExistente.cedulaNum}@informaticosvenezuela.com` : null,
-              cliExistente.whatsapp ? `${String(cliExistente.whatsapp).replace(/[^0-9]/g, '')}@informaticosvenezuela.com` : null
-            ].filter(Boolean);
-
-            let authSuccess = false;
-            for (const candEmail of candEmails) {
-              try {
-                await signInWithEmailAndPassword(auth, candEmail, pass);
-                authSuccess = true;
-                break;
-              } catch (_) {}
-            }
-
+            // 1. Verificación instantánea por hash SHA-256 local
             const hash = await sha256(pass);
             const hashTrimmed = await sha256(pass.trim());
             let loginPorHash = null;
             try {
               loginPorHash = await loginClienteByHash(cliExistente.whatsapp || userInput, hash);
             } catch (_) {}
-            const hashMatch = loginPorHash || (cliExistente.passwordHash && (cliExistente.passwordHash === hash || cliExistente.passwordHash === hashTrimmed)) || (cliExistente.password && cliExistente.password === pass);
+            const hashMatch = loginPorHash || (cliExistente.passwordHash && (cliExistente.passwordHash === hash || cliExistente.passwordHash === hashTrimmed)) || (cliExistente.password && (cliExistente.password === pass || cliExistente.password === pass.trim()));
+
+            let authSuccess = false;
+            if (!hashMatch) {
+              // 2. Intentar autenticación con Firebase Auth
+              const candEmails = [
+                cliExistente.email,
+                cliExistente.emailPersonal,
+                cliExistente.cedula ? `${cliExistente.cedula.replace(/[^a-zA-Z0-9]/g, '')}@informaticosvenezuela.com` : null,
+                cliExistente.cedulaNum ? `${cliExistente.cedulaNum}@informaticosvenezuela.com` : null,
+                cliExistente.whatsapp ? `${String(cliExistente.whatsapp).replace(/[^0-9]/g, '')}@informaticosvenezuela.com` : null,
+                `cli_${cliExistente.cedulaNum || cliExistente.cedula || ''}@informaticosvenezuela.com`
+              ].filter(Boolean);
+
+              for (const candEmail of candEmails) {
+                try {
+                  await signInWithEmailAndPassword(auth, candEmail, pass);
+                  authSuccess = true;
+                  break;
+                } catch (_) {}
+              }
+            }
 
             if (authSuccess || hashMatch) {
+              if (!cliExistente.passwordHash) {
+                try {
+                  await updateDoc(doc(db, COLS.clientes, cliExistente.id || cliExistente.uid), {
+                    passwordHash: hash,
+                    updatedAt: serverTimestamp()
+                  });
+                } catch (_) {}
+              }
+
               localStorage.setItem(ROLE_KEY, 'solicitante');
               if (cliExistente.whatsapp) localStorage.setItem(WA_KEY, cliExistente.whatsapp);
               if (cliExistente.cedula) localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
@@ -1220,7 +1275,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               };
 
               showToast('✅ Sesión de Solicitante iniciada con éxito', 'success');
-              modal.classList.remove('open');
               closeModalAuth();
               notifyListeners();
               updateNavUI();
@@ -1245,9 +1299,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
         submitBtn.disabled = false;
         submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : (currentMode === 'registro' ? 'Registrarme' : '🔑 Iniciar Sesión');
       } finally {
-        if (submitBtn.textContent === 'Procesando...') {
+        if (submitBtn && submitBtn.textContent === 'Procesando...') {
           submitBtn.disabled = false;
-          submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
+          submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : (currentMode === 'registro' ? 'Registrarme' : '🔑 Iniciar Sesión');
         }
       }
     });
@@ -1370,24 +1424,24 @@ onAuthStateChanged(auth, async user => {
     return;
   }
 
-  const savedRole   = localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || 'solicitante';
+  const savedRole   = localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || null;
   const savedCedula = localStorage.getItem('infovzla_user_cedula') || null;
   const savedWA     = localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null;
   const savedNombre = localStorage.getItem('infovzla_user_nombre') || null;
   const savedFoto   = localStorage.getItem('infovzla_user_foto') || null;
 
-  isAdmin      = false;
-  isTecnico    = savedRole === 'tecnico';
-  userRol      = savedRole;
-  userWhatsApp = savedWA;
-  userNombre   = savedNombre;
-  userCedula   = savedCedula;
-  userFoto     = savedFoto;
-
   if (user) {
-    currentUser = user;
+    isAdmin      = false;
+    isTecnico    = savedRole === 'tecnico';
+    userRol      = savedRole || 'solicitante';
+    userWhatsApp = savedWA;
+    userNombre   = savedNombre;
+    userCedula   = savedCedula;
+    userFoto     = savedFoto;
+    currentUser  = user;
+
     try {
-      if (savedRole === 'tecnico') {
+      if (isTecnico) {
         let perfilTec = await getTecnico(user.uid);
         if (!perfilTec && savedCedula) perfilTec = await getTecnicoByCedula(savedCedula);
         if (!perfilTec && savedWA)     perfilTec = await getTecnicoByWA(savedWA);
@@ -1433,10 +1487,18 @@ onAuthStateChanged(auth, async user => {
     } catch (e) {
       console.warn('[Auth] Error cargando perfil:', e);
     }
-  } else if (savedCedula || savedWA || savedRole) {
+  } else if (savedCedula || savedWA || (savedRole && savedRole !== 'null' && savedRole !== 'undefined')) {
     // Sesión guardada por Cédula o WhatsApp sin Firebase Auth activo
+    isAdmin      = false;
+    isTecnico    = savedRole === 'tecnico';
+    userRol      = savedRole || 'solicitante';
+    userWhatsApp = savedWA;
+    userNombre   = savedNombre;
+    userCedula   = savedCedula;
+    userFoto     = savedFoto;
+
     try {
-      if (savedRole === 'tecnico') {
+      if (isTecnico) {
         let perfilTec = null;
         if (savedCedula) perfilTec = await getTecnicoByCedula(savedCedula);
         if (!perfilTec && savedWA) perfilTec = await getTecnicoByWA(savedWA);
@@ -1497,6 +1559,9 @@ onAuthStateChanged(auth, async user => {
     }
   } else {
     currentUser  = null;
+    isAdmin      = false;
+    isTecnico    = false;
+    userRol      = null;
     userWhatsApp = null;
     userNombre   = null;
     userCedula   = null;

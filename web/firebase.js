@@ -188,28 +188,19 @@ export async function getClienteByWA(wa) {
   const digits = raw.replace(/[^0-9]/g, '');
   if (!digits) return null;
 
+  let alt = digits;
+  if (digits.startsWith('58') && digits.length >= 12) {
+    alt = '0' + digits.slice(2);
+  } else if (digits.startsWith('0') && digits.length === 11) {
+    alt = '58' + digits.slice(1);
+  }
+
+  const candidates = Array.from(new Set([raw, digits, alt, '+' + digits])).filter(Boolean);
+
   try {
-    const q1 = query(collection(db, COLS.clientes), where('whatsapp', '==', digits));
+    const q1 = query(collection(db, COLS.clientes), where('whatsapp', 'in', candidates.slice(0, 10)));
     const s1 = await getDocs(q1);
     if (!s1.empty) return { id: s1.docs[0].id, ...s1.docs[0].data() };
-
-    if (raw !== digits) {
-      const q2 = query(collection(db, COLS.clientes), where('whatsapp', '==', raw));
-      const s2 = await getDocs(q2);
-      if (!s2.empty) return { id: s2.docs[0].id, ...s2.docs[0].data() };
-    }
-
-    let alt = digits;
-    if (digits.startsWith('58') && digits.length >= 12) {
-      alt = '0' + digits.slice(2);
-    } else if (digits.startsWith('0') && digits.length === 11) {
-      alt = '58' + digits.slice(1);
-    }
-    if (alt !== digits) {
-      const q3 = query(collection(db, COLS.clientes), where('whatsapp', '==', alt));
-      const s3 = await getDocs(q3);
-      if (!s3.empty) return { id: s3.docs[0].id, ...s3.docs[0].data() };
-    }
 
     // Fallback scan
     const all = await getDocs(collection(db, COLS.clientes));
@@ -230,49 +221,55 @@ export async function getClienteByWA(wa) {
 export async function getClienteByCedula(cedula) {
   if (!cedula) return null;
   const raw = String(cedula).trim();
-  const clean = raw.toUpperCase();
+  const clean = raw.toUpperCase().replace(/\s+/g, '');
   const numOnly = raw.replace(/[^0-9]/g, '');
 
+  const candidates = Array.from(new Set([
+    clean,
+    numOnly,
+    'V-' + numOnly,
+    'V' + numOnly,
+    'E-' + numOnly,
+    'E' + numOnly,
+    'J-' + numOnly,
+    'J' + numOnly
+  ])).filter(Boolean);
+
   try {
-    // 1. Coincidencia exacta limpia (ej: V-12832779, 12832779)
-    const q1 = query(collection(db, COLS.clientes), where('cedula', '==', clean));
-    const s1 = await getDocs(q1);
-    if (!s1.empty) return { id: s1.docs[0].id, ...s1.docs[0].data() };
-
-    if (numOnly) {
-      // 2. Coincidencia por cedulaNum
-      const qNum = query(collection(db, COLS.clientes), where('cedulaNum', '==', numOnly));
-      const sNum = await getDocs(qNum);
-      if (!sNum.empty) return { id: sNum.docs[0].id, ...sNum.docs[0].data() };
-
-      // 3. Con prefijo V-
-      const qV = query(collection(db, COLS.clientes), where('cedula', '==', 'V-' + numOnly));
-      const sV = await getDocs(qV);
-      if (!sV.empty) return { id: sV.docs[0].id, ...sV.docs[0].data() };
-
-      // 4. Con prefijo V
-      const qV2 = query(collection(db, COLS.clientes), where('cedula', '==', 'V' + numOnly));
-      const sV2 = await getDocs(qV2);
-      if (!sV2.empty) return { id: sV2.docs[0].id, ...sV2.docs[0].data() };
-
-      // 5. Con prefijo E-
-      const qE = query(collection(db, COLS.clientes), where('cedula', '==', 'E-' + numOnly));
-      const sE = await getDocs(qE);
-      if (!sE.empty) return { id: sE.docs[0].id, ...sE.docs[0].data() };
-
-      // 6. Solo dígitos
-      const qDigits = query(collection(db, COLS.clientes), where('cedula', '==', numOnly));
-      const sDigits = await getDocs(qDigits);
-      if (!sDigits.empty) return { id: sDigits.docs[0].id, ...sDigits.docs[0].data() };
+    // 1. Coincidencia directa por ID de documento
+    const directPromises = [getDoc(doc(db, COLS.clientes, clean))];
+    if (numOnly && numOnly !== clean) {
+      directPromises.push(getDoc(doc(db, COLS.clientes, numOnly)));
+    }
+    const directSnaps = await Promise.allSettled(directPromises);
+    for (const res of directSnaps) {
+      if (res.status === 'fulfilled' && res.value && res.value.exists()) {
+        return { id: res.value.id, ...res.value.data() };
+      }
     }
 
-    // Fallback: búsqueda en memoria sobre clientes registrados
+    // 2. Coincidencia en paralelo por campo cedula y cedulaNum
+    const queryPromises = [
+      getDocs(query(collection(db, COLS.clientes), where('cedula', 'in', candidates.slice(0, 10))))
+    ];
+    if (numOnly) {
+      queryPromises.push(getDocs(query(collection(db, COLS.clientes), where('cedulaNum', '==', numOnly))));
+    }
+    const querySnaps = await Promise.allSettled(queryPromises);
+    for (const res of querySnaps) {
+      if (res.status === 'fulfilled' && res.value && !res.value.empty) {
+        return { id: res.value.docs[0].id, ...res.value.docs[0].data() };
+      }
+    }
+
+    // 3. Fallback: búsqueda en memoria sobre clientes registrados
     const all = await getDocs(collection(db, COLS.clientes));
     for (const d of all.docs) {
       const data = d.data();
       const docCed = String(data.cedula || '').toUpperCase().replace(/[^0-9]/g, '');
       const docCedNum = String(data.cedulaNum || '').replace(/[^0-9]/g, '');
-      if (numOnly && (docCed === numOnly || docCedNum === numOnly)) {
+      const docId = String(d.id || '').toUpperCase().replace(/[^0-9]/g, '');
+      if (numOnly && (docCed === numOnly || docCedNum === numOnly || docId === numOnly)) {
         return { id: d.id, ...data };
       }
     }
@@ -521,28 +518,19 @@ export async function getTecnicoByWA(wa) {
   const digits = raw.replace(/[^0-9]/g, '');
   if (!digits) return null;
 
+  let alt = digits;
+  if (digits.startsWith('58') && digits.length >= 12) {
+    alt = '0' + digits.slice(2);
+  } else if (digits.startsWith('0') && digits.length === 11) {
+    alt = '58' + digits.slice(1);
+  }
+
+  const candidates = Array.from(new Set([raw, digits, alt, '+' + digits])).filter(Boolean);
+
   try {
-    const q1 = query(collection(db, COLS.tecnicos), where('whatsapp', '==', digits));
+    const q1 = query(collection(db, COLS.tecnicos), where('whatsapp', 'in', candidates.slice(0, 10)));
     const s1 = await getDocs(q1);
     if (!s1.empty) return { id: s1.docs[0].id, ...s1.docs[0].data() };
-
-    if (raw !== digits) {
-      const q2 = query(collection(db, COLS.tecnicos), where('whatsapp', '==', raw));
-      const s2 = await getDocs(q2);
-      if (!s2.empty) return { id: s2.docs[0].id, ...s2.docs[0].data() };
-    }
-
-    let alt = digits;
-    if (digits.startsWith('58') && digits.length >= 12) {
-      alt = '0' + digits.slice(2);
-    } else if (digits.startsWith('0') && digits.length === 11) {
-      alt = '58' + digits.slice(1);
-    }
-    if (alt !== digits) {
-      const q3 = query(collection(db, COLS.tecnicos), where('whatsapp', '==', alt));
-      const s3 = await getDocs(q3);
-      if (!s3.empty) return { id: s3.docs[0].id, ...s3.docs[0].data() };
-    }
 
     // Fallback scan
     const all = await getDocs(collection(db, COLS.tecnicos));
@@ -563,49 +551,55 @@ export async function getTecnicoByWA(wa) {
 export async function getTecnicoByCedula(cedula) {
   if (!cedula) return null;
   const raw = String(cedula).trim();
-  const clean = raw.toUpperCase();
+  const clean = raw.toUpperCase().replace(/\s+/g, '');
   const numOnly = raw.replace(/[^0-9]/g, '');
 
+  const candidates = Array.from(new Set([
+    clean,
+    numOnly,
+    'V-' + numOnly,
+    'V' + numOnly,
+    'E-' + numOnly,
+    'E' + numOnly,
+    'J-' + numOnly,
+    'J' + numOnly
+  ])).filter(Boolean);
+
   try {
-    // 1. Coincidencia exacta limpia (ej: V-12832779, 12832779)
-    const q1 = query(collection(db, COLS.tecnicos), where('cedula', '==', clean));
-    const s1 = await getDocs(q1);
-    if (!s1.empty) return { id: s1.docs[0].id, ...s1.docs[0].data() };
-
-    if (numOnly) {
-      // 2. Coincidencia por cedulaNum
-      const qNum = query(collection(db, COLS.tecnicos), where('cedulaNum', '==', numOnly));
-      const sNum = await getDocs(qNum);
-      if (!sNum.empty) return { id: sNum.docs[0].id, ...sNum.docs[0].data() };
-
-      // 3. Con prefijo V-
-      const qV = query(collection(db, COLS.tecnicos), where('cedula', '==', 'V-' + numOnly));
-      const sV = await getDocs(qV);
-      if (!sV.empty) return { id: sV.docs[0].id, ...sV.docs[0].data() };
-
-      // 4. Con prefijo V
-      const qV2 = query(collection(db, COLS.tecnicos), where('cedula', '==', 'V' + numOnly));
-      const sV2 = await getDocs(qV2);
-      if (!sV2.empty) return { id: sV2.docs[0].id, ...sV2.docs[0].data() };
-
-      // 5. Con prefijo E-
-      const qE = query(collection(db, COLS.tecnicos), where('cedula', '==', 'E-' + numOnly));
-      const sE = await getDocs(qE);
-      if (!sE.empty) return { id: sE.docs[0].id, ...sE.docs[0].data() };
-
-      // 6. Solo dígitos
-      const qDigits = query(collection(db, COLS.tecnicos), where('cedula', '==', numOnly));
-      const sDigits = await getDocs(qDigits);
-      if (!sDigits.empty) return { id: sDigits.docs[0].id, ...sDigits.docs[0].data() };
+    // 1. Coincidencia directa por ID de documento
+    const directPromises = [getDoc(doc(db, COLS.tecnicos, clean))];
+    if (numOnly && numOnly !== clean) {
+      directPromises.push(getDoc(doc(db, COLS.tecnicos, numOnly)));
+    }
+    const directSnaps = await Promise.allSettled(directPromises);
+    for (const res of directSnaps) {
+      if (res.status === 'fulfilled' && res.value && res.value.exists()) {
+        return { id: res.value.id, ...res.value.data() };
+      }
     }
 
-    // Fallback: búsqueda en memoria sobre técnicos registrados
+    // 2. Coincidencia en paralelo por campo cedula y cedulaNum
+    const queryPromises = [
+      getDocs(query(collection(db, COLS.tecnicos), where('cedula', 'in', candidates.slice(0, 10))))
+    ];
+    if (numOnly) {
+      queryPromises.push(getDocs(query(collection(db, COLS.tecnicos), where('cedulaNum', '==', numOnly))));
+    }
+    const querySnaps = await Promise.allSettled(queryPromises);
+    for (const res of querySnaps) {
+      if (res.status === 'fulfilled' && res.value && !res.value.empty) {
+        return { id: res.value.docs[0].id, ...res.value.docs[0].data() };
+      }
+    }
+
+    // 3. Fallback: búsqueda en memoria sobre técnicos registrados
     const all = await getDocs(collection(db, COLS.tecnicos));
     for (const d of all.docs) {
       const data = d.data();
       const docCed = String(data.cedula || '').toUpperCase().replace(/[^0-9]/g, '');
       const docCedNum = String(data.cedulaNum || '').replace(/[^0-9]/g, '');
-      if (numOnly && (docCed === numOnly || docCedNum === numOnly)) {
+      const docId = String(d.id || '').toUpperCase().replace(/[^0-9]/g, '');
+      if (numOnly && (docCed === numOnly || docCedNum === numOnly || docId === numOnly)) {
         return { id: d.id, ...data };
       }
     }
