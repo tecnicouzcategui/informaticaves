@@ -212,7 +212,33 @@
     <div style="font-size:2.5rem;margin-bottom:0.5rem;">📋</div>
     <h1 style="font-size:1.6rem;font-weight:800;color:var(--text);margin-bottom:0.4rem;">Mis Solicitudes</h1>
     <p style="color:var(--text-dim);font-size:0.9rem;">Consulta el estado de tus solicitudes en tiempo real</p>
-    <button id="btn-cambiar-pass" class="btn btn-sm" style="background:var(--blue); color:white; border:none; margin-top:1rem; display:none;">🔑 Cambiar Contraseña</button>
+  </div>
+
+  <!-- Perfil del Solicitante Activo -->
+  <div id="cli-profile-card" style="display:none; background: linear-gradient(135deg, rgba(99,179,237,0.12), rgba(49,130,206,0.06)); border: 1px solid rgba(99,179,237,0.3); border-radius: 1.25rem; padding: 1.5rem; margin-bottom: 2rem;">
+    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1.25rem;">
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <div id="cli-card-avatar" style="width:64px; height:64px; border-radius:50%; overflow:hidden; background:linear-gradient(135deg, #3182ce, #63b3ed); display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:800; color:white; border:2px solid var(--blue); flex-shrink:0; box-shadow:0 4px 15px rgba(99,179,237,0.25);">
+          👤
+        </div>
+        <div>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.2rem;">
+            <h2 id="cli-card-nombre" style="font-size:1.25rem; font-weight:800; color:var(--text); margin:0;">Nombre Solicitante</h2>
+            <span class="badge" style="background:rgba(99,179,237,0.2); color:#63b3ed; font-size:0.72rem; border:1px solid rgba(99,179,237,0.4);">👤 Solicitante Activo</span>
+          </div>
+          <div id="cli-card-info" style="font-size:0.82rem; color:var(--text-muted); display:flex; flex-direction:column; gap:0.2rem;">
+            <span id="cli-card-cedula">🆔 Cédula (Usuario): —</span>
+            <span id="cli-card-compania">🏢 Empresa: —</span>
+            <span id="cli-card-profesion">💼 Profesión / Cargo: —</span>
+            <span id="cli-card-contacto">📱 WhatsApp: —</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <a href="solicitud.html" class="btn btn-primary btn-sm" style="font-weight:700;">➕ Nueva Solicitud</a>
+        <button id="btn-cambiar-pass" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">🔑 Cambiar Clave</button>
+      </div>
+    </div>
   </div>
 
   <!-- Buscar por WhatsApp (solo para usuarios no logueados) -->
@@ -293,41 +319,75 @@
 
   // ── Auth UI ──────────────────────────────────────────
   document.getElementById('btn-login')?.addEventListener('click', () => Auth.openAuthModal());
-  // El avatar ahora es manejado por auth.js (openProfileDropdown)
 
   const btnCambiarPassGlobal = document.getElementById('btn-cambiar-pass');
+  btnCambiarPassGlobal?.addEventListener('click', () => {
+    document.getElementById('modal-cambiar-pass')?.classList.add('open');
+  });
+
   onAuthChange(user => {
     const navAdmin = document.getElementById('nav-admin');
     const badge    = document.getElementById('admin-badge');
     const avatar   = document.getElementById('user-avatar');
     const btnLogin = document.getElementById('btn-login');
     const searchSection = document.getElementById('search-section');
+    const cliProfileCard = document.getElementById('cli-profile-card');
+
     if (user) {
       btnLogin?.classList.add('hidden');
       avatar?.classList.remove('hidden');
-      const nombre = Auth.userNombre || user.displayName || user.email || 'U';
-      avatar.textContent = nombre.charAt(0).toUpperCase();
+      const nombre = Auth.userNombre || user.displayName || user.email || 'Solicitante';
+      if (avatar) avatar.textContent = nombre.charAt(0).toUpperCase();
+
       if (Auth.isAdmin) {
         navAdmin?.classList.remove('hidden');
         badge?.classList.remove('hidden');
-        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'none';
+        if (cliProfileCard) cliProfileCard.style.display = 'none';
       } else {
-        // Cliente normal: mostrar botón cambiar contraseña
-        if (btnCambiarPassGlobal) btnCambiarPassGlobal.style.display = 'inline-block';
+        // Renderizar Tarjeta de Perfil de Solicitante
+        if (cliProfileCard) {
+          cliProfileCard.style.display = 'block';
+          const avatarEl   = document.getElementById('cli-card-avatar');
+          const nombreEl   = document.getElementById('cli-card-nombre');
+          const cedulaEl   = document.getElementById('cli-card-cedula');
+          const companiaEl = document.getElementById('cli-card-compania');
+          const profEl     = document.getElementById('cli-card-profesion');
+          const contactoEl = document.getElementById('cli-card-contacto');
+
+          const foto = Auth.userFoto || (Auth.clienteData && Auth.clienteData.fotoPerfil);
+          if (avatarEl) {
+            avatarEl.innerHTML = foto ? `<img src="${foto}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">` : nombre.charAt(0).toUpperCase();
+          }
+          if (nombreEl) nombreEl.textContent = nombre;
+          
+          const cedula = Auth.userCedula || (Auth.clienteData && Auth.clienteData.cedula) || localStorage.getItem('infovzla_user_cedula') || '—';
+          if (cedulaEl) cedulaEl.innerHTML = `🆔 <strong>Cédula (Usuario):</strong> <span style="color:var(--text);">${cedula}</span>`;
+
+          const comp = (Auth.clienteData && Auth.clienteData.compania) || 'Particular';
+          const dirComp = (Auth.clienteData && Auth.clienteData.direccionCompania) ? ` (${Auth.clienteData.direccionCompania})` : '';
+          if (companiaEl) companiaEl.innerHTML = `🏢 <strong>Empresa / Sede:</strong> <span style="color:var(--text);">${comp}${dirComp}</span>`;
+
+          const prof = (Auth.clienteData && Auth.clienteData.profesion) || 'Cliente';
+          if (profEl) profEl.innerHTML = `💼 <strong>Profesión / Cargo:</strong> <span style="color:var(--text);">${prof}</span>`;
+
+          const wa = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || '—';
+          const em = (Auth.clienteData && Auth.clienteData.email) || user.email || '';
+          if (contactoEl) contactoEl.innerHTML = `📱 <strong>Contacto:</strong> <span style="color:var(--text);">${wa}</span> ${em ? `• 📧 <span style="color:var(--text);">${em}</span>` : ''}`;
+        }
       }
+
       // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
       const wa = Auth.getWhatsApp ? Auth.getWhatsApp() : (Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number'));
       if (wa) {
         if (searchSection) searchSection.style.display = 'none';
         const inputWa = document.getElementById('input-buscar-wa');
         if (inputWa) inputWa.value = wa;
-        // Esperar un tick para que buscarSolicitudes esté definida
         setTimeout(() => buscarSolicitudes(), 0);
       } else {
-        // No tiene WhatsApp en Auth → mostrar buscador
         if (searchSection) searchSection.style.display = '';
       }
     } else {
+      if (cliProfileCard) cliProfileCard.style.display = 'none';
       btnLogin?.classList.remove('hidden');
       avatar?.classList.add('hidden');
       if (searchSection) searchSection.style.display = '';

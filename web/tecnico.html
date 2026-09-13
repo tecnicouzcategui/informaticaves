@@ -194,8 +194,17 @@
               <h1 id="tec-header-name" style="font-size:1.4rem; font-weight:800; color:var(--text); margin:0;">Cargando...</h1>
               <span id="tec-status-badge" class="badge" style="background:rgba(104,211,145,0.15); color:#68d391; font-size:0.7rem;">Activo</span>
             </div>
-            <p id="tec-header-specs" style="color:var(--text-muted); font-size:0.84rem; margin:0; margin-bottom:0.35rem;">Especialidades</p>
-            <div style="display:flex; gap:0.75rem; font-size:0.78rem; color:var(--text-dim);">
+            <div id="tec-header-specs-container" style="margin-bottom:0.5rem;">
+              <div id="tec-header-specs-badges" style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.35rem;">
+                <!-- Badges de especialidades activas -->
+              </div>
+              <button id="btn-open-manage-specs" class="btn btn-sm" style="background:rgba(246,173,85,0.18); border:1px solid rgba(246,173,85,0.4); color:#f6ad55; font-size:0.75rem; padding:3px 10px; border-radius:6px; cursor:pointer;">
+                ⚙️ Modificar Mis Especialidades / Iconos
+              </button>
+            </div>
+            <div style="display:flex; gap:0.75rem; font-size:0.78rem; color:var(--text-dim); flex-wrap:wrap;">
+              <span id="tec-header-cedula">🆔 Cédula: —</span>
+              <span>•</span>
               <span id="tec-header-wa">📱 WhatsApp</span>
               <span>•</span>
               <span id="tec-header-zona">📍 Zona</span>
@@ -281,6 +290,44 @@
     <div class="flex" style="gap:0.75rem;">
       <button class="btn btn-secondary w-full" id="modal-update-cancel">Cancelar</button>
       <button class="btn btn-primary w-full" id="modal-update-save" style="background:#f6ad55; color:#1a202c; font-weight:700;">💾 Guardar Cambio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Gestionar Especialidades & Categorías ──────────── -->
+<div class="modal-backdrop" id="modal-manage-specialties">
+  <div class="modal-box" style="max-width: 540px; padding: 2rem; max-height: 90vh; overflow-y: auto;">
+    <button class="modal-close" id="modal-manage-specs-close">&times;</button>
+    <h3 style="margin-bottom:0.25rem; font-size:1.25rem; font-weight:800; color:var(--text);">⚙️ Mis Especialidades & Iconos</h3>
+    <p style="color:var(--text-muted); font-size:0.82rem; margin-bottom:1.25rem;">
+      Agrega, modifica o elimina tus categorías de servicio. Cada icono se activará en tu perfil profesional.
+    </p>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <label class="form-label" style="margin:0;">Renglones de Especialidades</label>
+        <button type="button" id="tec-manage-add-row" class="btn btn-sm" style="background:rgba(246,173,85,0.2); color:#f6ad55; border:1px solid rgba(246,173,85,0.4); font-size:0.75rem; padding:2px 8px; border-radius:6px; cursor:pointer;">
+          ➕ Agregar Renglón
+        </button>
+      </div>
+      <div id="tec-manage-rows-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+        <!-- Filas cargadas dinámicamente -->
+      </div>
+    </div>
+
+    <!-- Vista previa de chips activos -->
+    <div style="margin-bottom:1.5rem; background:rgba(0,0,0,0.3); border:1px solid rgba(246,173,85,0.25); border-radius:8px; padding:0.75rem;">
+      <div style="font-size:0.75rem; font-weight:700; color:#f6ad55; margin-bottom:0.4rem;">
+        ⚡ Vista Previa de Iconos Activos en tu Perfil:
+      </div>
+      <div id="tec-manage-active-badges" style="display:flex; flex-wrap:wrap; gap:0.4rem; min-height:28px;">
+        <!-- Badges dinámicos -->
+      </div>
+    </div>
+
+    <div class="flex" style="gap:0.75rem;">
+      <button class="btn btn-secondary w-full" id="modal-manage-specs-cancel">Cancelar</button>
+      <button class="btn btn-primary w-full" id="modal-manage-specs-save" style="background:#f6ad55; color:#1a202c; font-weight:700;">💾 Guardar Especialidades</button>
     </div>
   </div>
 </div>

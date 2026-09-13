@@ -75,6 +75,9 @@ export let isTecnico   = false;
 export let userRol     = null; // 'admin' | 'tecnico' | 'solicitante'
 export let userWhatsApp = null;
 export let userNombre   = null;
+export let userCedula   = null;
+export let userFoto     = null;
+export let clienteData  = null;
 export let tecnicoData  = null;
 
 // ── Callbacks registrados ────────────────────────────────────
@@ -251,33 +254,87 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               <span>9. Especialidades Técnicas & Cualidades (Renglón por renglón) *</span>
               <button type="button" id="tec-btn-add-cualidad" class="btn btn-sm" style="background:rgba(246,173,85,0.25); color:#f6ad55; border:1px solid rgba(246,173,85,0.4); font-size:0.75rem; padding:2px 8px; border-radius:6px; cursor:pointer;">➕ Agregar Renglón</button>
             </label>
-            <div id="tec-cualidades-list" style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.35rem;">
+            <div id="tec-cualidades-list" style="display:flex; flex-direction:column; gap:0.45rem; margin-top:0.35rem;">
               <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
-                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 1: Ej: Diagnóstico y reparación de PC / Laptops Windows y Linux" style="font-size:0.83rem; padding:0.5rem;" required>
+                <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
+                  <option value="💻" selected>💻</option>
+                  <option value="📡">📡</option>
+                  <option value="📹">📹</option>
+                  <option value="🐧">🐧</option>
+                  <option value="🖨️">🖨️</option>
+                  <option value="🌐">🌐</option>
+                  <option value="⚡">⚡</option>
+                  <option value="🔧">🔧</option>
+                  <option value="📱">📱</option>
+                  <option value="🔒">🔒</option>
+                  <option value="💾">💾</option>
+                  <option value="🛡️">🛡️</option>
+                  <option value="🛠️">🛠️</option>
+                  <option value="🔌">🔌</option>
+                  <option value="🖥️">🖥️</option>
+                  <option value="⚙️">⚙️</option>
+                </select>
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 1: Ej: Diagnóstico y reparación de PC / Laptops" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="Diagnóstico y reparación de PC / Laptops Windows y Linux" required>
                 <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
               </div>
               <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
-                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 2: Ej: Configuración de redes WiFi, routers y cableado estructurado" style="font-size:0.83rem; padding:0.5rem;">
+                <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
+                  <option value="💻">💻</option>
+                  <option value="📡" selected>📡</option>
+                  <option value="📹">📹</option>
+                  <option value="🐧">🐧</option>
+                  <option value="🖨️">🖨️</option>
+                  <option value="🌐">🌐</option>
+                  <option value="⚡">⚡</option>
+                  <option value="🔧">🔧</option>
+                  <option value="📱">📱</option>
+                  <option value="🔒">🔒</option>
+                  <option value="💾">💾</option>
+                  <option value="🛡️">🛡️</option>
+                  <option value="🛠️">🛠️</option>
+                  <option value="🔌">🔌</option>
+                  <option value="🖥️">🖥️</option>
+                  <option value="⚙️">⚙️</option>
+                </select>
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 2: Ej: Configuración de redes WiFi y routers" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="Configuración de redes WiFi, routers y cableado">
                 <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
               </div>
               <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
-                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 3: Ej: Instalación de cámaras CCTV, DVR, NVR y control de acceso" style="font-size:0.83rem; padding:0.5rem;">
+                <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
+                  <option value="💻">💻</option>
+                  <option value="📡">📡</option>
+                  <option value="📹" selected>📹</option>
+                  <option value="🐧">🐧</option>
+                  <option value="🖨️">🖨️</option>
+                  <option value="🌐">🌐</option>
+                  <option value="⚡">⚡</option>
+                  <option value="🔧">🔧</option>
+                  <option value="📱">📱</option>
+                  <option value="🔒">🔒</option>
+                  <option value="💾">💾</option>
+                  <option value="🛡️">🛡️</option>
+                  <option value="🛠️">🛠️</option>
+                  <option value="🔌">🔌</option>
+                  <option value="🖥️">🖥️</option>
+                  <option value="⚙️">⚙️</option>
+                </select>
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 3: Ej: Instalación de cámaras CCTV y seguridad" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="Instalación de cámaras CCTV, DVR, NVR y seguridad">
                 <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
               </div>
             </div>
-            <small style="color:var(--text-muted); font-size:0.72rem; display:block; margin-top:4px;">Indica renglón por renglón tus cualidades y fortalezas técnicas.</small>
-          </div>
 
-          <div class="form-group" style="margin-bottom:0.25rem;">
-            <label class="form-label" style="margin-bottom:0.4rem; display:block;">Categorías Rápidas:</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; font-size:0.78rem; color:var(--text-muted);">
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Soporte PC / Laptops"> 💻 PC & Laptops</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Redes & WiFi"> 📡 Redes & WiFi</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="CCTV & Cámaras"> 📹 CCTV & Cámaras</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Linux & Servidores"> 🐧 Linux & Servers</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Impresoras & Periféricos"> 🖨️ Impresoras / Hardware</label>
-              <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" name="tec_esp" value="Software & Sistemas"> 🌐 Software & Web</label>
+            <!-- Iconos & Categorías Activas en Tiempo Real -->
+            <div style="margin-top:0.75rem; background:rgba(0,0,0,0.3); border:1px solid rgba(246,173,85,0.25); border-radius:8px; padding:0.65rem;">
+              <div style="font-size:0.75rem; font-weight:700; color:#f6ad55; margin-bottom:0.4rem; display:flex; align-items:center; justify-content:space-between;">
+                <span>⚡ Categorías & Iconos Activos en tu Perfil:</span>
+                <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">(Se activan automáticamente)</span>
+              </div>
+              <div id="tec-active-badges" style="display:flex; flex-wrap:wrap; gap:0.4rem; min-height:28px;">
+                <!-- Badges renderizados dinámicamente -->
+              </div>
             </div>
+
+            <small style="color:var(--text-muted); font-size:0.72rem; display:block; margin-top:4px;">Elige el icono y escribe tu especialidad. Puedes agregar, modificar o eliminar renglones.</small>
           </div>
         </div>
         
@@ -391,9 +448,94 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       }
     });
 
-    // Manejo dinámico de Renglones de Cualidades para Técnico
+    // Manejo dinámico de Renglones de Cualidades & Iconos para Técnico
     const btnAddCualidad = document.getElementById('tec-btn-add-cualidad');
     const cualidadesList = document.getElementById('tec-cualidades-list');
+    const badgesContainer = document.getElementById('tec-active-badges');
+
+    const ICONS_OPTIONS = `
+      <option value="💻">💻</option>
+      <option value="📡">📡</option>
+      <option value="📹">📹</option>
+      <option value="🐧">🐧</option>
+      <option value="🖨️">🖨️</option>
+      <option value="🌐">🌐</option>
+      <option value="⚡">⚡</option>
+      <option value="🔧">🔧</option>
+      <option value="📱">📱</option>
+      <option value="🔒">🔒</option>
+      <option value="💾">💾</option>
+      <option value="🛡️">🛡️</option>
+      <option value="🛠️">🛠️</option>
+      <option value="🔌">🔌</option>
+      <option value="🖥️">🖥️</option>
+      <option value="⚙️">⚙️</option>
+    `;
+
+    function detectIconForText(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes('wifi') || lower.includes('red') || lower.includes('router') || lower.includes('switch') || lower.includes('internet') || lower.includes('mikrotik')) return '📡';
+      if (lower.includes('camara') || lower.includes('cctv') || lower.includes('dvr') || lower.includes('nvr') || lower.includes('seguridad')) return '📹';
+      if (lower.includes('linux') || lower.includes('ubuntu') || lower.includes('debian') || lower.includes('server') || lower.includes('servidor')) return '🐧';
+      if (lower.includes('impresora') || lower.includes('toner') || lower.includes('escaner') || lower.includes('hardware')) return '🖨️';
+      if (lower.includes('pc') || lower.includes('laptop') || lower.includes('computadora') || lower.includes('windows') || lower.includes('formateo')) return '💻';
+      if (lower.includes('web') || lower.includes('software') || lower.includes('sistema') || lower.includes('sql') || lower.includes('app')) return '🌐';
+      if (lower.includes('ups') || lower.includes('electric') || lower.includes('inversor') || lower.includes('voltaje')) return '⚡';
+      if (lower.includes('mantenimiento') || lower.includes('limpieza') || lower.includes('reparac')) return '🔧';
+      if (lower.includes('celular') || lower.includes('telefono') || lower.includes('movil')) return '📱';
+      if (lower.includes('antivirus') || lower.includes('virus') || lower.includes('bloqueo')) return '🔒';
+      if (lower.includes('disco') || lower.includes('backup') || lower.includes('respaldo') || lower.includes('recuperacion')) return '💾';
+      if (lower.includes('firewall') || lower.includes('ciberseguridad') || lower.includes('vpn')) return '🛡️';
+      if (lower.includes('cableado') || lower.includes('utp') || lower.includes('fibra') || lower.includes('rack')) return '🔌';
+      return null;
+    }
+
+    function updateActiveBadges() {
+      if (!badgesContainer || !cualidadesList) return;
+      const rows = cualidadesList.querySelectorAll('.cualidad-row');
+      const badges = [];
+      rows.forEach(row => {
+        const icon = row.querySelector('.tec-cualidad-icon')?.value || '🛠️';
+        const text = row.querySelector('.tec-cualidad-input')?.value.trim();
+        if (text) {
+          badges.push({ icon, text });
+        }
+      });
+
+      if (badges.length === 0) {
+        badgesContainer.innerHTML = `<span style="font-size:0.75rem; color:var(--text-dim); font-style:italic;">Escribe tus especialidades arriba para activar tus iconos aquí.</span>`;
+      } else {
+        badgesContainer.innerHTML = badges.map(b => `
+          <span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(246,173,85,0.18); border:1px solid rgba(246,173,85,0.45); color:#fbd38d; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:700;">
+            <span style="font-size:0.95rem;">${b.icon}</span> ${b.text.length > 25 ? b.text.substring(0, 25) + '...' : b.text}
+          </span>
+        `).join('');
+      }
+    }
+
+    function bindRowEvents(row) {
+      const input = row.querySelector('.tec-cualidad-input');
+      const iconSelect = row.querySelector('.tec-cualidad-icon');
+      
+      input?.addEventListener('input', () => {
+        if (!row.dataset.iconManual) {
+          const autoIcon = detectIconForText(input.value);
+          if (autoIcon && iconSelect) {
+            iconSelect.value = autoIcon;
+          }
+        }
+        updateActiveBadges();
+      });
+
+      iconSelect?.addEventListener('change', () => {
+        row.dataset.iconManual = '1';
+        updateActiveBadges();
+      });
+    }
+
+    // Bind existing rows
+    cualidadesList?.querySelectorAll('.cualidad-row').forEach(bindRowEvents);
+    updateActiveBadges();
 
     btnAddCualidad?.addEventListener('click', () => {
       if (!cualidadesList) return;
@@ -402,11 +544,16 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       row.className = 'cualidad-row';
       row.style.cssText = 'display:flex; gap:0.4rem; align-items:center;';
       row.innerHTML = `
-        <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón ${rowCount}: Escribe otra cualidad o especialidad..." style="font-size:0.83rem; padding:0.5rem;">
+        <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
+          ${ICONS_OPTIONS}
+        </select>
+        <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón ${rowCount}: Escribe otra especialidad técnica..." style="font-size:0.83rem; padding:0.5rem; flex:1;">
         <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
       `;
       cualidadesList.appendChild(row);
+      bindRowEvents(row);
       row.querySelector('.tec-cualidad-input')?.focus();
+      updateActiveBadges();
     });
 
     cualidadesList?.addEventListener('click', (e) => {
@@ -418,6 +565,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           const input = allRows[0].querySelector('.tec-cualidad-input');
           if (input) input.value = '';
         }
+        updateActiveBadges();
       }
     });
 
@@ -595,11 +743,18 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           const emailInput   = document.getElementById('tec-email')?.value.trim();
           const profesion    = document.getElementById('tec-profesion')?.value.trim();
 
-          const cualidadInputs = document.querySelectorAll('.tec-cualidad-input');
-          const cualidades = Array.from(cualidadInputs).map(i => i.value.trim()).filter(v => v.length > 0);
+          const cualidadRows = document.querySelectorAll('#tec-cualidades-list .cualidad-row');
+          const especialidades = [];
+          const cualidades = [];
 
-          const espNodes = document.querySelectorAll('input[name="tec_esp"]:checked');
-          const especialidadesCategorias = Array.from(espNodes).map(n => n.value);
+          cualidadRows.forEach(row => {
+            const icon = row.querySelector('.tec-cualidad-icon')?.value || '🛠️';
+            const text = row.querySelector('.tec-cualidad-input')?.value.trim();
+            if (text) {
+              especialidades.push(`${icon} ${text}`);
+              cualidades.push(text);
+            }
+          });
 
           // Validaciones estrictas
           if (!uploadedTecnicoFotoBase64) {
@@ -641,9 +796,9 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             document.getElementById('tec-profesion')?.focus();
             submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
           }
-          if (cualidades.length === 0) {
+          if (especialidades.length === 0) {
             showToast('Debes ingresar al menos una cualidad / especialidad técnica en los renglones.', 'error');
-            cualidadInputs[0]?.focus();
+            document.querySelector('.tec-cualidad-input')?.focus();
             submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
           }
 
@@ -686,7 +841,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             zona: zona,
             profesion: profesion,
             cualidades: cualidades,
-            especialidades: especialidadesCategorias.length > 0 ? especialidadesCategorias : cualidades,
+            especialidades: especialidades,
             fotoPerfil: uploadedTecnicoFotoBase64,
             passwordHash: hash,
             rol: 'tecnico',
@@ -817,66 +972,116 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           return;
 
         } else {
-          // ── INICIAR SESIÓN (Solicitante o Técnico)
+          // ── INICIAR SESIÓN CON VALIDACIÓN ESTRICTA DE ROL (TÉCNICO O SOLICITANTE)
           const userInput = waInput.value.trim();
           if (!userInput) {
             showToast('Ingresa tu Cédula o WhatsApp para ingresar.', 'error');
-            submitBtn.disabled = false; submitBtn.textContent = 'Ingresar'; return;
-          }
-
-          let cliExistente = await getClienteByCedula(userInput);
-          if (!cliExistente) {
-            cliExistente = await getClienteByWA(userInput.replace(/[^0-9]/g, ''));
-          }
-
-          let tecExistente = null;
-          if (!cliExistente) {
-            tecExistente = await getTecnicoByCedula(userInput);
-            if (!tecExistente) {
-              tecExistente = await getTecnicoByWA(userInput.replace(/[^0-9]/g, ''));
-            }
-          }
-
-          if (!tecExistente && !cliExistente) {
-            showToast('Usuario o número no registrado. Selecciona "Registrarme" para crear tu cuenta.', 'info');
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Ingresar';
+            submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
             return;
           }
 
-          const targetEmail = cliExistente ? (cliExistente.email || `${cliExistente.whatsapp}@informaticosvenezuela.com`) : (tecExistente.email || `${tecExistente.whatsapp}@informaticosvenezuela.com`);
-
-          // Intentar Login con Firebase Auth
-          try {
-            await signInWithEmailAndPassword(auth, targetEmail, pass);
-            showToast('✅ Sesión iniciada con éxito', 'success');
-            modal.classList.remove('open');
-            
-            if (tecExistente) {
-              localStorage.setItem(ROLE_KEY, 'tecnico');
-              window.location.href = 'tecnico.html';
-            } else {
-              localStorage.setItem(ROLE_KEY, 'solicitante');
-              window.location.reload();
+          if (selectedRole === 'tecnico') {
+            // ── LOGIN EXCLUSIVO DE TÉCNICO: PROHIBIDO ENTRAR COMO SOLICITANTE
+            let tecExistente = await getTecnicoByCedula(userInput);
+            if (!tecExistente) {
+              tecExistente = await getTecnicoByWA(userInput.replace(/[^0-9]/g, ''));
             }
-          } catch (e) {
-            // Verificar si tiene passwordHash en Firestore
-            const hash = await sha256(pass);
-            const loginPorHash = await loginClienteByHash(cliExistente ? cliExistente.whatsapp : userInput, hash);
-            if (loginPorHash || (cliExistente && cliExistente.passwordHash === hash) || (tecExistente && tecExistente.passwordHash === hash)) {
-              showToast('✅ Sesión iniciada', 'success');
-              modal.classList.remove('open');
-              if (tecExistente) {
-                localStorage.setItem(ROLE_KEY, 'tecnico');
-                window.location.href = 'tecnico.html';
-              } else {
-                localStorage.setItem(ROLE_KEY, 'solicitante');
-                window.location.reload();
-              }
-            } else {
-              showToast('❌ Contraseña incorrecta. Revisa e intenta de nuevo.', 'error');
+
+            if (!tecExistente) {
+              showToast('❌ No existe una cuenta de Técnico con esta Cédula o teléfono. Si eres Solicitante cambia a la pestaña Solicitante, o pulsa Registrarme para unirte a la red de técnicos.', 'error');
               submitBtn.disabled = false;
-              submitBtn.textContent = 'Ingresar';
+              submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
+              return;
+            }
+
+            const targetEmail = tecExistente.email || `${(tecExistente.whatsapp || tecExistente.cedulaNum || 'tec')}@informaticosvenezuela.com`;
+
+            try {
+              try { await signOut(auth); } catch (_) {}
+              await signInWithEmailAndPassword(auth, targetEmail, pass);
+              localStorage.setItem(ROLE_KEY, 'tecnico');
+              localStorage.setItem(WA_KEY, tecExistente.whatsapp);
+              localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
+              if (tecExistente.fotoPerfil) {
+                try { localStorage.setItem('infovzla_user_foto', tecExistente.fotoPerfil); } catch (_) {}
+              }
+              showToast('✅ Sesión de Técnico iniciada con éxito', 'success');
+              modal.classList.remove('open');
+              window.location.href = 'tecnico.html';
+              return;
+            } catch (e) {
+              // Verificar hash en base de datos
+              const hash = await sha256(pass);
+              if (tecExistente.passwordHash === hash) {
+                localStorage.setItem(ROLE_KEY, 'tecnico');
+                localStorage.setItem(WA_KEY, tecExistente.whatsapp);
+                localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
+                if (tecExistente.fotoPerfil) {
+                  try { localStorage.setItem('infovzla_user_foto', tecExistente.fotoPerfil); } catch (_) {}
+                }
+                showToast('✅ Sesión de Técnico iniciada con éxito', 'success');
+                modal.classList.remove('open');
+                window.location.href = 'tecnico.html';
+                return;
+              } else {
+                showToast('❌ Contraseña incorrecta para tu cuenta de Técnico.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔑 Iniciar Sesión Técnico';
+                return;
+              }
+            }
+
+          } else {
+            // ── LOGIN EXCLUSIVO DE SOLICITANTE: PROHIBIDO ENTRAR COMO TÉCNICO
+            let cliExistente = await getClienteByCedula(userInput);
+            if (!cliExistente) {
+              cliExistente = await getClienteByWA(userInput.replace(/[^0-9]/g, ''));
+            }
+
+            if (!cliExistente) {
+              showToast('❌ No existe una cuenta de Solicitante con esta Cédula o teléfono. Si eres Técnico cambia a la pestaña "Soy Técnico", o pulsa Registrarme.', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = '🔑 Iniciar Sesión';
+              return;
+            }
+
+            const targetEmail = cliExistente.email || `${(cliExistente.whatsapp || cliExistente.cedulaNum || 'cli')}@informaticosvenezuela.com`;
+
+            try {
+              try { await signOut(auth); } catch (_) {}
+              await signInWithEmailAndPassword(auth, targetEmail, pass);
+              localStorage.setItem(ROLE_KEY, 'solicitante');
+              localStorage.setItem(WA_KEY, cliExistente.whatsapp);
+              localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
+              if (cliExistente.fotoPerfil) {
+                try { localStorage.setItem('infovzla_user_foto', cliExistente.fotoPerfil); } catch (_) {}
+              }
+              showToast('✅ Sesión de Solicitante iniciada con éxito', 'success');
+              modal.classList.remove('open');
+              window.location.reload();
+              return;
+            } catch (e) {
+              // Verificar hash en base de datos
+              const hash = await sha256(pass);
+              const loginPorHash = await loginClienteByHash(cliExistente.whatsapp || userInput, hash);
+              if (loginPorHash || cliExistente.passwordHash === hash) {
+                localStorage.setItem(ROLE_KEY, 'solicitante');
+                localStorage.setItem(WA_KEY, cliExistente.whatsapp);
+                localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
+                if (cliExistente.fotoPerfil) {
+                  try { localStorage.setItem('infovzla_user_foto', cliExistente.fotoPerfil); } catch (_) {}
+                }
+                showToast('✅ Sesión de Solicitante iniciada con éxito', 'success');
+                modal.classList.remove('open');
+                window.location.reload();
+                return;
+              } else {
+                showToast('❌ Contraseña incorrecta para tu cuenta de Solicitante.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔑 Iniciar Sesión';
+                return;
+              }
             }
           }
         }
@@ -980,10 +1185,12 @@ export function forceAdmin() {
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (localStorage.getItem(LOCAL_ADMIN_KEY) === '1') {
-    currentUser = { displayName: 'Admin', email: ADMIN_EMAIL, uid: 'local-admin' };
-    isAdmin = true;
-    isTecnico = false;
-    userRol = 'admin';
+    currentUser  = { displayName: 'Admin', email: ADMIN_EMAIL, uid: 'local-admin' };
+    isAdmin      = true;
+    isTecnico    = false;
+    userRol      = 'admin';
+    userNombre   = 'Administrador Principal';
+    userCedula   = 'ADMIN';
     notifyListeners();
     updateNavUI();
     import('./admin-notifications.js').then(m => m.initGlobalAdminNotifications()).catch(console.error);
@@ -996,54 +1203,57 @@ onAuthStateChanged(auth, async user => {
   userRol      = isAdmin ? 'admin' : (localStorage.getItem(ROLE_KEY) || 'solicitante');
   userWhatsApp = null;
   userNombre   = null;
+  userCedula   = localStorage.getItem('infovzla_user_cedula') || null;
+  userFoto     = localStorage.getItem('infovzla_user_foto') || null;
   tecnicoData  = null;
+  clienteData  = null;
 
   if (isAdmin && user) {
     localStorage.setItem(LOCAL_ADMIN_KEY, '1');
     localStorage.setItem(ROLE_KEY, 'admin');
+    userNombre = 'Administrador Principal';
   }
 
   if (user) {
     try {
-      // 1. Verificar si es Técnico
-      const perfilTec = await getTecnico(user.uid);
-      if (perfilTec) {
-        isTecnico = true;
-        userRol   = 'tecnico';
-        tecnicoData = perfilTec;
-        userWhatsApp = perfilTec.whatsapp;
-        userNombre   = perfilTec.nombre;
-        localStorage.setItem(WA_KEY, perfilTec.whatsapp);
-        localStorage.setItem(ROLE_KEY, 'tecnico');
+      const activeRole = localStorage.getItem(ROLE_KEY);
+
+      if (activeRole === 'tecnico') {
+        // 1. Cargar perfil Técnico
+        let perfilTec = await getTecnico(user.uid);
+        if (!perfilTec && userWhatsApp) perfilTec = await getTecnicoByWA(userWhatsApp);
+        if (!perfilTec && userCedula) perfilTec = await getTecnicoByCedula(userCedula);
+
+        if (perfilTec) {
+          isTecnico    = true;
+          userRol      = 'tecnico';
+          tecnicoData  = perfilTec;
+          userWhatsApp = perfilTec.whatsapp;
+          userNombre   = perfilTec.nombre;
+          userCedula   = perfilTec.cedula || userCedula;
+          userFoto     = perfilTec.fotoPerfil || userFoto;
+          localStorage.setItem(WA_KEY, perfilTec.whatsapp);
+          localStorage.setItem(ROLE_KEY, 'tecnico');
+          if (userCedula) localStorage.setItem('infovzla_user_cedula', userCedula);
+          if (userFoto) try { localStorage.setItem('infovzla_user_foto', userFoto); } catch(_) {}
+        }
       } else {
-        // 2. Verificar si es Cliente / Solicitante
-        const perfilCli = await getCliente(user.uid);
+        // 2. Cargar perfil Cliente / Solicitante
+        let perfilCli = await getCliente(user.uid);
+        if (!perfilCli && userWhatsApp) perfilCli = await getClienteByWA(userWhatsApp);
+        if (!perfilCli && userCedula) perfilCli = await getClienteByCedula(userCedula);
+
         if (perfilCli) {
           userRol      = 'solicitante';
+          clienteData  = perfilCli;
           userWhatsApp = perfilCli.whatsapp;
           userNombre   = perfilCli.nombre;
+          userCedula   = perfilCli.cedula || userCedula;
+          userFoto     = perfilCli.fotoPerfil || userFoto;
           localStorage.setItem(WA_KEY, perfilCli.whatsapp);
           localStorage.setItem(ROLE_KEY, 'solicitante');
-        } else {
-          // 3. Fallback por WhatsApp guardado
-          const savedWa = localStorage.getItem(WA_KEY);
-          if (savedWa) {
-            const tecPorWa = await getTecnicoByWA(savedWa);
-            if (tecPorWa) {
-              isTecnico = true;
-              userRol = 'tecnico';
-              tecnicoData = tecPorWa;
-              userWhatsApp = tecPorWa.whatsapp;
-              userNombre = tecPorWa.nombre;
-            } else {
-              const cliPorWa = await getClienteByWA(savedWa);
-              if (cliPorWa) {
-                userRol = 'solicitante';
-                userWhatsApp = cliPorWa.whatsapp;
-                userNombre = cliPorWa.nombre;
-              }
-            }
-          }
+          if (userCedula) localStorage.setItem('infovzla_user_cedula', userCedula);
+          if (userFoto) try { localStorage.setItem('infovzla_user_foto', userFoto); } catch(_) {}
         }
       }
     } catch (e) {
@@ -1068,7 +1278,7 @@ export function getWhatsApp() {
 // ── Actualizar UI de navegación ───────────────────────────────
 function updateNavUI() {
   const btnLogin          = document.getElementById('btn-login');
-  const userAvatar        = document.getElementById('user-avatar');
+  let   userAvatar        = document.getElementById('user-avatar');
   const adminBadge        = document.getElementById('admin-badge');
   const adminLink         = document.getElementById('nav-admin');
   const navSolicitar      = document.getElementById('nav-solicitar');
@@ -1087,24 +1297,50 @@ function updateNavUI() {
   btnLogin?.classList.add('hidden');
 
   if (currentUser) {
-    userAvatar?.classList.remove('hidden');
-    
-    const nameToUse = userNombre || currentUser.displayName || (isAdmin ? 'Admin' : (isTecnico ? 'Técnico' : 'Usuario'));
+    const nameToUse = userNombre || currentUser.displayName || (isAdmin ? 'Administrador' : (isTecnico ? 'Técnico IT' : 'Solicitante'));
     const initials = nameToUse.charAt(0).toUpperCase();
-    if (userAvatar) userAvatar.innerHTML = initials;
+    const cedulaToUse = userCedula || localStorage.getItem('infovzla_user_cedula') || '';
+    const fotoToUse = userFoto || localStorage.getItem('infovzla_user_foto') || null;
 
-    if (userAvatar && !userAvatar.dataset.profileBound) {
-      userAvatar.dataset.profileBound = '1';
-      userAvatar.style.cursor = 'pointer';
-      userAvatar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openProfileDropdown(userAvatar);
-      });
+    let userWidget = document.getElementById('nav-user-widget');
+    if (!userWidget) {
+      userWidget = document.createElement('div');
+      userWidget.id = 'nav-user-widget';
+      userWidget.style.cssText = 'display:flex; align-items:center; gap:0.5rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:3px 8px 3px 4px; border-radius:999px; cursor:pointer; transition:all 0.2s;';
+      const navActions = document.querySelector('.nav-actions');
+      if (navActions) {
+        if (userAvatar) userAvatar.style.display = 'none';
+        navActions.appendChild(userWidget);
+      }
     }
-    
+
+    if (userWidget) {
+      userWidget.style.display = 'flex';
+      userWidget.style.borderColor = isTecnico ? 'rgba(246,173,85,0.45)' : (isAdmin ? 'rgba(168,85,247,0.45)' : 'rgba(99,179,237,0.45)');
+      userWidget.innerHTML = `
+        <div style="width:34px; height:34px; border-radius:50%; overflow:hidden; background:${isTecnico ? '#f6ad55' : (isAdmin ? '#a855f7' : '#3182ce')}; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:0.9rem; flex-shrink:0;">
+          ${fotoToUse ? `<img src="${fotoToUse}" alt="Foto Perfil" style="width:100%; height:100%; object-fit:cover;">` : initials}
+        </div>
+        <div style="display:flex; flex-direction:column; text-align:left; line-height:1.2; padding-right:4px;">
+          <span style="font-size:0.82rem; font-weight:700; color:var(--text); white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis;">${nameToUse}</span>
+          <span style="font-size:0.68rem; font-weight:600; color:${isTecnico ? '#f6ad55' : (isAdmin ? '#c084fc' : '#63b3ed')};">
+            ${cedulaToUse ? cedulaToUse + ' • ' : ''}${isTecnico ? 'Técnico IT' : (isAdmin ? 'Admin' : 'Solicitante')}
+          </span>
+        </div>
+      `;
+
+      if (!userWidget.dataset.bound) {
+        userWidget.dataset.bound = '1';
+        userWidget.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openProfileDropdown(userWidget);
+        });
+      }
+    }
+
     if (isAdmin) {
       adminBadge?.classList.remove('hidden');
-      if (adminBadge) adminBadge.textContent = 'Administrador';
+      if (adminBadge) adminBadge.textContent = '👑 Admin';
       adminLink?.classList.remove('hidden');
       navTecnico?.classList.remove('hidden');
       navSolicitar?.closest('li')?.classList.remove('hidden');
@@ -1132,6 +1368,8 @@ function updateNavUI() {
       navMisSolicitudes?.classList.remove('hidden');
     }
   } else {
+    const userWidget = document.getElementById('nav-user-widget');
+    if (userWidget) userWidget.style.display = 'none';
     btnLogin?.classList.add('hidden');
     userAvatar?.classList.add('hidden');
     adminBadge?.classList.add('hidden');
@@ -1143,27 +1381,39 @@ function updateNavUI() {
   }
 }
 
-// ── Menú desplegable de Perfil ─────────────────────────────────
-function openProfileDropdown(avatarEl) {
+// ── Menú desplegable de Perfil con Información Completa ───────
+function openProfileDropdown(anchorEl) {
   const existing = document.getElementById('profile-dropdown');
   if (existing) { existing.remove(); return; }
 
-  const nameToUse  = userNombre || currentUser?.displayName || (isAdmin ? 'Administrador' : (isTecnico ? 'Técnico' : 'Solicitante'));
-  const waToUse    = userWhatsApp || localStorage.getItem(WA_KEY) || '—';
-  const roleLabel  = isAdmin ? '👑 Super Admin' : (isTecnico ? '⚡ Técnico Especialista' : '👤 Solicitante');
+  const nameToUse   = userNombre || currentUser?.displayName || (isAdmin ? 'Administrador' : (isTecnico ? 'Técnico' : 'Solicitante'));
+  const cedulaToUse = userCedula || localStorage.getItem('infovzla_user_cedula') || '—';
+  const waToUse     = userWhatsApp || localStorage.getItem(WA_KEY) || '—';
+  const fotoToUse   = userFoto || localStorage.getItem('infovzla_user_foto') || null;
+  const roleLabel   = isAdmin ? '👑 Super Administrador' : (isTecnico ? '⚡ Técnico Especialista IT' : '👤 Solicitante de Servicios');
+  const emailToUse  = currentUser?.email || '—';
+
+  const companyOrExp = isTecnico 
+    ? (tecnicoData?.zona ? `📍 Zona: ${tecnicoData.zona}` : '')
+    : (clienteData?.compania ? `🏢 Empresa: ${clienteData.compania}` : '');
+
+  const profOrSpecs = isTecnico
+    ? (tecnicoData?.profesion ? `🛠️ ${tecnicoData.profesion}` : '')
+    : (clienteData?.profesion ? `💼 Cargo: ${clienteData.profesion}` : '');
 
   const dropdown = document.createElement('div');
   dropdown.id = 'profile-dropdown';
   dropdown.style.cssText = `
     position: fixed;
-    top: 64px;
+    top: 66px;
     right: 1rem;
-    background: var(--bg-card, #1e293b);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 1rem;
-    padding: 1.25rem;
-    min-width: 250px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    background: #1a202c;
+    border: 1px solid ${isTecnico ? 'rgba(246,173,85,0.4)' : 'rgba(99,179,237,0.4)'};
+    border-radius: 1.25rem;
+    padding: 1.5rem 1.25rem;
+    min-width: 290px;
+    max-width: 340px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.75);
     z-index: 9999;
     animation: fadeInDown 0.2s ease;
   `;
@@ -1172,33 +1422,47 @@ function openProfileDropdown(avatarEl) {
     <style>
       @keyframes fadeInDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
       #profile-dropdown .pd-avatar {
-        width: 52px; height: 52px; border-radius: 50%;
-        background: ${isTecnico ? 'linear-gradient(135deg, #f6ad55, #ed8936)' : 'linear-gradient(135deg, #6366f1, #06b6d4)'};
+        width: 64px; height: 64px; border-radius: 50%;
+        background: ${isTecnico ? 'linear-gradient(135deg, #f6ad55, #ed8936)' : 'linear-gradient(135deg, #3182ce, #63b3ed)'};
         display: flex; align-items: center; justify-content: center;
-        font-size: 1.4rem; font-weight: 700; color: white;
+        font-size: 1.6rem; font-weight: 800; color: white;
         margin: 0 auto 0.75rem;
+        overflow: hidden;
+        border: 2px solid ${isTecnico ? '#f6ad55' : 'var(--blue)'};
       }
-      #profile-dropdown .pd-name { font-weight: 700; font-size: 1rem; color: var(--text, #fff); text-align: center; margin-bottom: 0.2rem; }
-      #profile-dropdown .pd-role { font-size: 0.78rem; font-weight: 700; color: ${isTecnico ? '#f6ad55' : 'var(--blue)'}; text-align: center; margin-bottom: 0.4rem; }
-      #profile-dropdown .pd-info { font-size: 0.8rem; color: var(--text-muted, #94a3b8); text-align: center; margin-bottom: 0.25rem; }
+      #profile-dropdown .pd-name { font-weight: 800; font-size: 1.05rem; color: var(--text, #fff); text-align: center; margin-bottom: 0.2rem; }
+      #profile-dropdown .pd-role { font-size: 0.78rem; font-weight: 700; color: ${isTecnico ? '#f6ad55' : 'var(--blue)'}; text-align: center; margin-bottom: 0.65rem; }
+      #profile-dropdown .pd-box { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 0.65rem; padding: 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; text-align: left; }
+      #profile-dropdown .pd-row { display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+      #profile-dropdown .pd-row:last-child { margin-bottom: 0; }
       #profile-dropdown .pd-link-btn {
-        display: block; width: 100%; text-align: center; padding: 0.5rem; margin-top: 0.5rem; border-radius: 0.5rem;
-        background: rgba(99,179,237,0.15); color: var(--blue, #63b3ed); font-size: 0.82rem; font-weight: 600; text-decoration: none;
+        display: block; width: 100%; text-align: center; padding: 0.6rem; margin-top: 0.5rem; border-radius: 0.5rem;
+        background: ${isTecnico ? 'rgba(246,173,85,0.18)' : 'rgba(99,179,237,0.18)'}; color: ${isTecnico ? '#f6ad55' : 'var(--blue)'}; font-size: 0.84rem; font-weight: 700; text-decoration: none; border: 1px solid ${isTecnico ? 'rgba(246,173,85,0.35)' : 'rgba(99,179,237,0.35)'};
       }
       #profile-dropdown .pd-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.75rem 0; }
       #profile-dropdown .pd-btn-logout {
-        width: 100%; padding: 0.6rem; border-radius: 0.5rem;
-        background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.3);
-        color: #fc8181; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        width: 100%; padding: 0.65rem; border-radius: 0.5rem;
+        background: rgba(252,129,129,0.12); border: 1px solid rgba(252,129,129,0.35);
+        color: #fc8181; font-size: 0.88rem; font-weight: 700; cursor: pointer;
         transition: background 0.2s;
       }
-      #profile-dropdown .pd-btn-logout:hover { background: rgba(252,129,129,0.2); }
+      #profile-dropdown .pd-btn-logout:hover { background: rgba(252,129,129,0.25); }
     </style>
-    <div class="pd-avatar">${nameToUse.charAt(0).toUpperCase()}</div>
+    <div class="pd-avatar">
+      ${fotoToUse ? `<img src="${fotoToUse}" alt="Foto" style="width:100%; height:100%; object-fit:cover;">` : nameToUse.charAt(0).toUpperCase()}
+    </div>
     <div class="pd-name">${nameToUse}</div>
     <div class="pd-role">${roleLabel}</div>
-    ${waToUse !== '—' ? `<div class="pd-info">📱 ${waToUse}</div>` : ''}
+
+    <div class="pd-box">
+      <div class="pd-row"><span>🆔</span> <strong>Cédula:</strong> <span style="color:var(--text);">${cedulaToUse}</span></div>
+      <div class="pd-row"><span>📱</span> <strong>WhatsApp:</strong> <span style="color:var(--text);">${waToUse}</span></div>
+      ${companyOrExp ? `<div class="pd-row">${companyOrExp}</div>` : ''}
+      ${profOrSpecs ? `<div class="pd-row">${profOrSpecs}</div>` : ''}
+    </div>
+
     ${isTecnico ? `<a href="tecnico.html" class="pd-link-btn">⚡ Ir a mi Panel de Técnico</a>` : ''}
+    ${!isTecnico && !isAdmin ? `<a href="mis-solicitudes.html" class="pd-link-btn">📋 Ver Mis Solicitudes</a>` : ''}
     ${isAdmin ? `<a href="admin.html" class="pd-link-btn">🛠️ Ir al Panel Administrador</a>` : ''}
     <hr class="pd-divider">
     <button class="pd-btn-logout" id="pd-logout-btn">🚪 Cerrar Sesión</button>

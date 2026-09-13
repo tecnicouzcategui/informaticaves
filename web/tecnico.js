@@ -7,12 +7,12 @@ import {
   auth, db,
   collection, doc, onSnapshot, query, where,
   getDoc, getDocs, updateDoc, serverTimestamp,
-  getTecnico, getTecnicoByWA, actualizarDisponibilidadTecnico,
+  getTecnico, getTecnicoByWA, guardarTecnico, actualizarDisponibilidadTecnico,
   actualizarEstadoPorTecnico
 } from './firebase.js';
 
 import {
-  currentUser, isAdmin, isTecnico, userWhatsApp,
+  currentUser, isAdmin, isTecnico, userWhatsApp, userFoto, userCedula,
   openAuthModal, showToast
 } from './auth.js';
 
@@ -21,15 +21,63 @@ let assignedJobs   = [];
 let currentFilter  = 'todos';
 let unsubscribeJobs = null;
 
+const ICONS_OPTIONS = `
+  <option value="💻">💻 PC & Laptops</option>
+  <option value="📡">📡 Redes & WiFi</option>
+  <option value="📹">📹 CCTV & Cámaras</option>
+  <option value="🐧">🐧 Linux & Servidores</option>
+  <option value="🖨️">🖨️ Impresoras / Hardware</option>
+  <option value="🌐">🌐 Web & Software</option>
+  <option value="⚡">⚡ Electricidad & UPS</option>
+  <option value="🔧">🔧 Mantenimiento</option>
+  <option value="📱">📱 Telefonía / Móvil</option>
+  <option value="🔒">🔒 Seguridad & Claves</option>
+  <option value="💾">💾 Respaldo & Datos</option>
+  <option value="🛡️">🛡️ Ciberseguridad</option>
+  <option value="🛠️">🛠️ Soporte General</option>
+  <option value="🔌">🔌 Cableado UTP / Fibra</option>
+  <option value="🖥️">🖥️ Servidores & VMs</option>
+  <option value="⚙️">⚙️ Configuración / Otros</option>
+`;
+
+function detectIconForText(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('wifi') || lower.includes('red') || lower.includes('router') || lower.includes('switch') || lower.includes('internet') || lower.includes('mikrotik')) return '📡';
+  if (lower.includes('camara') || lower.includes('cctv') || lower.includes('dvr') || lower.includes('nvr') || lower.includes('seguridad')) return '📹';
+  if (lower.includes('linux') || lower.includes('ubuntu') || lower.includes('debian') || lower.includes('server') || lower.includes('servidor')) return '🐧';
+  if (lower.includes('impresora') || lower.includes('toner') || lower.includes('escaner') || lower.includes('hardware')) return '🖨️';
+  if (lower.includes('pc') || lower.includes('laptop') || lower.includes('computadora') || lower.includes('windows') || lower.includes('formateo')) return '💻';
+  if (lower.includes('web') || lower.includes('software') || lower.includes('sistema') || lower.includes('sql') || lower.includes('app')) return '🌐';
+  if (lower.includes('ups') || lower.includes('electric') || lower.includes('inversor') || lower.includes('voltaje')) return '⚡';
+  if (lower.includes('mantenimiento') || lower.includes('limpieza') || lower.includes('reparac')) return '🔧';
+  if (lower.includes('celular') || lower.includes('telefono') || lower.includes('movil')) return '📱';
+  if (lower.includes('antivirus') || lower.includes('virus') || lower.includes('bloqueo')) return '🔒';
+  if (lower.includes('disco') || lower.includes('backup') || lower.includes('respaldo') || lower.includes('recuperacion')) return '💾';
+  if (lower.includes('firewall') || lower.includes('ciberseguridad') || lower.includes('vpn')) return '🛡️';
+  if (lower.includes('cableado') || lower.includes('utp') || lower.includes('fibra') || lower.includes('rack')) return '🔌';
+  return '🛠️';
+}
+
+function parseItem(itemStr) {
+  if (!itemStr) return { icon: '🛠️', text: '' };
+  const str = itemStr.trim();
+  const emojiMatch = str.match(/^([\p{Extended_Pictographic}\u200d\uFE0F]+)\s*(.*)$/u);
+  if (emojiMatch) {
+    return { icon: emojiMatch[1], text: emojiMatch[2].trim() };
+  }
+  return { icon: detectIconForText(str), text: str };
+}
+
 // ── Inicialización ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initEvents();
+  initSpecialtiesManager();
   checkAuthAndLoad();
 });
 
 function initEvents() {
   document.getElementById('btn-login-as-tec')?.addEventListener('click', () => {
-    openAuthModal('tecnico');
+    openAuthModal('tecnico', 'login', true);
   });
 
   document.getElementById('btn-toggle-availability')?.addEventListener('click', toggleAvailability);
@@ -44,7 +92,7 @@ function initEvents() {
     });
   });
 
-  // Modal Update
+  // Modal Update Avance
   document.getElementById('modal-update-close')?.addEventListener('click', closeUpdateModal);
   document.getElementById('modal-update-cancel')?.addEventListener('click', closeUpdateModal);
   document.getElementById('modal-update-save')?.addEventListener('click', saveJobStatus);
@@ -78,13 +126,14 @@ async function checkAuthAndLoad() {
         return;
       }
 
-      // Usuario autorizado
+      // Usuario autorizado como técnico
       currentTecnico = tecData || {
         id: user.uid,
         nombre: user.displayName || 'Administrador Técnico',
         whatsapp: userWhatsApp || '—',
         zona: 'Todas las Zonas',
-        especialidades: ['Soporte Integral', 'Redes', 'CCTV'],
+        especialidades: ['💻 Diagnóstico PC / Laptops', '📡 Redes WiFi', '📹 CCTV & Cámaras'],
+        cualidades: ['Diagnóstico PC / Laptops', 'Redes WiFi', 'CCTV & Cámaras'],
         disponible: true,
         estado: 'activo'
       };
@@ -104,22 +153,233 @@ function renderHeader() {
 
   const avatarEl = document.getElementById('tec-header-avatar');
   const nameEl   = document.getElementById('tec-header-name');
-  const specsEl  = document.getElementById('tec-header-specs');
+  const cedulaEl = document.getElementById('tec-header-cedula');
+  const badgesEl = document.getElementById('tec-header-specs-badges');
   const waEl     = document.getElementById('tec-header-wa');
   const zonaEl   = document.getElementById('tec-header-zona');
 
-  if (avatarEl) avatarEl.textContent = (currentTecnico.nombre || 'T').charAt(0).toUpperCase();
-  if (nameEl)   nameEl.textContent   = currentTecnico.nombre || 'Técnico Especialista';
+  const foto = currentTecnico.fotoPerfil || userFoto || localStorage.getItem('infovzla_user_foto');
+  const nombre = currentTecnico.nombre || 'Técnico Especialista';
+
+  if (avatarEl) {
+    if (foto) {
+      avatarEl.innerHTML = `<img src="${foto}" alt="Foto Técnico" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+    } else {
+      avatarEl.textContent = nombre.charAt(0).toUpperCase();
+    }
+  }
+
+  if (nameEl) nameEl.textContent = nombre;
   
-  if (specsEl) {
-    const esp = Array.isArray(currentTecnico.especialidades) ? currentTecnico.especialidades.join(', ') : (currentTecnico.especialidades || 'Soporte General');
-    specsEl.textContent = `🛠️ ${esp}`;
+  if (cedulaEl) {
+    const ced = currentTecnico.cedula || localStorage.getItem('infovzla_user_cedula') || '—';
+    cedulaEl.innerHTML = `🆔 <strong>Cédula:</strong> <span style="color:var(--text);">${ced}</span>`;
+  }
+  
+  if (badgesEl) {
+    let specs = [];
+    if (Array.isArray(currentTecnico.especialidades) && currentTecnico.especialidades.length > 0) {
+      specs = currentTecnico.especialidades;
+    } else if (Array.isArray(currentTecnico.cualidades) && currentTecnico.cualidades.length > 0) {
+      specs = currentTecnico.cualidades;
+    } else {
+      specs = ['💻 Soporte General', '📡 Redes'];
+    }
+
+    badgesEl.innerHTML = specs.map(item => {
+      const parsed = parseItem(item);
+      return `
+        <span style="display:inline-flex; align-items:center; gap:0.35rem; background:rgba(246,173,85,0.15); border:1px solid rgba(246,173,85,0.4); color:#fbd38d; padding:0.25rem 0.65rem; border-radius:999px; font-size:0.75rem; font-weight:700;">
+          <span style="font-size:0.95rem;">${parsed.icon}</span> ${parsed.text}
+        </span>
+      `;
+    }).join('');
   }
 
   if (waEl)   waEl.textContent   = `📱 ${currentTecnico.whatsapp || 'Sin WhatsApp'}`;
   if (zonaEl) zonaEl.textContent = `📍 ${currentTecnico.zona || 'Caracas / General'}`;
 
   updateAvailabilityUI(currentTecnico.disponible !== false);
+}
+
+// ── Gestión Dinámica de Especialidades & Iconos del Técnico ───
+function initSpecialtiesManager() {
+  const modal          = document.getElementById('modal-manage-specialties');
+  const btnOpen        = document.getElementById('btn-open-manage-specs');
+  const btnClose       = document.getElementById('modal-manage-specs-close');
+  const btnCancel      = document.getElementById('modal-manage-specs-cancel');
+  const btnSave        = document.getElementById('modal-manage-specs-save');
+  const btnAddRow      = document.getElementById('tec-manage-add-row');
+  const rowsList       = document.getElementById('tec-manage-rows-list');
+  const previewBadges  = document.getElementById('tec-manage-active-badges');
+
+  function updateModalPreview() {
+    if (!previewBadges || !rowsList) return;
+    const rows = rowsList.querySelectorAll('.tec-manage-row');
+    const items = [];
+    rows.forEach(r => {
+      const icon = r.querySelector('.tec-manage-icon-select')?.value || '🛠️';
+      const text = r.querySelector('.tec-manage-text-input')?.value.trim();
+      if (text) items.push({ icon, text });
+    });
+
+    if (items.length === 0) {
+      previewBadges.innerHTML = `<span style="font-size:0.75rem; color:var(--text-dim); font-style:italic;">Agrega al menos una especialidad arriba.</span>`;
+    } else {
+      previewBadges.innerHTML = items.map(it => `
+        <span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(246,173,85,0.2); border:1px solid rgba(246,173,85,0.45); color:#fbd38d; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:700;">
+          <span style="font-size:0.95rem;">${it.icon}</span> ${it.text}
+        </span>
+      `).join('');
+    }
+  }
+
+  function createRowElement(icon = '💻', text = '') {
+    const row = document.createElement('div');
+    row.className = 'tec-manage-row';
+    row.style.cssText = 'display:flex; gap:0.45rem; align-items:center; background:rgba(0,0,0,0.2); padding:0.4rem; border-radius:8px; border:1px solid rgba(255,255,255,0.06);';
+    row.innerHTML = `
+      <select class="form-input tec-manage-icon-select" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Cambiar icono">
+        <option value="💻" ${icon === '💻' ? 'selected' : ''}>💻</option>
+        <option value="📡" ${icon === '📡' ? 'selected' : ''}>📡</option>
+        <option value="📹" ${icon === '📹' ? 'selected' : ''}>📹</option>
+        <option value="🐧" ${icon === '🐧' ? 'selected' : ''}>🐧</option>
+        <option value="🖨️" ${icon === '🖨️' ? 'selected' : ''}>🖨️</option>
+        <option value="🌐" ${icon === '🌐' ? 'selected' : ''}>🌐</option>
+        <option value="⚡" ${icon === '⚡' ? 'selected' : ''}>⚡</option>
+        <option value="🔧" ${icon === '🔧' ? 'selected' : ''}>🔧</option>
+        <option value="📱" ${icon === '📱' ? 'selected' : ''}>📱</option>
+        <option value="🔒" ${icon === '🔒' ? 'selected' : ''}>🔒</option>
+        <option value="💾" ${icon === '💾' ? 'selected' : ''}>💾</option>
+        <option value="🛡️" ${icon === '🛡️' ? 'selected' : ''}>🛡️</option>
+        <option value="🛠️" ${icon === '🛠️' ? 'selected' : ''}>🛠️</option>
+        <option value="🔌" ${icon === '🔌' ? 'selected' : ''}>🔌</option>
+        <option value="🖥️" ${icon === '🖥️' ? 'selected' : ''}>🖥️</option>
+        <option value="⚙️" ${icon === '⚙️' ? 'selected' : ''}>⚙️</option>
+      </select>
+      <input type="text" class="form-input tec-manage-text-input" placeholder="Nombre de la especialidad o cualidad..." value="${text}" style="font-size:0.84rem; padding:0.5rem; flex:1;">
+      <button type="button" class="btn-remove-manage-row" style="background:none; border:none; color:#fc8181; font-size:1.3rem; cursor:pointer; padding:0 6px;" title="Eliminar">&times;</button>
+    `;
+
+    const input = row.querySelector('.tec-manage-text-input');
+    const select = row.querySelector('.tec-manage-icon-select');
+
+    input?.addEventListener('input', () => {
+      if (!row.dataset.manualIcon) {
+        const auto = detectIconForText(input.value);
+        if (auto && select) select.value = auto;
+      }
+      updateModalPreview();
+    });
+
+    select?.addEventListener('change', () => {
+      row.dataset.manualIcon = '1';
+      updateModalPreview();
+    });
+
+    return row;
+  }
+
+  function openSpecialtiesModal() {
+    if (!currentTecnico || !rowsList) return;
+    rowsList.innerHTML = '';
+
+    let items = [];
+    if (Array.isArray(currentTecnico.especialidades) && currentTecnico.especialidades.length > 0) {
+      items = currentTecnico.especialidades;
+    } else if (Array.isArray(currentTecnico.cualidades) && currentTecnico.cualidades.length > 0) {
+      items = currentTecnico.cualidades;
+    }
+
+    if (items.length === 0) {
+      items = ['💻 Soporte PC y Laptops', '📡 Redes & WiFi'];
+    }
+
+    items.forEach(item => {
+      const parsed = parseItem(item);
+      const row = createRowElement(parsed.icon, parsed.text);
+      rowsList.appendChild(row);
+    });
+
+    updateModalPreview();
+    modal?.classList.add('open');
+  }
+
+  function closeSpecialtiesModal() {
+    modal?.classList.remove('open');
+  }
+
+  btnOpen?.addEventListener('click', openSpecialtiesModal);
+  btnClose?.addEventListener('click', closeSpecialtiesModal);
+  btnCancel?.addEventListener('click', closeSpecialtiesModal);
+
+  btnAddRow?.addEventListener('click', () => {
+    if (!rowsList) return;
+    const row = createRowElement('🛠️', '');
+    rowsList.appendChild(row);
+    row.querySelector('.tec-manage-text-input')?.focus();
+    updateModalPreview();
+  });
+
+  rowsList?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-remove-manage-row')) {
+      const rows = rowsList.querySelectorAll('.tec-manage-row');
+      if (rows.length > 1) {
+        e.target.closest('.tec-manage-row')?.remove();
+      } else {
+        const inp = rows[0].querySelector('.tec-manage-text-input');
+        if (inp) inp.value = '';
+      }
+      updateModalPreview();
+    }
+  });
+
+  btnSave?.addEventListener('click', async () => {
+    if (!currentTecnico || !currentTecnico.id) return;
+
+    const rows = rowsList.querySelectorAll('.tec-manage-row');
+    const especialidades = [];
+    const cualidades = [];
+
+    rows.forEach(r => {
+      const icon = r.querySelector('.tec-manage-icon-select')?.value || '🛠️';
+      const text = r.querySelector('.tec-manage-text-input')?.value.trim();
+      if (text) {
+        especialidades.push(`${icon} ${text}`);
+        cualidades.push(text);
+      }
+    });
+
+    if (especialidades.length === 0) {
+      showToast('Debes tener al menos una especialidad registrada.', 'error');
+      return;
+    }
+
+    btnSave.disabled = true;
+    btnSave.textContent = 'Guardando...';
+
+    try {
+      if (currentTecnico.id !== 'local-admin') {
+        await guardarTecnico(currentTecnico.id, {
+          especialidades: especialidades,
+          cualidades: cualidades
+        });
+      }
+
+      currentTecnico.especialidades = especialidades;
+      currentTecnico.cualidades = cualidades;
+
+      renderHeader();
+      closeSpecialtiesModal();
+      showToast('✅ Especialidades e iconos actualizados exitosamente.', 'success');
+    } catch (err) {
+      console.error('Error guardando especialidades:', err);
+      showToast('Error al guardar especialidades: ' + err.message, 'error');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.textContent = '💾 Guardar Especialidades';
+    }
+  });
 }
 
 // ── Toggle Disponibilidad ─────────────────────────────────────
