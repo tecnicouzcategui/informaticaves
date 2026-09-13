@@ -49,7 +49,22 @@ body {
   line-height: 1.6;
 }
 
-/* ── Fondo animado ── */
+/* ── Fondo animado & Vectores IT Flotantes ── */
+#it-bg-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+main, .dashboard-layout, .container, .hero, .panel-card, .ticket-detail, .auth-modal, .footer, .services-grid, .portal-container {
+  position: relative;
+  z-index: 1;
+}
+
 body::before {
   content: '';
   position: fixed;
