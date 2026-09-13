@@ -13,9 +13,8 @@ import {
 function processImageFile(file) {
   return new Promise((resolve, reject) => {
     if (!file) return resolve(null);
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-      return reject(new Error('El archivo debe ser una imagen en formato JPG o PNG.'));
+    if (file.type && !file.type.startsWith('image/')) {
+      return reject(new Error('El archivo debe ser una imagen válida (JPG, PNG, WEBP).'));
     }
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -309,7 +308,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           <div style="display:flex; align-items:center; gap:0.5rem;"><div id="dot-numbers" style="width:8px;height:8px;border-radius:50%;background:var(--red);transition:background 0.3s;"></div> Obligatorio: Mínimo 4 números (0-9)</div>
         </div>
         
-        <button id="auth-btn-submit" class="btn btn-primary w-full" disabled style="opacity:0.5; margin-bottom:0.75rem; font-weight:700; padding:0.85rem; font-size:0.95rem;">Ingresar</button>
+        <button id="auth-btn-submit" class="btn btn-primary w-full" style="margin-bottom:0.75rem; font-weight:700; padding:0.85rem; font-size:0.95rem; cursor:pointer;">Ingresar</button>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; font-size:0.8rem;">
           <a id="auth-switch-mode-link" style="color:var(--text-muted); cursor:pointer; text-decoration:underline;">¿No tienes cuenta? Regístrate</a>
@@ -745,17 +744,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
       dotLetters.style.background = passRules.hasLetters ? 'var(--green)' : 'var(--red)';
       dotNumbers.style.background = passRules.hasNumbers ? 'var(--green)' : 'var(--red)';
-
-      const isReg = currentMode === 'registro';
-      let ready = passRules.isValid;
-
-      if (!isReg) {
-        // En login requiere identificador y clave válida
-        if (!waInput.value.trim()) ready = false;
-      }
-
-      submitBtn.disabled = !ready;
-      submitBtn.style.opacity = ready ? 1 : 0.5;
     }
 
     passInput.addEventListener('input', revalidatePassword);
@@ -776,11 +764,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     submitBtn.addEventListener('click', async () => {
       const pass = passInput.value;
       const passRules = checkPasswordRules(pass);
-
-      if (!passRules.isValid) {
-        showToast('La contraseña debe tener obligatoriamente al menos 6 letras y 4 números.', 'error');
-        return;
-      }
 
       const isRegisteringSolicitante = currentMode === 'registro' && selectedRole === 'solicitante';
       const isRegisteringTecnico     = currentMode === 'registro' && selectedRole === 'tecnico';
@@ -855,6 +838,11 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           if (especialidades.length === 0) {
             showToast('Debes ingresar al menos una cualidad / especialidad técnica en los renglones.', 'error');
             document.querySelector('.tec-cualidad-input')?.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
+          }
+          if (!passRules.isValid) {
+            showToast('La contraseña debe tener obligatoriamente al menos 6 letras y 4 números.', 'error');
+            passInput.focus();
             submitBtn.disabled = false; submitBtn.textContent = '🛠️ Crear Cuenta de Técnico'; return;
           }
 
@@ -971,6 +959,11 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             document.getElementById('auth-dir-trabajo')?.focus();
             submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
           }
+          if (!passRules.isValid) {
+            showToast('La contraseña debe tener obligatoriamente al menos 6 letras y 4 números.', 'error');
+            passInput.focus();
+            submitBtn.disabled = false; submitBtn.textContent = '📝 Crear Cuenta de Solicitante'; return;
+          }
 
           // Verificar si ya existe cédula o WhatsApp
           const yaExisteCed = await getClienteByCedula(cedula);
@@ -1032,6 +1025,15 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
           const userInput = waInput.value.trim();
           if (!userInput) {
             showToast('Ingresa tu Cédula o WhatsApp para ingresar.', 'error');
+            waInput.focus();
+            submitBtn.disabled = false;
+            submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
+            return;
+          }
+
+          if (!pass) {
+            showToast('Ingresa tu contraseña para ingresar.', 'error');
+            passInput.focus();
             submitBtn.disabled = false;
             submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
             return;
@@ -1160,8 +1162,6 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
   document.getElementById('auth-pass').value = '';
   document.getElementById('auth-pass').type = 'password';
   document.getElementById('auth-toggle-pass').textContent = '👁️';
-  document.getElementById('auth-btn-submit').disabled = true;
-  document.getElementById('auth-btn-submit').style.opacity = 0.5;
   document.getElementById('dot-letters').style.background = 'var(--red)';
   document.getElementById('dot-numbers').style.background = 'var(--red)';
   document.getElementById('auth-forgot-panel').style.display = 'none';
