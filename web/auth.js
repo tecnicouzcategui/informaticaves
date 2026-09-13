@@ -274,51 +274,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
                   <option value="🖥️">🖥️</option>
                   <option value="⚙️">⚙️</option>
                 </select>
-                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 1: Ej: Diagnóstico y reparación de PC / Laptops" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="Diagnóstico y reparación de PC / Laptops Windows y Linux" required>
-                <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
-              </div>
-              <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
-                <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
-                  <option value="💻">💻</option>
-                  <option value="📡" selected>📡</option>
-                  <option value="📹">📹</option>
-                  <option value="🐧">🐧</option>
-                  <option value="🖨️">🖨️</option>
-                  <option value="🌐">🌐</option>
-                  <option value="⚡">⚡</option>
-                  <option value="🔧">🔧</option>
-                  <option value="📱">📱</option>
-                  <option value="🔒">🔒</option>
-                  <option value="💾">💾</option>
-                  <option value="🛡️">🛡️</option>
-                  <option value="🛠️">🛠️</option>
-                  <option value="🔌">🔌</option>
-                  <option value="🖥️">🖥️</option>
-                  <option value="⚙️">⚙️</option>
-                </select>
-                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 2: Ej: Configuración de redes WiFi y routers" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="Configuración de redes WiFi, routers y cableado">
-                <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
-              </div>
-              <div class="cualidad-row" style="display:flex; gap:0.4rem; align-items:center;">
-                <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
-                  <option value="💻">💻</option>
-                  <option value="📡">📡</option>
-                  <option value="📹" selected>📹</option>
-                  <option value="🐧">🐧</option>
-                  <option value="🖨️">🖨️</option>
-                  <option value="🌐">🌐</option>
-                  <option value="⚡">⚡</option>
-                  <option value="🔧">🔧</option>
-                  <option value="📱">📱</option>
-                  <option value="🔒">🔒</option>
-                  <option value="💾">💾</option>
-                  <option value="🛡️">🛡️</option>
-                  <option value="🛠️">🛠️</option>
-                  <option value="🔌">🔌</option>
-                  <option value="🖥️">🖥️</option>
-                  <option value="⚙️">⚙️</option>
-                </select>
-                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 3: Ej: Instalación de cámaras CCTV y seguridad" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="Instalación de cámaras CCTV, DVR, NVR y seguridad">
+                <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón 1: Escribe tu especialidad técnica (ej: Reparación PC) y presiona Enter o ✓" style="font-size:0.83rem; padding:0.5rem; flex:1;" value="" required>
+                <button type="button" class="btn-check-cualidad" style="background:#28a745; color:white; border:none; width:34px; height:34px; border-radius:6px; cursor:pointer; font-weight:800; font-size:1rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;" title="Aceptar y pasar a la siguiente especialidad (Enter)">✓</button>
                 <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
               </div>
             </div>
@@ -334,7 +291,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
               </div>
             </div>
 
-            <small style="color:var(--text-muted); font-size:0.72rem; display:block; margin-top:4px;">Elige el icono y escribe tu especialidad. Puedes agregar, modificar o eliminar renglones.</small>
+            <small style="color:var(--text-muted); font-size:0.72rem; display:block; margin-top:4px;">Escribe cada especialidad y presiona <strong>Enter</strong> o el botón <strong>✓</strong> para aceptarla y pasar al siguiente renglón.</small>
           </div>
         </div>
         
@@ -521,7 +478,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       });
 
       if (badges.length === 0) {
-        badgesContainer.innerHTML = `<span style="font-size:0.75rem; color:var(--text-dim); font-style:italic;">Escribe tus especialidades arriba para activar tus iconos aquí.</span>`;
+        badgesContainer.innerHTML = `<span style="font-size:0.75rem; color:var(--text-dim); font-style:italic;">Escribe tus especialidades arriba y presiona Enter o ✓ para agregarlas.</span>`;
       } else {
         badgesContainer.innerHTML = badges.map(b => `
           <span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(246,173,85,0.18); border:1px solid rgba(246,173,85,0.45); color:#fbd38d; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:700;">
@@ -531,9 +488,34 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       }
     }
 
+    function addNewCualidadRow(initialIcon = '💻', initialText = '') {
+      if (!cualidadesList) return null;
+      const rowCount = cualidadesList.querySelectorAll('.cualidad-row').length + 1;
+      const row = document.createElement('div');
+      row.className = 'cualidad-row';
+      row.style.cssText = 'display:flex; gap:0.4rem; align-items:center;';
+      row.innerHTML = `
+        <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
+          ${ICONS_OPTIONS}
+        </select>
+        <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón ${rowCount}: Escribe tu especialidad técnica..." style="font-size:0.83rem; padding:0.5rem; flex:1;" value="${initialText}">
+        <button type="button" class="btn-check-cualidad" style="background:#28a745; color:white; border:none; width:34px; height:34px; border-radius:6px; cursor:pointer; font-weight:800; font-size:1rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;" title="Aceptar y pasar a la siguiente especialidad (Enter)">✓</button>
+        <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
+      `;
+      if (initialIcon) {
+        const sel = row.querySelector('.tec-cualidad-icon');
+        if (sel) sel.value = initialIcon;
+      }
+      cualidadesList.appendChild(row);
+      bindRowEvents(row);
+      updateActiveBadges();
+      return row;
+    }
+
     function bindRowEvents(row) {
       const input = row.querySelector('.tec-cualidad-input');
       const iconSelect = row.querySelector('.tec-cualidad-icon');
+      const checkBtn = row.querySelector('.btn-check-cualidad');
       
       input?.addEventListener('input', () => {
         if (!row.dataset.iconManual) {
@@ -548,6 +530,57 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
       iconSelect?.addEventListener('change', () => {
         row.dataset.iconManual = '1';
         updateActiveBadges();
+      });
+
+      function acceptAndNext() {
+        const val = input?.value.trim();
+        if (val) {
+          // Animación de confirmación en el botón check
+          if (checkBtn) {
+            checkBtn.style.background = '#38a169';
+            checkBtn.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+              if (checkBtn) {
+                checkBtn.style.background = '#28a745';
+                checkBtn.style.transform = 'scale(1)';
+              }
+            }, 180);
+          }
+          updateActiveBadges();
+
+          // Buscar si ya existe un renglón posterior vacío
+          const allRows = Array.from(cualidadesList.querySelectorAll('.cualidad-row'));
+          const currIdx = allRows.indexOf(row);
+          let nextEmpty = null;
+          for (let i = currIdx + 1; i < allRows.length; i++) {
+            const inp = allRows[i].querySelector('.tec-cualidad-input');
+            if (inp && !inp.value.trim()) {
+              nextEmpty = allRows[i];
+              break;
+            }
+          }
+
+          if (nextEmpty) {
+            nextEmpty.querySelector('.tec-cualidad-input')?.focus();
+          } else {
+            const newRow = addNewCualidadRow();
+            newRow?.querySelector('.tec-cualidad-input')?.focus();
+          }
+        } else {
+          input?.focus();
+        }
+      }
+
+      input?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          acceptAndNext();
+        }
+      });
+
+      checkBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        acceptAndNext();
       });
     }
 
@@ -564,22 +597,8 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
     updateActiveBadges();
 
     btnAddCualidad?.addEventListener('click', () => {
-      if (!cualidadesList) return;
-      const rowCount = cualidadesList.querySelectorAll('.cualidad-row').length + 1;
-      const row = document.createElement('div');
-      row.className = 'cualidad-row';
-      row.style.cssText = 'display:flex; gap:0.4rem; align-items:center;';
-      row.innerHTML = `
-        <select class="form-input tec-cualidad-icon" style="width:62px; padding:0.45rem 0.2rem; font-size:1.1rem; text-align:center; background:#1a202c; border:1px solid rgba(246,173,85,0.4); border-radius:6px; cursor:pointer;" title="Selecciona el icono de la especialidad">
-          ${ICONS_OPTIONS}
-        </select>
-        <input type="text" class="form-input tec-cualidad-input" placeholder="Renglón ${rowCount}: Escribe otra especialidad técnica..." style="font-size:0.83rem; padding:0.5rem; flex:1;">
-        <button type="button" class="btn-remove-cualidad" style="background:none; border:none; color:#fc8181; font-size:1.2rem; cursor:pointer; padding:0 4px;" title="Eliminar renglón">&times;</button>
-      `;
-      cualidadesList.appendChild(row);
-      bindRowEvents(row);
-      row.querySelector('.tec-cualidad-input')?.focus();
-      updateActiveBadges();
+      const newRow = addNewCualidadRow();
+      newRow?.querySelector('.tec-cualidad-input')?.focus();
     });
 
     cualidadesList?.addEventListener('click', (e) => {

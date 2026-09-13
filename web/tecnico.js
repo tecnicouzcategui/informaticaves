@@ -262,11 +262,13 @@ function initSpecialtiesManager() {
         ${optionsHtml}
       </select>
       <input type="text" class="form-input tec-manage-text-input" placeholder="Nombre de la especialidad o cualidad..." value="${text}" style="font-size:0.84rem; padding:0.5rem; flex:1;">
+      <button type="button" class="btn-check-manage-row" style="background:#28a745; color:white; border:none; width:34px; height:34px; border-radius:6px; cursor:pointer; font-weight:800; font-size:1rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;" title="Aceptar y pasar a la siguiente (Enter)">✓</button>
       <button type="button" class="btn-remove-manage-row" style="background:none; border:none; color:#fc8181; font-size:1.3rem; cursor:pointer; padding:0 6px;" title="Eliminar">&times;</button>
     `;
 
     const input = row.querySelector('.tec-manage-text-input');
     const select = row.querySelector('.tec-manage-icon-select');
+    const checkBtn = row.querySelector('.btn-check-manage-row');
 
     input?.addEventListener('input', () => {
       if (!row.dataset.manualIcon) {
@@ -279,6 +281,57 @@ function initSpecialtiesManager() {
     select?.addEventListener('change', () => {
       row.dataset.manualIcon = '1';
       updateModalPreview();
+    });
+
+    function acceptAndNext() {
+      const val = input?.value.trim();
+      if (val) {
+        if (checkBtn) {
+          checkBtn.style.background = '#38a169';
+          checkBtn.style.transform = 'scale(1.1)';
+          setTimeout(() => {
+            if (checkBtn) {
+              checkBtn.style.background = '#28a745';
+              checkBtn.style.transform = 'scale(1)';
+            }
+          }, 180);
+        }
+        updateModalPreview();
+
+        const allRows = Array.from(rowsList.querySelectorAll('.tec-manage-row'));
+        const currIdx = allRows.indexOf(row);
+        let nextEmpty = null;
+        for (let i = currIdx + 1; i < allRows.length; i++) {
+          const inp = allRows[i].querySelector('.tec-manage-text-input');
+          if (inp && !inp.value.trim()) {
+            nextEmpty = allRows[i];
+            break;
+          }
+        }
+
+        if (nextEmpty) {
+          nextEmpty.querySelector('.tec-manage-text-input')?.focus();
+        } else {
+          const newRow = createRowElement('🛠️', '');
+          rowsList.appendChild(newRow);
+          newRow.querySelector('.tec-manage-text-input')?.focus();
+          updateModalPreview();
+        }
+      } else {
+        input?.focus();
+      }
+    }
+
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        acceptAndNext();
+      }
+    });
+
+    checkBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      acceptAndNext();
     });
 
     return row;
