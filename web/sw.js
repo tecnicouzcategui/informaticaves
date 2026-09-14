@@ -1,9 +1,9 @@
 // ============================================================
 // sw.js — Service Worker PWA (Network-first, JS always fresh)
 // ============================================================
-const CACHE_NAME = 'informaticosvenezuela-cache-v46';
+const CACHE_NAME = 'informaticosvenezuela-cache-v47';
 // Solo cachear assets estáticos (imágenes, íconos, CSS)
-// Los archivos .js y .html siempre se buscan en la red primero
+// Los archivos .js, .css y .html siempre se buscan en la red primero
 const STATIC_ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -39,9 +39,9 @@ self.addEventListener('fetch', event => {
   if (url.includes('gstatic.com')) return;
   if (url.includes('googleapis.com')) return;
 
-  // Los archivos .js y .html SIEMPRE van a la red primero
+  // Los archivos .js, .css y .html SIEMPRE van a la red primero
   // Solo si la red falla, se sirve desde caché (offline fallback)
-  if (url.endsWith('.js') || url.endsWith('.html') || url.includes('.html?')) {
+  if (url.endsWith('.js') || url.endsWith('.html') || url.endsWith('.css') || url.includes('.html?') || url.includes('.css?')) {
     event.respondWith(
       fetch(event.request)
         .then(res => {
