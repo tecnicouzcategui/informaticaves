@@ -313,8 +313,8 @@
     serverTimestamp, addDoc, COLS, getSolicitudesByWhatsApp, guardarValoracion, getValoracionBySolicitud,
     onSnapshot
   } from './firebase.js';
-  import * as Auth from './auth.js';
-  import { onAuthChange, isAdmin } from './auth.js';
+  import * as Auth from './auth.js?v=47';
+  import { onAuthChange, isAdmin } from './auth.js?v=47';
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);

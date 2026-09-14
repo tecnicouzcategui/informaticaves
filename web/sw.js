@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
 
   // Los archivos .js, .css y .html SIEMPRE van a la red primero
   // Solo si la red falla, se sirve desde caché (offline fallback)
-  if (url.endsWith('.js') || url.endsWith('.html') || url.endsWith('.css') || url.includes('.html?') || url.includes('.css?')) {
+  if (url.endsWith('.js') || url.endsWith('.html') || url.endsWith('.css') || url.includes('.html?') || url.includes('.css?') || url.includes('.js?')) {
     event.respondWith(
       fetch(event.request)
         .then(res => {

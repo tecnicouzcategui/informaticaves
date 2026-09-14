@@ -14,7 +14,7 @@ import {
 import {
   currentUser, isAdmin, isTecnico, userWhatsApp, userFoto, userCedula,
   openAuthModal, showToast
-} from './auth.js';
+} from './auth.js?v=47';
 
 let currentTecnico = null;
 let assignedJobs   = [];
