@@ -92,13 +92,10 @@ export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
   }
 
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
-  localStorage.setItem('ives_local_admin', '1');
   localStorage.setItem(ROLE_KEY, 'admin');
-  localStorage.setItem('ives_user_role', 'admin');
   localStorage.setItem('infovzla_user_cedula', 'V-12832779');
   localStorage.setItem('infovzla_user_nombre', 'Luis Uzcátegui');
   localStorage.setItem(WA_KEY, '04242964339');
-  localStorage.setItem('ives_wa_number', '04242964339');
   if (hash) {
     localStorage.setItem('infovzla_admin_hash', hash);
   }
@@ -141,14 +138,14 @@ export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
 }
 
 // ── Estado global inicializado optimistamente desde localStorage ──
-const _rawAdmin = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem(ROLE_KEY) === 'admin');
+const _rawAdmin = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem(ROLE_KEY) === 'admin');
 const _rawCedula = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_cedula') || null) : null;
 const _isSuperLocal = _rawAdmin || isSuperAdminIdentifier(_rawCedula);
 
 const _initAdmin  = _isSuperLocal;
-const _initRole   = _isSuperLocal ? 'admin' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || null) : null);
+const _initRole   = _isSuperLocal ? 'admin' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || null) : null);
 const _initCedula = _isSuperLocal ? 'V-12832779' : _rawCedula;
-const _initWA     = _isSuperLocal ? '04242964339' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null) : null);
+const _initWA     = _isSuperLocal ? '04242964339' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || null) : null);
 const _initNombre = _isSuperLocal ? 'Luis Uzcátegui' : (typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_nombre') || null) : null);
 const _initFoto   = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_foto') || null) : null;
 
@@ -1526,13 +1523,10 @@ export function forceAdmin() {
   userWhatsApp = '04242964339';
   tecnicoData = { ...SUPER_ADMIN_DATA };
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
-  localStorage.setItem('ives_local_admin', '1');
   localStorage.setItem(ROLE_KEY, 'admin');
-  localStorage.setItem('ives_user_role', 'admin');
   localStorage.setItem('infovzla_user_cedula', 'V-12832779');
   localStorage.setItem('infovzla_user_nombre', 'Luis Uzcátegui');
   localStorage.setItem(WA_KEY, '04242964339');
-  localStorage.setItem('ives_wa_number', '04242964339');
   try { localStorage.setItem('infovzla_tecnico_data', JSON.stringify(SUPER_ADMIN_DATA)); } catch(_) {}
   updateNavUI();
   notifyListeners();
@@ -1540,7 +1534,7 @@ export function forceAdmin() {
 
 (function restoreLocalAdmin() {
   if (typeof localStorage !== 'undefined') {
-    const isLocalAdmin = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem(ROLE_KEY) === 'admin';
+    const isLocalAdmin = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem(ROLE_KEY) === 'admin';
     const isLocalSuperCed = isSuperAdminIdentifier(localStorage.getItem('infovzla_user_cedula'));
     if (isLocalAdmin || isLocalSuperCed) {
       currentUser = { displayName: 'Luis Uzcátegui (Super Admin)', email: ADMIN_EMAIL, uid: '12832779' };
@@ -1557,7 +1551,7 @@ export function forceAdmin() {
 
 // ── Observador de sesión ─────────────────────────────────────
 onAuthStateChanged(auth, async user => {
-  const localIsAdmin = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem(ROLE_KEY) === 'admin';
+  const localIsAdmin = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem(ROLE_KEY) === 'admin';
   const isCedAdmin   = isSuperAdminIdentifier(localStorage.getItem('infovzla_user_cedula'));
   const isFbAdmin    = user?.email === ADMIN_EMAIL;
 
@@ -1577,9 +1571,9 @@ onAuthStateChanged(auth, async user => {
     return;
   }
 
-  const savedRole   = localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role') || null;
+  const savedRole   = localStorage.getItem(ROLE_KEY) || null;
   const savedCedula = localStorage.getItem('infovzla_user_cedula') || null;
-  const savedWA     = localStorage.getItem(WA_KEY) || localStorage.getItem('ives_wa_number') || null;
+  const savedWA     = localStorage.getItem(WA_KEY) || null;
   const savedNombre = localStorage.getItem('infovzla_user_nombre') || null;
   const savedFoto   = localStorage.getItem('infovzla_user_foto') || null;
 
@@ -1759,18 +1753,20 @@ function updateNavUI() {
   btnLogin?.classList.add('hidden');
 
   const savedCedula = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_cedula') : null;
-  const savedRole   = typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || localStorage.getItem('ives_user_role')) : null;
+  const savedRole   = typeof localStorage !== 'undefined' ? localStorage.getItem(ROLE_KEY) : null;
   const savedNombre = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_nombre') : null;
-  const savedAdmin  = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1');
+  const savedAdmin  = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1');
   const hasUserSession = !!(currentUser || savedCedula || (savedRole && savedRole !== 'null') || savedAdmin);
 
+  const roleIsTec = isTecnico || savedRole === 'tecnico';
+  const roleIsAdm = isAdmin || savedAdmin || savedRole === 'admin';
+  const nameToUse = userNombre || savedNombre || currentUser?.displayName || (roleIsAdm ? 'Administrador' : (roleIsTec ? 'Técnico IT' : 'Solicitante'));
+  const initials = nameToUse.charAt(0).toUpperCase();
+  const cedulaToUse = userCedula || savedCedula || '';
+  const fotoToUse = userFoto || (typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_foto') : null) || null;
+
   if (hasUserSession) {
-    const roleIsTec = isTecnico || savedRole === 'tecnico';
-    const roleIsAdm = isAdmin || savedAdmin || savedRole === 'admin';
-    const nameToUse = userNombre || savedNombre || currentUser?.displayName || (roleIsAdm ? 'Administrador' : (roleIsTec ? 'Técnico IT' : 'Solicitante'));
-    const initials = nameToUse.charAt(0).toUpperCase();
-    const cedulaToUse = userCedula || savedCedula || '';
-    const fotoToUse = userFoto || (typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_user_foto') : null) || null;
+    btnLogin?.classList.add('hidden');
 
     if (!currentUser) {
       currentUser = {
@@ -1799,7 +1795,7 @@ function updateNavUI() {
         <div style="width:34px; height:34px; border-radius:50%; overflow:hidden; background:${roleIsTec ? '#f6ad55' : (roleIsAdm ? '#a855f7' : '#3182ce')}; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:0.9rem; flex-shrink:0;">
           ${fotoToUse ? `<img src="${fotoToUse}" alt="Foto Perfil" style="width:100%; height:100%; object-fit:cover;">` : initials}
         </div>
-        <div style="display:flex; flex-direction:column; text-align:left; line-height:1.2; padding-right:4px;">
+        <div class="user-widget-text" style="display:flex; flex-direction:column; text-align:left; line-height:1.2; padding-right:4px;">
           <span style="font-size:0.82rem; font-weight:700; color:var(--text); white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis;">${nameToUse}</span>
           <span style="font-size:0.68rem; font-weight:600; color:${roleIsTec ? '#f6ad55' : (roleIsAdm ? '#c084fc' : '#63b3ed')};">
             ${cedulaToUse ? cedulaToUse + ' • ' : ''}${roleIsTec ? 'Técnico IT' : (roleIsAdm ? 'Admin' : 'Solicitante')}
@@ -1862,7 +1858,7 @@ function updateNavUI() {
   } else {
     const userWidget = document.getElementById('nav-user-widget');
     if (userWidget) userWidget.style.display = 'none';
-    btnLogin?.classList.add('hidden');
+    btnLogin?.classList.remove('hidden');
     userAvatar?.classList.add('hidden');
     adminBadge?.classList.add('hidden');
     adminLink?.classList.add('hidden');
@@ -1877,13 +1873,236 @@ function updateNavUI() {
     if (!link.dataset.authCheckBound) {
       link.dataset.authCheckBound = '1';
       link.addEventListener('click', (e) => {
-        if (!currentUser) {
+        if (!currentUser && !hasUserSession) {
           e.preventDefault();
           openAuthModal('solicitante', 'login', true);
         }
       });
     }
   });
+
+  // Renderizar la barra inferior móvil y el menú drawer lateral
+  renderMobileNavigation(hasUserSession, roleIsAdm, roleIsTec, nameToUse, cedulaToUse, userRol);
+}
+
+// ── Renderizado del Sistema Móvil App (Bottom Bar y Drawer) ──
+function renderMobileNavigation(hasUserSession, roleIsAdm, roleIsTec, nameToUse, cedulaToUse, currentRole) {
+  if (typeof document === 'undefined') return;
+
+  // 1. Asegurar botón Hamburguesa en .nav-actions
+  const navActions = document.querySelector('.nav-actions');
+  let btnHam = document.getElementById('btn-nav-hamburger');
+  if (navActions && !btnHam) {
+    btnHam = document.createElement('button');
+    btnHam.id = 'btn-nav-hamburger';
+    btnHam.className = 'btn-nav-hamburger';
+    btnHam.setAttribute('aria-label', 'Abrir Menú');
+    btnHam.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`;
+    navActions.appendChild(btnHam);
+  }
+
+  // 2. Crear o actualizar Mobile Bottom Nav (#mobile-bottom-nav)
+  let bottomNav = document.getElementById('mobile-bottom-nav');
+  if (!bottomNav) {
+    bottomNav = document.createElement('nav');
+    bottomNav.id = 'mobile-bottom-nav';
+    document.body.appendChild(bottomNav);
+  }
+
+  const path = window.location.pathname.toLowerCase();
+  const isHome = path.endsWith('index.html') || path.endsWith('/') || path === '';
+  const isServ = path.includes('servicios');
+  const isSoli = path.includes('solicitud.html');
+  const isMisS = path.includes('mis-solicitudes');
+  const isTec  = path.includes('tecnico.html');
+  const isAdm  = path.includes('admin.html');
+
+  let tabsHTML = `
+    <a href="index.html" class="mob-nav-btn ${isHome ? 'active' : ''}">
+      <span class="mob-icon">🏠</span>
+      <span>Inicio</span>
+    </a>
+    <a href="servicios.html" class="mob-nav-btn ${isServ ? 'active' : ''}">
+      <span class="mob-icon">🛠️</span>
+      <span>Servicios</span>
+    </a>
+  `;
+
+  if (roleIsAdm) {
+    tabsHTML += `
+      <a href="tecnico.html" class="mob-nav-btn ${isTec ? 'active' : ''}">
+        <span class="mob-icon">⚡</span>
+        <span>Técnico</span>
+      </a>
+      <a href="admin.html" class="mob-nav-btn ${isAdm ? 'active' : ''}">
+        <span class="mob-icon">👑</span>
+        <span>Admin</span>
+      </a>
+    `;
+  } else if (roleIsTec) {
+    tabsHTML += `
+      <a href="tecnico.html" class="mob-nav-btn ${isTec ? 'active' : ''}">
+        <span class="mob-icon">⚡</span>
+        <span>Mis Órdenes</span>
+      </a>
+      <a href="tecnico.html#solicitudes" class="mob-nav-btn">
+        <span class="mob-icon">📥</span>
+        <span>Bandeja</span>
+      </a>
+    `;
+  } else if (hasUserSession) {
+    tabsHTML += `
+      <a href="solicitud.html" class="mob-nav-btn ${isSoli ? 'active' : ''}">
+        <span class="mob-icon">📝</span>
+        <span>Solicitar</span>
+      </a>
+      <a href="mis-solicitudes.html" class="mob-nav-btn ${isMisS ? 'active' : ''}">
+        <span class="mob-icon">📋</span>
+        <span>Tickets</span>
+      </a>
+    `;
+  } else {
+    tabsHTML += `
+      <a href="solicitud.html" class="mob-nav-btn ${isSoli ? 'active' : ''}">
+        <span class="mob-icon">📝</span>
+        <span>Solicitar</span>
+      </a>
+      <button type="button" class="mob-nav-btn" id="mob-btn-auth-login">
+        <span class="mob-icon">🔑</span>
+        <span>Ingresar</span>
+      </button>
+    `;
+  }
+
+  tabsHTML += `
+    <button type="button" class="mob-nav-btn" id="mob-btn-open-drawer">
+      <span class="mob-icon">☰</span>
+      <span>Menú</span>
+    </button>
+  `;
+
+  bottomNav.innerHTML = tabsHTML;
+
+  const mobAuthBtn = document.getElementById('mob-btn-auth-login');
+  if (mobAuthBtn) {
+    mobAuthBtn.onclick = () => openAuthModal('solicitante', 'login');
+  }
+
+  // 3. Crear o actualizar Mobile Drawer (#mobile-nav-drawer & #mobile-nav-overlay)
+  let overlay = document.getElementById('mobile-nav-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'mobile-nav-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  let drawer = document.getElementById('mobile-nav-drawer');
+  if (!drawer) {
+    drawer = document.createElement('div');
+    drawer.id = 'mobile-nav-drawer';
+    document.body.appendChild(drawer);
+  }
+
+  function openDrawer() {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.onclick = closeDrawer;
+  if (btnHam) btnHam.onclick = openDrawer;
+  const mobOpenDrawerBtn = document.getElementById('mob-btn-open-drawer');
+  if (mobOpenDrawerBtn) mobOpenDrawerBtn.onclick = openDrawer;
+
+  let userBoxHTML = '';
+  if (hasUserSession) {
+    const roleBadgeText = roleIsAdm ? '👑 Super Admin' : (roleIsTec ? '⚡ Técnico IT' : '👤 Solicitante');
+    const roleColor = roleIsAdm ? '#c084fc' : (roleIsTec ? '#f6ad55' : '#63b3ed');
+    userBoxHTML = `
+      <div class="drawer-user-box">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="width:44px; height:44px; border-radius:50%; background:${roleIsTec ? '#f6ad55' : (roleIsAdm ? '#a855f7' : '#3182ce')}; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:1.1rem; flex-shrink:0;">
+            ${(nameToUse || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div style="display:flex; flex-direction:column; overflow:hidden;">
+            <strong style="font-size:0.95rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nameToUse}</strong>
+            <span style="font-size:0.75rem; color:${roleColor}; font-weight:700;">${roleBadgeText}</span>
+            ${cedulaToUse ? `<small style="font-size:0.72rem; color:var(--text-muted);">${cedulaToUse}</small>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    userBoxHTML = `
+      <div class="drawer-user-box" style="text-align:center;">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">Accede a tu cuenta para gestionar tickets y servicios</p>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-primary btn-sm w-full" style="padding:0.5rem;" onclick="document.getElementById('mobile-nav-overlay').click(); openAuthModal('solicitante', 'login');">🔑 Iniciar Sesión</button>
+          <button class="btn btn-secondary btn-sm w-full" style="padding:0.5rem;" onclick="document.getElementById('mobile-nav-overlay').click(); openAuthModal('solicitante', 'register');">📝 Registrarme</button>
+        </div>
+      </div>
+    `;
+  }
+
+  drawer.innerHTML = `
+    <div class="drawer-header">
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <img src="logo_oficial.svg" alt="Informáticos Venezuela" style="height:32px; width:auto; max-width:150px; object-fit:contain;">
+      </div>
+      <button id="mobile-drawer-close" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer; padding:4px 8px; line-height:1;">✕</button>
+    </div>
+    ${userBoxHTML}
+    <ul class="drawer-nav-list">
+      <li><a href="index.html" class="drawer-link ${isHome ? 'active' : ''}">🏠 <span>Inicio</span></a></li>
+      <li><a href="servicios.html" class="drawer-link ${isServ ? 'active' : ''}">🛠️ <span>Servicios & Presupuestos</span></a></li>
+      ${!roleIsAdm && !roleIsTec ? `
+        <li><a href="solicitud.html" class="drawer-link ${isSoli ? 'active' : ''}">📝 <span>Solicitar Asistencia</span></a></li>
+        <li><a href="mis-solicitudes.html" class="drawer-link ${isMisS ? 'active' : ''}">📋 <span>Mis Solicitudes / Tickets</span></a></li>
+      ` : ''}
+      ${roleIsTec || roleIsAdm ? `
+        <li><a href="tecnico.html" class="drawer-link ${isTec ? 'active' : ''}">⚡ <span>Panel del Técnico IT</span></a></li>
+      ` : ''}
+      ${roleIsAdm ? `
+        <li><a href="admin.html" class="drawer-link ${isAdm ? 'active' : ''}">👑 <span>Panel de Administración</span></a></li>
+      ` : ''}
+    </ul>
+    <div class="drawer-footer">
+      <a href="https://wa.me/584242964339?text=Hola%20Inform%C3%A1ticos%20Venezuela,%20necesito%20asistencia%20t%C3%A9cnica" target="_blank" rel="noopener" class="btn btn-secondary w-full" style="background:#25D366; color:#fff; border:none; display:flex; align-items:center; justify-content:center; gap:0.5rem; text-decoration:none; padding:0.6rem;">
+        💬 WhatsApp (+58 424-2964339)
+      </a>
+      <a href="tel:+584242964339" class="btn btn-secondary w-full" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; text-decoration:none; font-size:0.85rem; padding:0.5rem;">
+        📞 Llamar a Soporte
+      </a>
+      ${hasUserSession ? `
+        <button id="btn-drawer-logout" class="btn btn-ghost w-full" style="color:#fc8181; display:flex; align-items:center; justify-content:center; gap:0.5rem; margin-top:0.25rem;">
+          🚪 Cerrar Sesión
+        </button>
+      ` : ''}
+    </div>
+  `;
+
+  const btnClose = document.getElementById('mobile-drawer-close');
+  if (btnClose) btnClose.onclick = closeDrawer;
+
+  const btnLogoutDrawer = document.getElementById('btn-drawer-logout');
+  if (btnLogoutDrawer) {
+    btnLogoutDrawer.onclick = async () => {
+      closeDrawer();
+      await logout();
+      window.location.reload();
+    };
+  }
+
+  drawer.querySelectorAll('.drawer-link').forEach(link => {
+    link.addEventListener('click', closeDrawer);
+  });
+}
 }
 
 export { updateNavUI };

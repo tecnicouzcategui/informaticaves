@@ -269,7 +269,7 @@
     if (!canvas) {
       canvas = document.createElement('canvas');
       canvas.id = 'it-bg-canvas';
-      canvas.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:0; opacity:0.95; transition:opacity 0.5s ease;';
+      canvas.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; max-width:100vw; max-height:100vh; pointer-events:none; z-index:0; opacity:0.95; transition:opacity 0.5s ease;';
       // Insertar como primer elemento de body
       document.body.insertBefore(canvas, document.body.firstChild);
     }
@@ -286,7 +286,7 @@
 
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
+      width = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
       height = window.innerHeight;
       canvas.width = width * dpr;
       canvas.height = height * dpr;

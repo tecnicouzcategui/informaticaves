@@ -35,7 +35,6 @@ export function initAdmin() {
   function handleAuth(user, admin) {
     const localAdmin = (typeof localStorage !== 'undefined' && (
       localStorage.getItem('infovzla_local_admin') === '1' ||
-      localStorage.getItem('ives_local_admin') === '1' ||
       localStorage.getItem('infovzla_user_role') === 'admin' ||
       isSuperAdminIdentifier(localStorage.getItem('infovzla_user_cedula'))
     ));

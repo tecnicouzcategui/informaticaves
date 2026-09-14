@@ -15,6 +15,9 @@
   <meta name="geo.region" content="VE">
   <meta name="geo.placename" content="Caracas, Venezuela">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="style.css">
@@ -24,10 +27,10 @@
   <script>
     (function() {
       try {
-        var r = localStorage.getItem('infovzla_user_role') || localStorage.getItem('ives_user_role');
+        var r = localStorage.getItem('infovzla_user_role');
         var c = localStorage.getItem('infovzla_user_cedula');
-        var w = localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
-        var a = localStorage.getItem('infovzla_local_admin') || localStorage.getItem('ives_local_admin');
+        var w = localStorage.getItem('infovzla_wa_number');
+        var a = localStorage.getItem('infovzla_local_admin');
         if (c || w || a || (r && r !== 'null' && r !== 'undefined')) {
           document.documentElement.classList.add('user-logged-in');
           if (r === 'tecnico') {
@@ -1420,10 +1423,10 @@
     const solDash  = document.getElementById('portal-solicitante-dashboard');
     const tecDash  = document.getElementById('portal-tecnico-dashboard');
 
-    const role = Auth.userRol || localStorage.getItem('infovzla_user_role') || localStorage.getItem('ives_user_role');
+    const role = Auth.userRol || localStorage.getItem('infovzla_user_role');
     const cedula = Auth.userCedula || localStorage.getItem('infovzla_user_cedula');
-    const wa = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
-    const isAdminUser = !!(Auth.isAdmin || localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
+    const wa = Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number');
+    const isAdminUser = !!(Auth.isAdmin || localStorage.getItem('infovzla_local_admin') === '1');
     const hasUser = !!(Auth.currentUser || cedula || wa || isAdminUser || (role && role !== 'null' && role !== 'undefined'));
     const isTecOrAdmin = !!(Auth.isTecnico || Auth.isAdmin || isAdminUser || role === 'tecnico' || role === 'admin');
 

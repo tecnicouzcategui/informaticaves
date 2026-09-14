@@ -7,6 +7,9 @@
   <meta name="description" content="Consulta el estado de tus solicitudes y tickets de soporte en Informáticos Venezuela.">
   <meta name="theme-color" content="#63b3ed">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="style.css">
@@ -377,7 +380,7 @@
       }
 
       // Si está logueado: ocultar buscador y cargar solicitudes automáticamente
-      const wa = Auth.getWhatsApp ? Auth.getWhatsApp() : (Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number'));
+      const wa = Auth.getWhatsApp ? Auth.getWhatsApp() : (Auth.userWhatsApp || localStorage.getItem('infovzla_wa_number'));
       if (wa) {
         if (searchSection) searchSection.style.display = 'none';
         const inputWa = document.getElementById('input-buscar-wa');
@@ -491,8 +494,6 @@
         const wa = (Auth.getWhatsApp ? Auth.getWhatsApp() : null) ||
                    localStorage.getItem('infovzla_rescued_wa') ||
                    localStorage.getItem('infovzla_wa_number') ||
-                   localStorage.getItem('ives_rescued_wa') ||
-                   localStorage.getItem('ives_wa_number') ||
                    (Auth.currentUser ? Auth.currentUser.email?.split('@')[0] : null);
 
         if (!wa) throw new Error('No se pudo identificar tu número. Cierra sesión e ingresa nuevamente.');
@@ -696,7 +697,7 @@
   });
 
   // Si hay wa guardado, buscar automático
-  const waGuardado = localStorage.getItem('infovzla_wa') || localStorage.getItem('ives_wa');
+  const waGuardado = localStorage.getItem('infovzla_wa');
   if (waGuardado) {
     document.getElementById('input-buscar-wa').value = waGuardado;
     buscarSolicitudes();

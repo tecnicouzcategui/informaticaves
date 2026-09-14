@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <script>
     window.addEventListener('error', function(e) {
       const d = document.createElement('div');
@@ -72,7 +75,7 @@
   }
 
   // Auto-login si ya hay sesión guardada
-  if (localStorage.getItem(LOCAL_KEY) === '1' || localStorage.getItem('ives_local_admin') === '1') {
+  if (localStorage.getItem(LOCAL_KEY) === '1') {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', mostrarPanel);
     } else {
@@ -132,13 +135,10 @@
 
         if (valid) {
           localStorage.setItem(LOCAL_KEY, '1');
-          localStorage.setItem('ives_local_admin', '1');
           localStorage.setItem('infovzla_user_role', 'admin');
-          localStorage.setItem('ives_user_role', 'admin');
           localStorage.setItem('infovzla_user_cedula', 'V-12832779');
           localStorage.setItem('infovzla_user_nombre', 'Luis Uzcátegui');
           localStorage.setItem('infovzla_wa_number', '04242964339');
-          localStorage.setItem('ives_wa_number', '04242964339');
           if (!stored) localStorage.setItem(PASS_KEY, hash);
           mostrarPanel();
         } else {
@@ -775,7 +775,7 @@
   // ── En APK Capacitor: restaurar sesión automáticamente si ya hay hash guardado
   (async function checkAutoLogin() {
     const isCapacitor = !!(window.Capacitor);
-    const yaAdmin = (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1');
+    const yaAdmin = (localStorage.getItem('infovzla_local_admin') === '1');
     if (isCapacitor && yaAdmin) {
       // Sesión ya activa, saltar pantalla de login
       forceAdmin();

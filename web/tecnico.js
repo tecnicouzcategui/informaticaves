@@ -141,8 +141,8 @@ async function checkAuthAndLoad() {
       const panelContent = document.getElementById('tec-panel-content');
 
       const savedCedula = userCedula || localStorage.getItem('infovzla_user_cedula');
-      const savedWA = userWhatsApp || localStorage.getItem('infovzla_wa_number') || localStorage.getItem('ives_wa_number');
-      const isLocalAdmin = (typeof localStorage !== 'undefined' && (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('ives_local_admin') === '1' || localStorage.getItem('infovzla_user_role') === 'admin'));
+      const savedWA = userWhatsApp || localStorage.getItem('infovzla_wa_number');
+      const isLocalAdmin = (typeof localStorage !== 'undefined' && (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('infovzla_user_role') === 'admin'));
       const isSuper = admin || isLocalAdmin || isSuperAdminIdentifier(savedCedula) || isSuperAdminIdentifier(savedWA) || (user && (isSuperAdminIdentifier(user.uid) || user.email === 'tecnicouzcategui@gmail.com'));
 
       if (!user && !isSuper) {
@@ -183,7 +183,7 @@ async function checkAuthAndLoad() {
         try { tecData = JSON.parse(localStorage.getItem('infovzla_tecnico_data')); } catch(_) {}
       }
 
-      const isTecRole = tec || (typeof localStorage !== 'undefined' && (localStorage.getItem('infovzla_user_role') === 'tecnico' || localStorage.getItem('ives_user_role') === 'tecnico'));
+      const isTecRole = tec || (typeof localStorage !== 'undefined' && localStorage.getItem('infovzla_user_role') === 'tecnico');
       if (!tecData && !isTecRole) {
         if (accessDenied) accessDenied.style.display = 'block';
         if (panelContent) panelContent.style.display = 'none';

@@ -812,6 +812,13 @@ h1.hero-name {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.admin-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-tab {
@@ -824,6 +831,8 @@ h1.hero-name {
   transition: var(--transition);
   border: none;
   background: transparent;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .admin-tab.active {
@@ -833,9 +842,11 @@ h1.hero-name {
 }
 
 .table-wrapper {
+  max-width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -918,45 +929,337 @@ tr:hover td { background: var(--bg-card); }
 /* ── Social feeds ── */
 .feeds-section { padding: 2rem 0 3rem; }
 
-/* ── Responsive ── */
-@media (max-width: 640px) {
-  .urgencia-grid { grid-template-columns: 1fr; }
-  .services-grid { grid-template-columns: 1fr; }
-  
-  /* Mobile Bottom Navigation */
-  .nav-links {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(10,11,15,0.95);
-    backdrop-filter: blur(15px);
-    border-top: 1px solid var(--border);
-    justify-content: space-around;
-    padding: 0.5rem 0.25rem;
-    z-index: 1000;
-    margin: 0;
-    gap: 0;
+/* ════════════════════════════════════════════════════════════
+   SISTEMA DE NAVEGACIÓN Y RESPONSIVE MÓVIL PROFESIONAL (PWA)
+   ════════════════════════════════════════════════════════════ */
+
+/* Botón Hamburguesa en Navbar */
+.btn-nav-hamburger {
+  display: none;
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  color: var(--text);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.btn-nav-hamburger:hover, .btn-nav-hamburger:active {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent);
+}
+
+.btn-nav-hamburger svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+/* Barra de Navegación Inferior Móvil (App Style) */
+#mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(10, 11, 15, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 9990;
+  padding: 0 4px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 769px) {
+  #mobile-bottom-nav {
+    display: none !important;
   }
-  .nav-links li { list-style: none; }
-  .nav-links a {
-    font-size: 0.7rem;
-    padding: 0.4rem;
-    text-align: center;
-    border-radius: 8px;
+  .btn-nav-hamburger {
+    display: none !important;
   }
-  .nav-links a.active {
-    background: rgba(255,255,255,0.1);
+}
+
+.mob-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 2px;
+  flex: 1;
+  height: 100%;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mob-nav-btn .mob-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.mob-nav-btn.active {
+  color: var(--accent);
+}
+
+.mob-nav-btn.active .mob-icon {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0 6px rgba(99, 179, 237, 0.6));
+}
+
+.mob-nav-btn:active {
+  transform: scale(0.92);
+}
+
+/* Drawer / Menú Lateral Desplegable Móvil */
+#mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 99998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#mobile-nav-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 86vw);
+  background: #0d1117;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 99999;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.6);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#mobile-nav-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-user-box {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawer-nav-list {
+  list-style: none;
+  padding: 0.75rem 0.5rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.drawer-link:hover, .drawer-link:active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+}
+
+.drawer-link.active {
+  background: rgba(99, 179, 237, 0.12);
+  color: var(--accent);
+  border-left: 3px solid var(--accent);
+}
+
+.drawer-footer {
+  margin-top: auto;
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Reglas Responsive Globales para Pantallas Móviles */
+@media (max-width: 768px) {
+  :root {
+    --nav-h: 58px;
   }
+
   body {
-    padding-bottom: 70px; /* Space for bottom nav */
+    padding-bottom: 74px !important;
+    overflow-x: hidden !important;
   }
-  .admin-tabs { width: 100%; }
+
+  .navbar {
+    height: var(--nav-h) !important;
+    padding: 0 10px !important;
+  }
+
+  .nav-inner {
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .nav-logo {
+    flex-shrink: 0 !important;
+  }
+
+  .nav-logo img {
+    height: 32px !important;
+    max-width: 160px !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Ocultar enlaces de escritorio en la barra superior móvil */
+  .nav-links {
+    display: none !important;
+  }
+
+  .btn-nav-hamburger {
+    display: inline-flex !important;
+  }
+
+  .nav-actions {
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #nav-user-widget {
+    padding: 2px 6px 2px 2px !important;
+    max-width: 130px !important;
+  }
+
+  #nav-user-widget .user-widget-text {
+    max-width: 75px !important;
+  }
+
+  .admin-badge {
+    display: none !important;
+  }
+
+  .container, .container-wide {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    max-width: 100% !important;
+  }
+
+  .page-wrapper {
+    padding-top: var(--nav-h) !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Grids & Cards */
+  .urgencia-grid { grid-template-columns: 1fr !important; }
+  .services-grid { grid-template-columns: 1fr !important; }
+
+  #stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+
+  .tec-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+
+  .admin-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .admin-title {
+    font-size: 1.25rem !important;
+  }
+
+  .card {
+    padding: 1rem !important;
+  }
+
+  .modal-box {
+    padding: 1.25rem !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 12px auto !important;
+  }
+
+  /* Inputs que no hagan auto-zoom en iOS (min 16px) */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 @media (max-width: 480px) {
-  .modal-box { padding: 1.5rem; }
+  .nav-logo img {
+    height: 28px !important;
+    max-width: 135px !important;
+  }
+
+  #nav-user-widget .user-widget-text {
+    display: none !important;
+  }
+
+  #nav-user-widget {
+    padding: 2px !important;
+    border-radius: 50% !important;
+  }
 }
 
 /* ── Utilidades ── */

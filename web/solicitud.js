@@ -151,7 +151,7 @@ async function cargarServicios() {
 
 function getCachedServicios() {
   try {
-    return JSON.parse(localStorage.getItem('infovzla_servicios') || localStorage.getItem('ives_servicios') || '[]');
+    return JSON.parse(localStorage.getItem('infovzla_servicios') || '[]');
   } catch (_) { return []; }
 }
 
