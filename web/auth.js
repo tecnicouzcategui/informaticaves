@@ -2103,7 +2103,6 @@ function renderMobileNavigation(hasUserSession, roleIsAdm, roleIsTec, nameToUse,
     link.addEventListener('click', closeDrawer);
   });
 }
-}
 
 export { updateNavUI };
 
