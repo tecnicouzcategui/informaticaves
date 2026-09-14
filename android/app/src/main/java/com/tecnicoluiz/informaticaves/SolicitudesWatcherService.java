@@ -20,7 +20,7 @@ import androidx.core.app.NotificationCompat;
 public class SolicitudesWatcherService extends Service {
 
     private static final String CHANNEL_ID   = "ives_watcher";
-    private static final String CHANNEL_NAME = "InformaticaVES — Vigilante de Solicitudes";
+    private static final String CHANNEL_NAME = "Informáticos Venezuela — Vigilante de Solicitudes";
     private static final int    NOTIF_ID     = 1001;
 
     private PowerManager.WakeLock wakeLock;
@@ -35,7 +35,7 @@ public class SolicitudesWatcherService extends Service {
         if (pm != null) {
             wakeLock = pm.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
-                "InformaticaVES:SolicitudesWakeLock"
+                "InformaticosVenezuela:SolicitudesWakeLock"
             );
             wakeLock.acquire();
         }
@@ -67,7 +67,7 @@ public class SolicitudesWatcherService extends Service {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("Mantiene la app activa para recibir nuevas solicitudes de clientes.");
+            channel.setDescription("Mantiene la app activa para recibir nuevas solicitudes de clientes en tiempo real.");
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm != null) nm.createNotificationChannel(channel);
         }
@@ -81,8 +81,8 @@ public class SolicitudesWatcherService extends Service {
         );
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("InformaticaVES activo")
-            .setContentText("Esperando solicitudes de clientes...")
+            .setContentTitle("Informáticos Venezuela Activo")
+            .setContentText("Servicio de guardia activo para solicitudes...")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pi)
             .setPriority(NotificationCompat.PRIORITY_LOW)

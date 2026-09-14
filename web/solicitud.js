@@ -6,6 +6,7 @@
 import { guardarSolicitud, getServiciosPublicados, SERVICIOS_DEFAULT, COLS } from './firebase.js';
 import * as Auth from './auth.js';
 import { showToast } from './auth.js';
+import { playNewRequestCreatedSound } from './sound-effects.js';
 // Nota: currentUser se lee dinámicamente via Auth.currentUser para evitar
 // el problema de módulos ES donde el valor primitivo importado queda "congelado".
 
@@ -412,7 +413,8 @@ async function handleSubmit(e) {
       console.warn('[Solicitud] Error enviando a Webhook AI:', e);
     }
 
-    // Éxito
+    // Éxito con sonido de confirmación y vibración
+    playNewRequestCreatedSound();
     showToast('✅ Solicitud enviada correctamente', 'success');
     mostrarConfirmacion(solicitudData, urgConfig);
     e.target.reset();

@@ -1720,7 +1720,7 @@ onAuthStateChanged(auth, async user => {
   updateNavUI();
   notifyListeners();
 
-  if (isAdmin) {
+  if (isAdmin || isTecnico) {
     import('./admin-notifications.js').then(m => m.initGlobalAdminNotifications()).catch(console.error);
   } else if (userWhatsApp) {
     import('./client-notifications.js').then(m => m.initGlobalClientNotifications(userWhatsApp)).catch(console.error);

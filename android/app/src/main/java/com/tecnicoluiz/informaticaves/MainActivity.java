@@ -11,48 +11,68 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    // ── Canal de ALTA prioridad para nuevas solicitudes ─────────────
-    // IMPORTANCE_HIGH = aparece como heads-up (banner en pantalla),
-    // reproduce el sonido del sistema y vibra.
+    // ── Canales de Notificación y Alarma ──────────────────────────
     private static final String CHANNEL_SOLICITUDES_ID   = "ives_solicitudes_high";
-    private static final String CHANNEL_SOLICITUDES_NAME = "Nuevas Solicitudes";
+    private static final String CHANNEL_SOLICITUDES_NAME = "🚨 Alarmas de Nuevas Solicitudes";
+    private static final String CHANNEL_STATUS_ID        = "ives_status_updates";
+    private static final String CHANNEL_STATUS_NAME      = "🔔 Cambios de Estado y Asignaciones";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        crearCanalNotificaciones();
+        crearCanalesNotificaciones();
     }
 
-    private void crearCanalNotificaciones() {
+    private void crearCanalesNotificaciones() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm == null) return;
 
-            // ── Canal de ALTA prioridad (solicitudes) ──────────────
-            if (nm.getNotificationChannel(CHANNEL_SOLICITUDES_ID) == null) {
-                NotificationChannel canal = new NotificationChannel(
-                    CHANNEL_SOLICITUDES_ID,
-                    CHANNEL_SOLICITUDES_NAME,
-                    NotificationManager.IMPORTANCE_HIGH  // Heads-up, sonido, vibración
-                );
-                canal.setDescription("Notificaciones de nuevas solicitudes de clientes");
-                canal.enableVibration(true);
-                canal.setVibrationPattern(new long[]{0, 300, 150, 300, 150, 300});
-                canal.enableLights(true);
-                canal.setShowBadge(true);
+            // ── Canal 1: ALARMA DE NUEVAS SOLICITUDES (Alarma acústica + vibración intensa) ──
+            NotificationChannel canalAlarma = new NotificationChannel(
+                CHANNEL_SOLICITUDES_ID,
+                CHANNEL_SOLICITUDES_NAME,
+                NotificationManager.IMPORTANCE_HIGH  // Banner heads-up, sonido, vibración
+            );
+            canalAlarma.setDescription("Alarma inmediata y sonora cuando un cliente solicita asistencia técnica");
+            canalAlarma.enableVibration(true);
+            canalAlarma.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500, 200, 800});
+            canalAlarma.enableLights(true);
+            canalAlarma.setShowBadge(true);
 
-                // Usar sonido de notificación del sistema
-                AudioAttributes audioAtts = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build();
-                canal.setSound(
+            AudioAttributes audioAttsAlarma = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+            canalAlarma.setSound(
+                android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI != null ?
+                    android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI :
                     android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
-                    audioAtts
-                );
+                audioAttsAlarma
+            );
+            nm.createNotificationChannel(canalAlarma);
 
-                nm.createNotificationChannel(canal);
-            }
+            // ── Canal 2: ACTUALIZACIONES DE ESTADO (Tomado, En camino, Finalizado) ──
+            NotificationChannel canalStatus = new NotificationChannel(
+                CHANNEL_STATUS_ID,
+                CHANNEL_STATUS_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            canalStatus.setDescription("Alertas al tomar casos, traslados y actualizaciones en tiempo real");
+            canalStatus.enableVibration(true);
+            canalStatus.setVibrationPattern(new long[]{0, 250, 100, 250});
+            canalStatus.enableLights(true);
+            canalStatus.setShowBadge(true);
+
+            AudioAttributes audioAttsStatus = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+            canalStatus.setSound(
+                android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+                audioAttsStatus
+            );
+            nm.createNotificationChannel(canalStatus);
         }
     }
 }

@@ -1,7 +1,7 @@
 // ============================================================
 // sw.js — Service Worker PWA (Network-first, JS always fresh)
 // ============================================================
-const CACHE_NAME = 'informaticosvenezuela-cache-v47';
+const CACHE_NAME = 'informaticosvenezuela-cache-v48';
 // Solo cachear assets estáticos (imágenes, íconos, CSS)
 // Los archivos .js, .css y .html siempre se buscan en la red primero
 const STATIC_ASSETS = [
@@ -64,6 +64,56 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
         return res;
       });
+    })
+  );
+});
+
+// ── Recepción de Notificaciones Push con Vibración ─────────────
+self.addEventListener('push', event => {
+  let payload = {
+    title: 'Informáticos Venezuela',
+    body: 'Nueva actualización de asistencia técnica',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url: '/tecnico.html' }
+  };
+
+  try {
+    if (event.data) {
+      payload = { ...payload, ...event.data.json() };
+    }
+  } catch (_) {
+    if (event.data) payload.body = event.data.text();
+  }
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon || '/icons/icon-192.png',
+    badge: payload.badge || '/icons/icon-192.png',
+    vibrate: [400, 150, 400, 150, 600],
+    data: payload.data || { url: '/tecnico.html' },
+    requireInteraction: true
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });

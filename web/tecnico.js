@@ -15,6 +15,7 @@ import {
   currentUser, isAdmin, isTecnico, userWhatsApp, userFoto, userCedula,
   openAuthModal, showToast
 } from './auth.js?v=47';
+import { playCaseTakenSound, playStatusChangeSound } from './sound-effects.js';
 
 let currentTecnico = null;
 let assignedJobs   = [];
@@ -776,6 +777,7 @@ async function tomarSolicitud(jobId) {
       tomadoEn: serverTimestamp()
     });
 
+    playCaseTakenSound();
     showToast(`✅ ¡Has tomado la solicitud! Asignada directamente a ${tecNombre}.`, 'success');
   } catch (err) {
     console.error('Error tomando solicitud:', err);
@@ -874,6 +876,7 @@ document.getElementById('modal-assign-confirm')?.addEventListener('click', async
       asignadoEn: serverTimestamp()
     });
 
+    playCaseTakenSound();
     showToast(`✅ ¡Solicitud asignada con éxito a ${selected.dataset.nombre}!`, 'success');
     document.getElementById('modal-assign-tecnico')?.classList.remove('open');
     assignJobId = null;
@@ -913,6 +916,7 @@ async function saveJobStatus() {
 
   try {
     await actualizarEstadoPorTecnico(activeJobId, nuevoEstado, notaTecnica);
+    playStatusChangeSound(nuevoEstado);
     showToast('✅ Estado y reporte actualizados con éxito', 'success');
     closeUpdateModal();
   } catch (err) {
@@ -927,6 +931,7 @@ async function saveJobStatus() {
 async function quickUpdateStatus(id, nuevoEstado) {
   try {
     await actualizarEstadoPorTecnico(id, nuevoEstado);
+    playStatusChangeSound(nuevoEstado);
     const labels = {
       'en_camino': '🚗 Notificado: En camino al lugar',
       'en_progreso': '🔧 En progreso de diagnóstico y reparación',

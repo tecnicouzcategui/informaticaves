@@ -1,27 +1,12 @@
 import { db, COLS, query, collection, where, onSnapshot } from './firebase.js';
+import { playStatusChangeSound, triggerVibration } from './sound-effects.js';
 
 let _knownStatus = new Map();
 let _initialLoad = true;
-let _audioCtx = null;
 let unsubscribeNotifs = null;
 
-function _tocarAlarma() {
-  try {
-    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (_audioCtx.state === 'suspended') _audioCtx.resume();
-
-    // Sonido alegre para el cliente
-    [[500,0.0],[700,0.15],[900,0.30]].forEach(([f,t]) => {
-      const o = _audioCtx.createOscillator();
-      const g = _audioCtx.createGain();
-      o.connect(g); g.connect(_audioCtx.destination);
-      o.frequency.value = f; o.type = 'sine';
-      g.gain.setValueAtTime(0.3, _audioCtx.currentTime + t);
-      g.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + t + 0.12);
-      o.start(_audioCtx.currentTime + t);
-      o.stop(_audioCtx.currentTime + t + 0.13);
-    });
-  } catch(e) { console.warn('Audio error:', e); }
+function _tocarAlarma(estado) {
+  playStatusChangeSound(estado || 'en_progreso');
 }
 
 function _mostrarModalAlerta(datos) {
@@ -92,10 +77,15 @@ export function initGlobalClientNotifications(whatsapp) {
         if (viejoEstado !== nuevoEstado && nuevoEstado !== 'pendiente') {
           _knownStatus.set(id, nuevoEstado);
           if (!_initialLoad) {
-            _tocarAlarma();
+            _tocarAlarma(nuevoEstado);
             _mostrarModalAlerta({ id, ...data });
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Actualización de solicitud', { body: `Tu solicitud "${data.servicio}" ahora está: ${nuevoEstado}`, icon: './img/logo.png' });
+              new Notification('🔔 Actualización de Solicitud', {
+                body: `Tu solicitud "${data.servicio}" ahora está: ${nuevoEstado}`,
+                icon: './img/logo.png',
+                badge: './img/logo.png',
+                vibrate: [200, 100, 200, 100, 300]
+              });
             }
           }
         }

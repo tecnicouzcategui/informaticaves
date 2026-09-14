@@ -9,11 +9,16 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <!-- ══════════════════════════════════════════════
-         NOTIFICACIONES Y VIBRACIÓN
+         ALERTAS, NOTIFICACIONES Y VIBRACIÓN
     ══════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- ══════════════════════════════════════════════
          EJECUCIÓN EN SEGUNDO PLANO (sin hibernar)
@@ -24,9 +29,17 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- ══════════════════════════════════════════════
+         UBICACIÓN (GPS / ASISTENCIA TÉCNICA)
+    ══════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- ══════════════════════════════════════════════
          CONTACTOS Y LLAMADAS
     ══════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <!-- ══════════════════════════════════════════════
@@ -34,8 +47,6 @@
     ══════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"

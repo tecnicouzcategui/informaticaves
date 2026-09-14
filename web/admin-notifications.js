@@ -1,25 +1,11 @@
 import { db, COLS, query, collection, orderBy, limit, onSnapshot } from './firebase.js';
+import { playAlarmSound, triggerVibration } from './sound-effects.js';
 
 let _notifSeenIds = new Set();
 let _initialLoad = true;
-let _audioCtx = null;
 
 function _tocarAlarma() {
-  try {
-    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (_audioCtx.state === 'suspended') _audioCtx.resume();
-
-    [[800,0.0],[800,0.15],[1000,0.35],[1000,0.50],[800,0.70]].forEach(([f,t]) => {
-      const o = _audioCtx.createOscillator();
-      const g = _audioCtx.createGain();
-      o.connect(g); g.connect(_audioCtx.destination);
-      o.frequency.value = f; o.type = 'sine';
-      g.gain.setValueAtTime(0.4, _audioCtx.currentTime + t);
-      g.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + t + 0.12);
-      o.start(_audioCtx.currentTime + t);
-      o.stop(_audioCtx.currentTime + t + 0.13);
-    });
-  } catch(e) { console.warn('Audio error:', e); }
+  playAlarmSound();
 }
 
 function _escapeHtml(str) {
@@ -78,7 +64,13 @@ function _alertarNuevaSolicitud(datos) {
   _tocarAlarma();
   _mostrarModalAlerta(datos);
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('⚡ Nueva Solicitud', { body: `${datos.nombre} — ${datos.servicio}`, icon: './img/logo.png' });
+    new Notification('⚡ Nueva Solicitud de Asistencia', {
+      body: `${datos.nombre} — ${datos.servicio} (${datos.urgencia || 'Normal'})`,
+      icon: './img/logo.png',
+      badge: './img/logo.png',
+      vibrate: [400, 150, 400, 150, 600],
+      tag: 'nueva-solicitud-' + datos.id
+    });
   }
 }
 
