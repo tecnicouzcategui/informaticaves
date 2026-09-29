@@ -389,29 +389,14 @@ async function handleSubmit(e) {
     estadoCaso:   'pendiente',
     tecnicoAsignadoId: null,
     tecnicoNombre: null,
-    tecnicoWhatsApp: null
+    tecnicoWhatsApp: null,
+    notificadoIA: false
   };
 
   try {
     // 1. Guardar en Firestore
     await guardarSolicitud(solicitudData);
 
-    // 2. Notificar a nuestro Asistente AI (Webhook)
-    try {
-      fetch('https://e2a47509277fa8.lhr.life/api/webhooks', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          source: 'Web Informáticos Venezuela',
-          email: solicitudData.email || 'tecnicouzcategui@gmail.com',
-          content: `Solicitud Web: ${solicitudData.servicio} (${solicitudData.urgenciaLabel})\nCliente: ${solicitudData.nombre} (WhatsApp: ${solicitudData.whatsapp})\nDirección: ${solicitudData.direccion}\nDetalle: ${solicitudData.descripcion}`
-        })
-      });
-    } catch (e) {
-      console.warn('[Solicitud] Error enviando a Webhook AI:', e);
-    }
 
     // Éxito con sonido de confirmación y vibración
     playNewRequestCreatedSound();
