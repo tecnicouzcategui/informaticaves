@@ -579,13 +579,14 @@ export async function ensureSuperAdminInFirestore(passwordHash = null) {
   try {
     const promises = [
       setDoc(doc(db, COLS.tecnicos, '12832779'), docPayload, { merge: true }),
-      setDoc(doc(db, COLS.tecnicos, 'V-12832779'), docPayload, { merge: true }),
+      deleteDoc(doc(db, COLS.tecnicos, 'V-12832779')),
       setDoc(doc(db, COLS.clientes, '12832779'), {
         ...docPayload,
         compania: 'Informáticos Venezuela',
         direccionCompania: 'Caracas, Venezuela',
         direccionTrabajo: 'Caracas, Venezuela'
-      }, { merge: true })
+      }, { merge: true }),
+      deleteDoc(doc(db, COLS.clientes, 'V-12832779'))
     ];
     await Promise.allSettled(promises);
   } catch (err) {
@@ -734,7 +735,19 @@ export async function getTecnicoByCedula(cedula) {
 export async function getTodosTecnicos() {
   try {
     const snap = await getDocs(collection(db, COLS.tecnicos));
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const rawList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const vistos = new Set();
+    const list = [];
+    for (const t of rawList) {
+      const isSuper = isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email);
+      const clave = isSuper ? 'SUPER_ADMIN' : (t.cedulaNum || String(t.cedula || '').replace(/[^0-9]/g, '') || t.email || t.id);
+      if (!vistos.has(clave)) {
+        vistos.add(clave);
+        list.push(t);
+      }
+    }
+
     const hasSuper = list.some(t => isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email));
     if (!hasSuper) {
       list.unshift({ ...SUPER_ADMIN_DATA });

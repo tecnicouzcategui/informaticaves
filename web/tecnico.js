@@ -803,7 +803,18 @@ async function abrirModalAsignar(jobId, ticketTitle) {
 
   try {
     const snap = await getDocs(collection(db, 'tecnicos'));
-    let tecs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const rawTecs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const vistos = new Set();
+    let tecs = [];
+    for (const t of rawTecs) {
+      const isSuper = isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email);
+      const clave = isSuper ? 'SUPER_ADMIN' : (t.cedulaNum || String(t.cedula || '').replace(/[^0-9]/g, '') || t.email || t.id);
+      if (!vistos.has(clave)) {
+        vistos.add(clave);
+        tecs.push(t);
+      }
+    }
 
     // Asegurar que el Super Administrador Luis Uzcátegui esté en la lista
     const hasLuis = tecs.some(t => isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email));

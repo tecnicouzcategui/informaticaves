@@ -890,7 +890,16 @@ async function cargarClientes() {
 
   // 1. Escuchar la colección de CLIENTES en tiempo real
   onSnapshot(collection(db, COLS.clientes), snap => {
-    clientesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const rawClientes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const vistos = new Set();
+    clientesList = [];
+    for (const c of rawClientes) {
+      const clave = (c.cedulaNum || String(c.cedula || '').replace(/[^0-9]/g, '') || c.whatsapp || c.email || c.id);
+      if (!vistos.has(clave)) {
+        vistos.add(clave);
+        clientesList.push(c);
+      }
+    }
     clientesList.sort((a, b) => {
       const tA = a.creadoEn?.seconds || a.updatedAt?.seconds || 0;
       const tB = b.creadoEn?.seconds || b.updatedAt?.seconds || 0;
@@ -1203,17 +1212,47 @@ async function cargarTecnicos() {
   const tbody = document.getElementById('tecnicos-tbody');
   if (!tbody) return;
 
-  onSnapshot(collection(db, COLS.tecnicos), snap => {
-    tecnicosList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  onSnapshot(collection(db, COLS.tecnicos), async snap => {
+    const rawDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Limpiar documento duplicado en Firestore si existe
+    const superDocs = rawDocs.filter(d => isSuperAdminIdentifier(d.id) || isSuperAdminIdentifier(d.cedula) || isSuperAdminIdentifier(d.email));
+    if (superDocs.length > 1) {
+      for (const d of superDocs) {
+        if (d.id === 'V-12832779' || (d.id !== '12832779' && isSuperAdminIdentifier(d.id))) {
+          deleteDoc(doc(db, COLS.tecnicos, d.id)).catch(() => {});
+        }
+      }
+    }
+
+    // Deduplicación en memoria por Cédula / Email / SuperAdmin
+    const vistos = new Set();
+    tecnicosList = [];
+
+    for (const t of rawDocs) {
+      const isSuper = isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email);
+      const clave = isSuper ? 'SUPER_ADMIN' : (t.cedulaNum || String(t.cedula || '').replace(/[^0-9]/g, '') || t.email || t.id);
+      if (!vistos.has(clave)) {
+        vistos.add(clave);
+        tecnicosList.push(t);
+      }
+    }
+
     const hasSuper = tecnicosList.some(t => isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email));
     if (!hasSuper) {
       tecnicosList.unshift({ ...SUPER_ADMIN_DATA });
     }
+
     tecnicosList.sort((a, b) => {
+      const isSuperA = isSuperAdminIdentifier(a.id) || isSuperAdminIdentifier(a.cedula) || isSuperAdminIdentifier(a.email);
+      const isSuperB = isSuperAdminIdentifier(b.id) || isSuperAdminIdentifier(b.cedula) || isSuperAdminIdentifier(b.email);
+      if (isSuperA) return -1;
+      if (isSuperB) return 1;
       const tA = a.creadoEn?.seconds || a.updatedAt?.seconds || 0;
       const tB = b.creadoEn?.seconds || b.updatedAt?.seconds || 0;
       return tB - tA;
     });
+
     renderTablaTecnicos();
     actualizarStatTecnicos();
   }, err => {
