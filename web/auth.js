@@ -78,6 +78,66 @@ export const WA_KEY               = 'infovzla_wa_number';
 export const ROLE_KEY             = 'infovzla_user_role';
 export const LOCAL_ADMIN_KEY      = 'infovzla_local_admin';
 
+// ── Control de Sesión: Inactividad y Cierre de Navegador ─────────────
+export const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos de inactividad
+export const SESSION_ACTIVE_KEY    = 'infovzla_session_active';
+export const LAST_ACTIVITY_KEY     = 'infovzla_last_activity';
+
+export function clearStoredCredentials() {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.removeItem(LOCAL_ADMIN_KEY);
+  localStorage.removeItem('ives_local_admin');
+  localStorage.removeItem(WA_KEY);
+  localStorage.removeItem('ives_wa_number');
+  localStorage.removeItem(ROLE_KEY);
+  localStorage.removeItem('ives_user_role');
+  localStorage.removeItem('infovzla_user_cedula');
+  localStorage.removeItem('infovzla_user_foto');
+  localStorage.removeItem('infovzla_user_nombre');
+  localStorage.removeItem('infovzla_cliente_data');
+  localStorage.removeItem('infovzla_tecnico_data');
+  localStorage.removeItem('infovzla_admin_hash');
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.removeItem(SESSION_ACTIVE_KEY);
+    sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+  }
+}
+
+export function activateBrowserSession() {
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(SESSION_ACTIVE_KEY, '1');
+    sessionStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  }
+}
+
+export function registerUserActivity() {
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  }
+}
+
+function isSessionAlive() {
+  if (typeof sessionStorage === 'undefined' || typeof localStorage === 'undefined') return false;
+  const isLogged = localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem(ROLE_KEY) || localStorage.getItem('infovzla_user_cedula');
+  if (!isLogged) return false;
+
+  // Si no hay marca activa en sessionStorage, significa que el navegador se cerró previamente
+  const sessionActive = sessionStorage.getItem(SESSION_ACTIVE_KEY);
+  if (!sessionActive) {
+    clearStoredCredentials();
+    return false;
+  }
+
+  // Verificar si expiró por inactividad
+  const lastAct = parseInt(sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+  if (lastAct && (Date.now() - lastAct > INACTIVITY_TIMEOUT_MS)) {
+    clearStoredCredentials();
+    return false;
+  }
+
+  return true;
+}
+
 // ── Verificación y Autenticación del Super Administrador ─────
 export async function isSuperAdminPassword(pass) {
   if (!pass) return false;
@@ -97,6 +157,8 @@ export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
   if (pass) {
     try { hash = await sha256(pass); } catch(_) {}
   }
+
+  activateBrowserSession();
 
   localStorage.setItem(LOCAL_ADMIN_KEY, '1');
   localStorage.setItem(ROLE_KEY, 'admin');
@@ -144,21 +206,22 @@ export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
   return true;
 }
 
-// ── Estado global inicializado optimistamente desde localStorage ──
-const _rawAdmin = typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem(ROLE_KEY) === 'admin');
-const _rawCedula = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_cedula') || null) : null;
-const _isSuperLocal = _rawAdmin || isSuperAdminIdentifier(_rawCedula);
+// ── Estado global inicializado con verificación de vida de sesión ──
+const _sessionAlive = isSessionAlive();
+const _rawAdmin = _sessionAlive && typeof localStorage !== 'undefined' && (localStorage.getItem(LOCAL_ADMIN_KEY) === '1' || localStorage.getItem(ROLE_KEY) === 'admin');
+const _rawCedula = _sessionAlive && typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_cedula') || null) : null;
+const _isSuperLocal = _rawAdmin || (_sessionAlive && isSuperAdminIdentifier(_rawCedula));
 
 const _initAdmin  = _isSuperLocal;
-const _initRole   = _isSuperLocal ? 'admin' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || null) : null);
+const _initRole   = _isSuperLocal ? 'admin' : (_sessionAlive && typeof localStorage !== 'undefined' ? (localStorage.getItem(ROLE_KEY) || null) : null);
 const _initCedula = _isSuperLocal ? 'V-12832779' : _rawCedula;
-const _initWA     = _isSuperLocal ? '04242964339' : (typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || null) : null);
-const _initNombre = _isSuperLocal ? 'Luis Uzcátegui' : (typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_nombre') || null) : null);
-const _initFoto   = typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_foto') || null) : null;
+const _initWA     = _isSuperLocal ? '04242964339' : (_sessionAlive && typeof localStorage !== 'undefined' ? (localStorage.getItem(WA_KEY) || null) : null);
+const _initNombre = _isSuperLocal ? 'Luis Uzcátegui' : (_sessionAlive && typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_nombre') || null) : null);
+const _initFoto   = _sessionAlive && typeof localStorage !== 'undefined' ? (localStorage.getItem('infovzla_user_foto') || null) : null;
 
 let _initCliData = null;
 try {
-  const rawCli = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_cliente_data') : null;
+  const rawCli = _sessionAlive && typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_cliente_data') : null;
   if (rawCli) _initCliData = JSON.parse(rawCli);
 } catch(_) {}
 if (!_initCliData && (_initCedula || _initWA) && _initRole !== 'tecnico' && !_initAdmin) {
@@ -172,7 +235,7 @@ if (!_initCliData && (_initCedula || _initWA) && _initRole !== 'tecnico' && !_in
 
 let _initTecData = null;
 try {
-  const rawTec = typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_tecnico_data') : null;
+  const rawTec = _sessionAlive && typeof localStorage !== 'undefined' ? localStorage.getItem('infovzla_tecnico_data') : null;
   if (rawTec) _initTecData = JSON.parse(rawTec);
 } catch(_) {}
 if (_isSuperLocal && !_initTecData) {
@@ -198,6 +261,33 @@ export let tecnicoData  = _initTecData;
 export let currentUser  = (_initAdmin || _initCedula || _initWA || _initRole)
   ? { uid: _initAdmin ? '12832779' : (_initCedula || _initWA || 'user'), displayName: userNombre || (_initRole === 'tecnico' ? 'Técnico IT' : 'Solicitante'), email: _initAdmin ? ADMIN_EMAIL : '' }
   : null;
+
+// ── Iniciar tracker de inactividad global ──
+if (typeof window !== 'undefined') {
+  let _lastTouch = Date.now();
+  const _throttleActivity = () => {
+    const now = Date.now();
+    if (now - _lastTouch > 5000) {
+      _lastTouch = now;
+      if (currentUser || isAdmin || isTecnico) {
+        registerUserActivity();
+      }
+    }
+  };
+
+  ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+    window.addEventListener(evt, _throttleActivity, { passive: true });
+  });
+
+  setInterval(() => {
+    if (currentUser || isAdmin || isTecnico) {
+      const lastAct = parseInt(sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+      if (lastAct && (Date.now() - lastAct > INACTIVITY_TIMEOUT_MS)) {
+        logout(true);
+      }
+    }
+  }, 20000);
+}
 
 // ── Callbacks registrados ────────────────────────────────────
 const authListeners = [];
@@ -1011,6 +1101,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             creadoEn: serverTimestamp()
           });
 
+          activateBrowserSession();
           localStorage.setItem(ROLE_KEY, 'tecnico');
           localStorage.setItem(WA_KEY, wa);
           localStorage.setItem('infovzla_user_cedula', cedula.toUpperCase());
@@ -1130,6 +1221,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
             creadoEn: serverTimestamp()
           });
 
+          activateBrowserSession();
           localStorage.setItem(ROLE_KEY, 'solicitante');
           localStorage.setItem(WA_KEY, wa);
           localStorage.setItem('infovzla_user_cedula', cedula.toUpperCase());
@@ -1270,6 +1362,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
                 } catch (_) {}
               }
 
+              activateBrowserSession();
               localStorage.setItem(ROLE_KEY, 'tecnico');
               if (tecExistente.whatsapp) localStorage.setItem(WA_KEY, tecExistente.whatsapp);
               if (tecExistente.cedula) localStorage.setItem('infovzla_user_cedula', tecExistente.cedula);
@@ -1394,6 +1487,7 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
                 } catch (_) {}
               }
 
+              activateBrowserSession();
               localStorage.setItem(ROLE_KEY, 'solicitante');
               if (cliExistente.whatsapp) localStorage.setItem(WA_KEY, cliExistente.whatsapp);
               if (cliExistente.cedula) localStorage.setItem('infovzla_user_cedula', cliExistente.cedula);
@@ -1478,6 +1572,7 @@ export const loginGoogle = openAuthModal;
 export async function loginEmail(email, password) {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
+    activateBrowserSession();
     return result.user;
   } catch (err) {
     const msgs = {
@@ -1489,18 +1584,8 @@ export async function loginEmail(email, password) {
 }
 
 // ── Logout ───────────────────────────────────────────────────
-export async function logout() {
-  localStorage.removeItem(LOCAL_ADMIN_KEY);
-  localStorage.removeItem('ives_local_admin');
-  localStorage.removeItem(WA_KEY);
-  localStorage.removeItem('ives_wa_number');
-  localStorage.removeItem(ROLE_KEY);
-  localStorage.removeItem('ives_user_role');
-  localStorage.removeItem('infovzla_user_cedula');
-  localStorage.removeItem('infovzla_user_foto');
-  localStorage.removeItem('infovzla_user_nombre');
-  localStorage.removeItem('infovzla_cliente_data');
-  localStorage.removeItem('infovzla_tecnico_data');
+export async function logout(isExpired = false) {
+  clearStoredCredentials();
   
   currentUser  = null;
   isAdmin      = false;
@@ -1524,11 +1609,20 @@ export async function logout() {
   notifyListeners();
   updateNavUI();
   
-  window.location.href = 'index.html';
+  if (isExpired) {
+    showToast('⚠️ Tu sesión ha expirado por inactividad.', 'warning');
+  } else {
+    showToast('Sesión cerrada correctamente.', 'info');
+  }
+  
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 250);
 }
 
 // ── Modo Admin Local ─────────────────────────────────────────
 export function forceAdmin() {
+  activateBrowserSession();
   currentUser = { displayName: 'Luis Uzcátegui (Super Admin)', email: ADMIN_EMAIL, uid: '12832779' };
   isAdmin = true;
   isTecnico = true;
