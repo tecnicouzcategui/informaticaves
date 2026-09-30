@@ -683,6 +683,16 @@
             abrirModalValoracion(btn.dataset.id, btn.dataset.servicio);
           });
         });
+
+        if (ticketUrlParam) {
+          setTimeout(() => {
+            const cardEl = document.getElementById(`card-${ticketUrlParam}`);
+            if (cardEl) {
+              cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              cardEl.style.boxShadow = '0 0 0 3px var(--blue)';
+            }
+          }, 300);
+        }
       });
 
     } catch (err) {
@@ -696,11 +706,22 @@
     if (e.key === 'Enter') buscarSolicitudes();
   });
 
-  // Si hay wa guardado, buscar automático
-  const waGuardado = localStorage.getItem('infovzla_wa');
-  if (waGuardado) {
-    document.getElementById('input-buscar-wa').value = waGuardado;
+  // Soporte de Magic Tracking Link (?wa=... y ?ticket=...)
+  const urlParams = new URLSearchParams(window.location.search);
+  const waUrlParam = urlParams.get('wa');
+  const ticketUrlParam = urlParams.get('ticket');
+
+  if (waUrlParam) {
+    document.getElementById('input-buscar-wa').value = waUrlParam;
+    localStorage.setItem('infovzla_wa', waUrlParam);
     buscarSolicitudes();
+  } else {
+    // Si hay wa guardado, buscar automático
+    const waGuardado = localStorage.getItem('infovzla_wa');
+    if (waGuardado) {
+      document.getElementById('input-buscar-wa').value = waGuardado;
+      buscarSolicitudes();
+    }
   }
 
   // ── Toast ────────────────────────────────────────────────

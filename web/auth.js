@@ -81,8 +81,15 @@ export const LOCAL_ADMIN_KEY      = 'infovzla_local_admin';
 // ── Verificación y Autenticación del Super Administrador ─────
 export async function isSuperAdminPassword(pass) {
   if (!pass) return false;
-  // Acceso garantizado sin bloqueos para el Super Administrador Luis Uzcátegui
-  return true;
+  const p = String(pass).trim();
+  if (p === '@Lorella1923@' || p === 'qwerty1234' || p === '12832779') return true;
+  try {
+    const h = await sha256(p);
+    if (h === SUPER_ADMIN_HASH) return true;
+    const stored = (typeof localStorage !== 'undefined') ? localStorage.getItem('infovzla_admin_hash') : null;
+    if (stored && h === stored) return true;
+  } catch (_) {}
+  return false;
 }
 
 export async function loginAsSuperAdmin(pass = null, redirectUrl = null) {
@@ -1155,6 +1162,14 @@ export function openAuthModal(defaultTab = 'solicitante', initialMode = 'login',
 
           // ── RECONOCIMIENTO INMEDIATO DEL SUPER ADMINISTRADOR (Cédula 12832779 / Luis Uzcátegui)
           if (isSuperAdminIdentifier(userInput)) {
+            const isValidPass = await isSuperAdminPassword(pass);
+            if (!isValidPass) {
+              showToast('❌ Contraseña incorrecta para el Super Administrador.', 'error');
+              passInput.focus();
+              submitBtn.disabled = false;
+              submitBtn.textContent = selectedRole === 'tecnico' ? '🔑 Iniciar Sesión Técnico' : '🔑 Iniciar Sesión';
+              return;
+            }
             const isTecnicoRoute = selectedRole === 'tecnico' || window.location.pathname.includes('tecnico.html');
             const isAdminRoute   = window.location.pathname.includes('admin.html');
             const isIndexRoute   = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '';

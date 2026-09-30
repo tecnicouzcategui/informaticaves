@@ -609,6 +609,18 @@ function renderJobs() {
     const clienteWa = (job.whatsapp || '').replace(/[^0-9]/g, '');
     const waMsg = encodeURIComponent(`Hola ${job.nombre || ''}, te saluda ${currentTecnico.nombre || 'Luis Uzcátegui'} de Informáticos Venezuela sobre tu solicitud de ${job.servicio || 'servicio técnico'}.`);
     const waUrl = `https://wa.me/${clienteWa}?text=${waMsg}`;
+    const telUrl = `tel:${clienteWa}`;
+
+    let wazeUrl = null;
+    let gmapsUrl = null;
+    if (job.ubicacionCoords && job.ubicacionCoords.lat && job.ubicacionCoords.lng) {
+      wazeUrl = `https://waze.com/ul?ll=${job.ubicacionCoords.lat},${job.ubicacionCoords.lng}&navigate=yes`;
+      gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${job.ubicacionCoords.lat},${job.ubicacionCoords.lng}`;
+    } else if (job.direccion) {
+      const q = encodeURIComponent(job.direccion + ', Venezuela');
+      wazeUrl = `https://waze.com/ul?q=${q}&navigate=yes`;
+      gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    }
 
     return `
       <div class="job-card ${urgencia}" style="margin-bottom:1.25rem;">
@@ -631,12 +643,33 @@ function renderJobs() {
           <div>
             <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">👤 Cliente Solicitante:</div>
             <div><strong>${escapeHtml(job.nombre || 'Cliente')}</strong></div>
-            <div style="font-size:0.8rem; color:var(--blue); margin-top:0.15rem;">📱 ${escapeHtml(job.whatsapp || '—')}</div>
+            <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.25rem; flex-wrap:wrap;">
+              <span style="font-size:0.82rem; color:var(--blue); font-weight:700;">📱 ${escapeHtml(job.whatsapp || '—')}</span>
+              ${clienteWa ? `
+                <a href="${telUrl}" class="btn btn-sm" style="background:rgba(99,179,237,0.15); color:var(--blue); border:1px solid rgba(99,179,237,0.3); padding:0.2rem 0.5rem; font-size:0.72rem; border-radius:4px; text-decoration:none;">
+                  📞 Llamar
+                </a>
+              ` : ''}
+            </div>
           </div>
 
           <div>
             <div style="font-weight:700; color:var(--text); margin-bottom:0.2rem;">📍 Ubicación / Zona:</div>
-            <div>${escapeHtml(job.direccion || job.zona || 'Caracas')}</div>
+            <div style="font-size:0.85rem;">${escapeHtml(job.direccion || job.zona || 'Caracas')}</div>
+            ${(gmapsUrl || wazeUrl) ? `
+              <div style="display:flex; gap:0.4rem; margin-top:0.35rem; flex-wrap:wrap;">
+                ${wazeUrl ? `
+                  <a href="${wazeUrl}" target="_blank" class="btn btn-sm" style="background:#33ccff; color:#1a202c; font-weight:800; border:none; padding:0.25rem 0.55rem; font-size:0.72rem; border-radius:4px; text-decoration:none;">
+                    🚗 Waze
+                  </a>
+                ` : ''}
+                ${gmapsUrl ? `
+                  <a href="${gmapsUrl}" target="_blank" class="btn btn-sm" style="background:#ea4335; color:white; font-weight:700; border:none; padding:0.25rem 0.55rem; font-size:0.72rem; border-radius:4px; text-decoration:none;">
+                    🗺️ Google Maps
+                  </a>
+                ` : ''}
+              </div>
+            ` : ''}
           </div>
 
           <div>

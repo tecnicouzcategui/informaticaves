@@ -58,23 +58,38 @@ function bloquearFormAdmin() {
   const aviso = document.createElement('div');
   aviso.id = 'admin-block-msg';
   aviso.className = 'card';
-  aviso.style.cssText = 'text-align:center; padding:3rem 1.5rem; max-width:640px; margin:1.5rem auto; border:1px solid rgba(246,173,85,0.4); background:linear-gradient(135deg, rgba(246,173,85,0.12), rgba(237,137,54,0.04)); border-radius:1rem;';
+  aviso.style.cssText = 'text-align:center; padding:2.5rem 1.5rem; max-width:680px; margin:1.5rem auto; border:1px solid rgba(246,173,85,0.4); background:linear-gradient(135deg, rgba(246,173,85,0.12), rgba(237,137,54,0.04)); border-radius:1rem;';
   aviso.innerHTML = `
-    <div style="font-size:3.5rem; margin-bottom:0.75rem;">⚡</div>
-    <h2 style="font-size:1.5rem; font-weight:800; color:var(--text); margin-bottom:0.5rem;">Bandeja de Entrada de Solicitudes</h2>
-    <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.6; max-width:520px; margin:0 auto 1.75rem;">
-      Has iniciado sesión como <strong>Técnico / Administrador (Luis Uzcátegui)</strong>.<br>
-      Tu rol es <strong>recibir, aprobar, tomar las solicitudes o trasladarlas a otros técnicos</strong> de la red Help Desk.
+    <div style="font-size:3rem; margin-bottom:0.75rem;">⚡</div>
+    <h2 style="font-size:1.4rem; font-weight:800; color:var(--text); margin-bottom:0.5rem;">Bandeja de Entrada de Solicitudes</h2>
+    <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.6; max-width:540px; margin:0 auto 1.5rem;">
+      Has iniciado sesión como <strong>Técnico / Administrador</strong>.<br>
+      Puedes gestionar los tickets en el panel o registrar directamente un ticket a nombre de un cliente.
     </p>
     <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
-      <a href="tecnico.html" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:800; padding:0.8rem 1.75rem; font-size:0.92rem; text-decoration:none;">
+      <button type="button" id="btn-admin-crear-ticket" class="btn btn-primary" style="background:#3182ce; color:white; font-weight:800; padding:0.75rem 1.4rem; font-size:0.9rem; border-radius:8px; border:none; cursor:pointer;">
+        📝 Registrar Ticket para un Cliente
+      </button>
+      <a href="tecnico.html" class="btn btn-primary" style="background:#f6ad55; color:#1a202c; font-weight:800; padding:0.75rem 1.4rem; font-size:0.9rem; text-decoration:none;">
         📥 Ver Solicitudes de Clientes →
       </a>
-      <a href="servicios.html" class="btn btn-secondary" style="font-weight:600; padding:0.8rem 1.25rem; font-size:0.92rem; text-decoration:none;">
+      <a href="servicios.html" class="btn btn-secondary" style="font-weight:600; padding:0.75rem 1.15rem; font-size:0.9rem; text-decoration:none;">
         🛠️ Gestionar Servicios
       </a>
     </div>`;
   form.insertAdjacentElement('beforebegin', aviso);
+
+  document.getElementById('btn-admin-crear-ticket')?.addEventListener('click', () => {
+    aviso.style.display = 'none';
+    form.style.display = 'block';
+    const inpNom = document.getElementById('input-nombre');
+    const inpWa  = document.getElementById('input-whatsapp');
+    const inpDir = document.getElementById('input-direccion');
+    if (inpNom) inpNom.value = '';
+    if (inpWa)  inpWa.value = '';
+    if (inpDir) inpDir.value = '';
+    showToast('Modo de registro de cliente activado. Completa los datos del solicitante.', 'info');
+  });
 }
 
 function actualizarUI() {
@@ -370,13 +385,15 @@ async function handleSubmit(e) {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Enviando...';
 
-  const urgConfig = URGENCIA_CONFIG[urgenciaSeleccionada];
+  const isAdmOrTec = Auth.isAdmin || Auth.isTecnico || (typeof localStorage !== 'undefined' && (localStorage.getItem('infovzla_local_admin') === '1' || localStorage.getItem('infovzla_user_role') === 'admin' || localStorage.getItem('infovzla_user_role') === 'tecnico'));
 
   const solicitudData = {
     nombre,
     whatsapp,
-    email:        Auth.currentUser?.email || '',
-    uid:          Auth.currentUser?.uid   || 'anon',
+    email:        isAdmOrTec ? '' : (Auth.currentUser?.email || ''),
+    uid:          isAdmOrTec ? `admin_reg_${Date.now()}` : (Auth.currentUser?.uid || 'anon'),
+    creadoPorAdmin: isAdmOrTec,
+    adminUid:     isAdmOrTec ? (Auth.currentUser?.uid || '12832779') : null,
     servicio:     servicioSeleccionado.nombre,
     servicioId:   servicioSeleccionado.id,
     precio:       servicioSeleccionado.precio,
@@ -395,13 +412,13 @@ async function handleSubmit(e) {
 
   try {
     // 1. Guardar en Firestore
-    await guardarSolicitud(solicitudData);
-
+    const newDocRef = await guardarSolicitud(solicitudData);
+    const correlativo = newDocRef?.id ? `#${newDocRef.id.substring(0,6)}` : '';
 
     // Éxito con sonido de confirmación y vibración
     playNewRequestCreatedSound();
     showToast('✅ Solicitud enviada correctamente', 'success');
-    mostrarConfirmacion(solicitudData, urgConfig);
+    mostrarConfirmacion({ ...solicitudData, correlativo, id: newDocRef?.id }, urgConfig);
     e.target.reset();
     document.querySelectorAll('.urgencia-option').forEach(b => b.classList.remove('selected'));
     urgenciaSeleccionada  = null;
@@ -425,10 +442,14 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-// ── Confirmación visual ───────────────────────────────────────
+// ── Confirmación visual con Magic Tracking Link ────────────────
 function mostrarConfirmacion(data, urgConfig) {
   const conf = document.getElementById('confirmacion');
   if (!conf) return;
+
+  const cleanWa = (data.whatsapp || '').replace(/[^0-9]/g, '');
+  const trackingUrl = `https://informaticosvenezuela.com/mis-solicitudes.html?wa=${cleanWa}${data.id ? `&ticket=${data.id}` : ''}`;
+  const waMessageText = `Hola Soporte Informáticos Venezuela, acabo de registrar una solicitud para: ${data.servicio}. Mi nombre es ${data.nombre}.\nPueden revisar mi ticket aquí: ${trackingUrl}`;
 
   conf.innerHTML = `
     <div class="card" style="border-color:rgba(104,211,145,0.3);background:rgba(104,211,145,0.05);">
@@ -436,19 +457,28 @@ function mostrarConfirmacion(data, urgConfig) {
         <div style="font-size:3rem">✅</div>
         <h3 style="font-size:1.2rem;font-weight:800;margin:0.75rem 0 0.5rem">¡Solicitud enviada!</h3>
         <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem">
-          Tu solicitud ha sido registrada en el sistema de Help Desk y el equipo técnico te contactará a la brevedad.
+          Tu solicitud ha sido registrada en el sistema de Help Desk. Puedes realizar el seguimiento en tiempo real con tu enlace personalizado.
         </p>
-        <div class="alert alert-info" style="text-align:left">
+        <div class="alert alert-info" style="text-align:left; margin-bottom:1rem;">
           <div>
             <div><strong>Servicio:</strong> ${escapeHtml(data.servicio)}</div>
             <div><strong>Urgencia:</strong> ${urgConfig.emoji} ${urgConfig.label}</div>
             <div><strong>WhatsApp:</strong> ${escapeHtml(data.whatsapp)}</div>
+            <div style="margin-top:0.4rem; font-size:0.82rem; color:var(--blue);">
+              <strong>🔗 Enlace de seguimiento:</strong><br>
+              <a href="${trackingUrl}" target="_blank" style="color:var(--blue); word-break:break-all; text-decoration:underline;">${trackingUrl}</a>
+            </div>
           </div>
         </div>
-        <a href="https://wa.me/584242964339?text=${encodeURIComponent(`Hola Soporte Informáticos Venezuela, acabo de enviar una solicitud para: ${data.servicio}. Mi nombre es ${data.nombre}.`)}"
-           class="btn btn-primary" target="_blank" style="margin-top:0.75rem">
-          💬 Contactar por WhatsApp
-        </a>
+        <div style="display:flex; gap:0.6rem; justify-content:center; flex-wrap:wrap;">
+          <a href="https://wa.me/584242964339?text=${encodeURIComponent(waMessageText)}"
+             class="btn btn-primary" target="_blank" style="background:#25D366; color:white; border:none; font-weight:700;">
+            💬 Contactar por WhatsApp
+          </a>
+          <a href="${trackingUrl}" class="btn btn-secondary" style="font-weight:700;">
+            🔍 Ver Estado del Ticket
+          </a>
+        </div>
       </div>
     </div>
   `;
