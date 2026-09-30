@@ -14,7 +14,7 @@ import {
   actualizarEstadoTecnico, asignarTecnicoASolicitud,
   isSuperAdminIdentifier
 } from './firebase.js';
-import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js?v=47';
+import { currentUser, isAdmin, onAuthChange, showToast } from './auth.js';
 
 const ADMIN_EMAIL = 'tecnicouzcategui@gmail.com';
 let _panelInited = false;

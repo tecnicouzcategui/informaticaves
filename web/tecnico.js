@@ -14,7 +14,7 @@ import {
 import {
   currentUser, isAdmin, isTecnico, userWhatsApp, userFoto, userCedula,
   openAuthModal, showToast
-} from './auth.js?v=47';
+} from './auth.js';
 import { playCaseTakenSound, playStatusChangeSound } from './sound-effects.js';
 
 let currentTecnico = null;

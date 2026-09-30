@@ -50,13 +50,16 @@ const db   = getFirestore(app);
 const auth = getAuth(app);
 
 // ── Activar persistencia offline (Firestore) ────────────────
-enableIndexedDbPersistence(db).catch(err => {
-  if (err.code === 'failed-precondition') {
-    console.warn('[Firestore] Persistencia fallida: múltiples pestañas abiertas.');
-  } else if (err.code === 'unimplemented') {
-    console.warn('[Firestore] Persistencia no soportada en este navegador.');
+if (typeof window !== 'undefined' && !window.__infovzla_persistence_initialized) {
+  window.__infovzla_persistence_initialized = true;
+  try {
+    enableIndexedDbPersistence(db).catch(err => {
+      console.warn('[Firestore] Persistencia offline no activada:', err?.message || err);
+    });
+  } catch (err) {
+    console.warn('[Firestore] Persistencia offline omitida:', err?.message || err);
   }
-});
+}
 
 // ── Colecciones ─────────────────────────────────────────────
 const COLS = {
