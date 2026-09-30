@@ -202,7 +202,7 @@
           <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem" id="admin-welcome"></p>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" style="background:#4a5568;color:white;border:none;" onclick="caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c)))).then(()=>navigator.serviceWorker.getRegistrations()).then(r=>Promise.all(r.map(s=>s.unregister()))).then(()=>location.reload(true))">🔄 Limpiar Caché</button>
+          <button class="btn btn-secondary btn-sm" style="background:#4a5568;color:white;border:none;" onclick="if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>Promise.all(r.map(s=>s.unregister())))}if('caches' in window){caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c))))}setTimeout(()=>{window.location.href=window.location.pathname+'?v='+Date.now();},300)">🔄 Limpiar Caché</button>
           <a href="index.html" class="btn btn-secondary btn-sm">🌐 Ver sitio</a>
           <button class="btn btn-ghost btn-sm" id="btn-logout-admin">Cerrar sesión</button>
         </div>

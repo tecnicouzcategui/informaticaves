@@ -1282,15 +1282,27 @@ function renderTablaTecnicos() {
   const tbody = document.getElementById('tecnicos-tbody');
   if (!tbody) return;
 
-  let filtrados = tecnicosList;
+  // Deduplicación infalible por clave única (cédula / ID / superAdmin)
+  const vistos = new Set();
+  const unicos = [];
+  for (const t of tecnicosList) {
+    const isSuper = isSuperAdminIdentifier(t.id) || isSuperAdminIdentifier(t.cedula) || isSuperAdminIdentifier(t.email);
+    const key = isSuper ? 'SUPER_ADMIN' : (t.cedulaNum || String(t.cedula || '').replace(/[^0-9]/g, '') || t.email || t.id);
+    if (!vistos.has(key)) {
+      vistos.add(key);
+      unicos.push(t);
+    }
+  }
+
+  let filtrados = unicos;
   if (filtroTecnicoActual === 'activo') {
-    filtrados = tecnicosList.filter(t => t.estado === 'activo');
+    filtrados = unicos.filter(t => t.estado === 'activo');
   } else if (filtroTecnicoActual === 'disponible') {
-    filtrados = tecnicosList.filter(t => t.estado === 'activo' && t.disponible !== false);
+    filtrados = unicos.filter(t => t.estado === 'activo' && t.disponible !== false);
   } else if (filtroTecnicoActual === 'pendiente') {
-    filtrados = tecnicosList.filter(t => t.estado === 'pendiente' || t.estado === 'pendiente_aprobacion');
+    filtrados = unicos.filter(t => t.estado === 'pendiente' || t.estado === 'pendiente_aprobacion');
   } else if (filtroTecnicoActual === 'suspendido') {
-    filtrados = tecnicosList.filter(t => t.estado === 'suspendido');
+    filtrados = unicos.filter(t => t.estado === 'suspendido');
   }
 
   if (!filtrados.length) {
